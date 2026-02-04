@@ -1,7 +1,7 @@
 [package]
 name = "Chinese_Chess_Engine"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
 tokio = { version = "1.28", features = ["macros", "sync", "rt-multi-thread"] }

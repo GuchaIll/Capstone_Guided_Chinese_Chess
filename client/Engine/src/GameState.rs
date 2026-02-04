@@ -1,48 +1,54 @@
-
-pub enum Side {
-    Red,
-    Black
-}
-
+// GameState module - manages overall game state including board, history, and captured pieces
+use crate::board::{Board, Side};
 
 pub enum GameStage {
     PreGame,
     InGame,
-    PostGame
+    PostGame,
 }
 
 pub struct GameState {
-    stage: GameStage,
-    turn: Side,
-    board: Vec<Vec<u8>>,
-    captured: Vec<Vec<u8>>,
-    history: Vec<Vec<Vec<u8>>>
+    pub stage: GameStage,
+    pub board: Board,
+    pub history: Vec<String>,  // Store moves as strings for now
+    pub captured_red: Vec<u8>,
+    pub captured_black: Vec<u8>,
 }
 
-
 impl GameState {
-    fn new () -> GameState {
+    pub fn new() -> GameState {
         GameState {
             stage: GameStage::PreGame,
-            turn: Side::Red,
-            board: vec![vec![0; 8]; 8],
-            captured: vec![vec![0; 8]; 8],
-            history: vec![]
+            board: Board::new(),
+            history: vec![],
+            captured_red: vec![],
+            captured_black: vec![],
         }
     }
-    fn update_board (&mut self, new_board: Vec<Vec<u8>>) {
-        self.board = new_board;
-
+    
+    pub fn start_game(&mut self) {
+        self.stage = GameStage::InGame;
+        self.board.reset();
+        self.history.clear();
+        self.captured_red.clear();
+        self.captured_black.clear();
     }
-
-    fn capture (&mut self, piece: u8, pos: (usize, usize)) {
-
-
+    
+    pub fn reset(&mut self) {
+        self.stage = GameStage::PreGame;
+        self.board = Board::new();
+        self.history.clear();
+        self.captured_red.clear();
+        self.captured_black.clear();
     }
+    
+    pub fn get_current_side(&self) -> &Side {
+        &self.board.side
+    }
+}
 
-    fn reset (&mut self) {
-        self.board = vec![vec![0; 8]; 8];
-        self.GameStage = GameStage::PreGame;
-
+impl Default for GameState {
+    fn default() -> Self {
+        Self::new()
     }
 }
