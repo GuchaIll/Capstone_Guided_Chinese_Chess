@@ -1,6 +1,71 @@
-TODO:
--Define Coordinate System for board
--Implement Rule Validation
--Implement Game State Transitions and turns
--Set up web socket streaming with frontend react display
--Unit Testing
+Xiangqi Engine Implementation TODO
+===================================
+
+Step 1: ✅ Project Setup
+   - Set up Cargo workspace
+   - Configure dependencies
+   - Basic project structure
+
+Step 2: ✅ Define Coordinate System for Board
+   - Mailbox board representation (11x14)
+   - Piece encoding constants
+   - Coordinate mapping (a0-i9)
+   - Board zones (palace restrictions)
+   - FEN parsing
+   - Board display
+   - Unit tests
+
+Step 3: ⏳ Implement Rule Validation
+   - Move generation for each piece type:
+     * Pawn (兵/卒) - forward, river crossing logic
+     * Advisor (仕/士) - diagonal in palace
+     * Bishop (相/象) - diagonal 2 squares, no river crossing
+     * Knight (傌/馬) - L-shape with blocking check
+     * Cannon (炮/炮) - orthogonal with jump capture
+     * Rook (俥/車) - orthogonal sliding
+     * King (帥/將) - orthogonal in palace, flying general rule
+   - Attack detection (isSquareAttacked)
+   - Legal move filtering (no self-check)
+   - Move encoding/decoding
+
+Step 4: ⏳ Implement Game State Transitions and Turns
+   - Make move / Unmake move
+   - Move stack for history
+   - Check/checkmate/stalemate detection
+   - Draw conditions (60-move rule, repetition)
+   - Zobrist hashing
+   - Game phase management
+
+Step 5: ⏳ Set up WebSocket Streaming with Frontend
+   - WebSocket server with warp
+   - Game state serialization
+   - Move validation endpoint
+   - Real-time board updates
+   - React frontend integration
+
+Step 6: ⏳ Unit Testing
+   Current tests (5):
+     ✅ Board creation
+     ✅ Coordinate mapping
+     ✅ Offboard detection
+     ✅ FEN parsing
+     ✅ Side operations
+   
+   Needed tests:
+     - Move generation per piece
+     - Move validation
+     - Attack detection
+     - Check detection
+     - Checkmate detection
+     - Draw conditions
+     - Make/unmake moves
+     - FEN generation
+     - Edge cases
+
+Optional Enhancements:
+   - Search algorithm (alpha-beta)
+   - Evaluation function
+   - Opening book
+   - Endgame tablebases
+   - Time management
+   - UCI protocol support
