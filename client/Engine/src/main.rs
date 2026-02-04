@@ -2,8 +2,8 @@
 // Main entry point
 
 mod board;
-mod Game;
-mod GameState;
+mod game;
+mod game_state;
 
 use board::Board;
 
@@ -23,7 +23,7 @@ fn main() {
     println!("\n--- Game State Demo ---\n");
     
     // Create game state
-    let mut game = GameState::GameState::new();
+    let mut game = game_state::GameState::new();
     game.start_game();
     
     println!("Game started with side to move: {:?}", game.get_current_side());

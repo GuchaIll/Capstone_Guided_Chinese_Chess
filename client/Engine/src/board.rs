@@ -322,6 +322,8 @@ impl Board {
                 
                 if self.squares[square] != OFFBOARD {
                     if file == 1 {
+                        // Display human-readable rank (9 at top, 0 at bottom)
+                        // Mailbox rank 2 = display rank 9, rank 11 = display rank 0
                         result.push_str(&format!("{}  ", 11 - rank));
                     }
                     result.push(PIECE_TO_CHAR[self.squares[square] as usize]);
