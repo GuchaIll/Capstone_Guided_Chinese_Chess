@@ -1,1 +1,13 @@
 /target
+
+# Python server
+server/.env
+server/chroma_db/
+server/agent_orchestration/.agent/profiles/*.json
+server/__pycache__/
+server/**/__pycache__/
+server/**/*.pyc
+server/.pytest_cache/
+server/**/.pytest_cache/
+server/logs/*.log
+server/logs/*.log.*
