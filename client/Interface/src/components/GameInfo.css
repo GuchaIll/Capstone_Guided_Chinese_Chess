@@ -1,0 +1,298 @@
+/* ===== Panel ===== */
+.game-info {
+  background: #1a1a1a;
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  padding: 20px;
+  width: 300px;
+  color: #e0e0e0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+/* ===== Status Section ===== */
+.status-section {
+  margin-bottom: 18px;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: #111;
+  border: 1px solid #2e2e2e;
+  margin-bottom: 12px;
+}
+
+.status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.connection-status.connected .status-dot {
+  background: #2e7d32;
+  box-shadow: 0 0 6px #2e7d32;
+}
+
+.connection-status.disconnected .status-dot {
+  background: #b71c1c;
+}
+
+.connection-status.connecting .status-dot {
+  background: #e65100;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.status-text {
+  font-size: 13px;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ===== Turn Indicator ===== */
+.turn-indicator {
+  padding: 12px 16px;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  border: 1px solid transparent;
+}
+
+.turn-indicator.red {
+  background: #1f0000;
+  border-color: #8b0000;
+  color: #cc0000;
+}
+
+.turn-indicator.black {
+  background: #111;
+  border-color: #333;
+  color: #e0e0e0;
+}
+
+/* ===== Game Result ===== */
+.game-result {
+  padding: 14px;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: #1a1a1a;
+  border: 1px solid #555;
+  color: #c8a96e;
+}
+
+/* ===== Thinking Indicator ===== */
+.turn-indicator.thinking {
+  animation: thinkPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes thinkPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ===== Suggestion Panel ===== */
+.suggestion-panel {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: #0d1a0d;
+  border: 1px solid #1a3a1a;
+  border-radius: 4px;
+}
+
+.suggestion-label {
+  font-size: 10px;
+  color: #4a8a4a;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 4px;
+}
+
+.suggestion-move {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: #6abf6a;
+  font-weight: 600;
+}
+
+.suggestion-score {
+  margin-left: 8px;
+  font-size: 11px;
+  color: #4a8a4a;
+  font-weight: 400;
+}
+
+/* ===== Controls ===== */
+.controls {
+  margin-bottom: 18px;
+}
+
+.reset-btn {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #1e1e1e;
+  color: #c8a96e;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.reset-btn:hover {
+  background: #2a2a2a;
+  border-color: #c8a96e;
+  color: #e0c88a;
+}
+
+.reset-btn:active {
+  background: #111;
+}
+
+/* ===== Move History ===== */
+.move-history {
+  background: #111;
+  border: 1px solid #2e2e2e;
+  border-radius: 4px;
+  padding: 12px;
+}
+
+.move-history h3 {
+  margin: 0 0 10px 0;
+  font-size: 11px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-bottom: 1px solid #2e2e2e;
+  padding-bottom: 8px;
+}
+
+.move-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.no-moves {
+  color: #555;
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+  font-size: 13px;
+}
+
+.move-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 3px;
+  margin-bottom: 3px;
+  font-size: 12px;
+  border: 1px solid transparent;
+}
+
+.move-item.red-move {
+  background: #1a0000;
+  border-color: #2a0000;
+}
+
+.move-item.black-move {
+  background: #141414;
+  border-color: #1e1e1e;
+}
+
+/* Move number */
+.move-number {
+  color: #555;
+  min-width: 20px;
+  font-size: 11px;
+}
+
+/* Piece cell with char + name stacked */
+.move-piece {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 36px;
+}
+
+.move-piece-char {
+  font-family: 'Microsoft YaHei', 'SimHei', serif;
+  font-size: 15px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.move-piece-name {
+  font-size: 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #888;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+.red-move .move-piece-char {
+  color: #cc0000;
+}
+
+.red-move .move-piece-name {
+  color: #993333;
+}
+
+.black-move .move-piece-char {
+  color: #e0e0e0;
+}
+
+.black-move .move-piece-name {
+  color: #888;
+}
+
+.move-notation {
+  flex: 1;
+  color: #aaa;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+}
+
+.move-capture {
+  color: #8b0000;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+/* ===== Scrollbar ===== */
+.move-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.move-list::-webkit-scrollbar-track {
+  background: #0d0d0d;
+  border-radius: 3px;
+}
+
+.move-list::-webkit-scrollbar-thumb {
+  background: #2e2e2e;
+  border-radius: 3px;
+}
+
+.move-list::-webkit-scrollbar-thumb:hover {
+  background: #3e3e3e;
+}

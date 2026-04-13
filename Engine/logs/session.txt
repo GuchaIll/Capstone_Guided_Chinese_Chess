@@ -1,0 +1,19 @@
+Session log file for Chinese Chess Engine server.
+Logs are output to stdout — run the server and pipe to this file:
+  cargo run 2>&1 | tee Engine/logs/session.txt
+
+Expected log output format:
+  [WS] Client connected
+  [WS] <<< {"type":"move","move":"e0e1"}
+  [WS] Processing: move 'e0e1'
+  [WS] Move result: valid=true
+  [AI] generate_ai_move: depth=4, MO=true, TT=true, QS=true, time_limit=Some(5000)ms
+  [AI] Position: <FEN>
+  [ENGINE] Search started: depth=4, time_limit=Some(5000)ms, features: MO=true TT=true QS=true
+  [ENGINE] Depth 1 done: score=50, nodes=44, time=0.2ms, aborted=false
+  [ENGINE] Depth 2 done: score=50, nodes=380, time=1.5ms, aborted=false
+  [ENGINE] Depth 3 done: score=75, nodes=2100, time=12.0ms, aborted=false
+  [ENGINE] Depth 4 done: score=75, nodes=12400, time=250.0ms, aborted=false
+  [ENGINE] Search complete: best_score=75, depth_reached=4/4, nodes=12400, time=250.0ms
+  [WS] AI move complete: e7e6 (score=75, nodes=12400, time=250.5ms)
+  [WS] Client disconnected
