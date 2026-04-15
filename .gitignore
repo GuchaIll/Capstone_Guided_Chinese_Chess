@@ -1,4 +1,11 @@
+# Rust
 /target
+
+# Node / React / Vite
+node_modules/
+dist/
+*.local
+.vite/
 
 # Python server
 server/.env
@@ -11,3 +18,20 @@ server/.pytest_cache/
 server/**/.pytest_cache/
 server/logs/*.log
 server/logs/*.log.*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Engine logs
+Engine/logs/*.txt
+
+# Docker
+docker-compose.override.yml

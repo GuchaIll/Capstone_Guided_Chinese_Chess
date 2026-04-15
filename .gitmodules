@@ -1,0 +1,3 @@
+[submodule "server/go_agent_framework"]
+    path = go_agent_framework
+    url = https://github.com/GuchaIll/go_agent_framework.git
