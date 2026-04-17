@@ -333,4 +333,103 @@ impl GameSession {
             None => ServerMessage::Error { message: "No suggestion available".to_string() },
         }
     }
+
+    /// Deep position analysis with full feature extraction
+    pub fn analyze_position(&mut self, fen: Option<&str>, difficulty: Option<u8>) -> ServerMessage {
+        // Set position if FEN provided
+        if let Some(fen_str) = fen {
+            self.state = ChessGameState::from_fen(fen_str);
+        }
+
+        if let Some(level) = difficulty {
+            self.ai.set_difficulty(level);
+        }
+
+        let (result, analysis, features) = self.ai.analyze_position(&mut self.state, None);
+
+        // Combine analysis + features into a JSON value
+        let mut output = serde_json::to_value(&analysis).unwrap_or(serde_json::json!({}));
+        if let Some(feat) = features {
+            if let Ok(feat_val) = serde_json::to_value(&feat) {
+                output["move_features"] = feat_val;
+            }
+        }
+        output["search_score"] = serde_json::json!(result.score);
+        output["search_nodes"] = serde_json::json!(result.nodes_searched);
+        output["search_depth"] = serde_json::json!(result.depth_reached);
+
+        ServerMessage::Analysis { features: output }
+    }
+
+    /// Batch analyze a full game: process each FEN+move pair and extract features
+    pub fn batch_analyze(
+        &mut self,
+        moves: &[crate::api::BatchEntryMsg],
+        difficulty: Option<u8>,
+    ) -> ServerMessage {
+        if let Some(level) = difficulty {
+            self.ai.set_difficulty(level);
+        }
+
+        let mut results: Vec<serde_json::Value> = Vec::new();
+        let mut prev_score: Option<i32> = None;
+
+        for (idx, entry) in moves.iter().enumerate() {
+            println!("[BATCH] Processing move {}/{}: {} on {}",
+                idx + 1, moves.len(), entry.move_str, entry.fen);
+
+            // Set position
+            self.state = ChessGameState::from_fen(&entry.fen);
+
+            // Run analysis
+            let search_start = std::time::Instant::now();
+            let search_result = self.ai.generate_move(&mut self.state);
+            let elapsed_ms = search_start.elapsed().as_secs_f64() * 1000.0;
+
+            // Find the played move in legal moves
+            let legal_moves = self.state.legal_moves();
+            let played_mv = legal_moves.iter().find(|mv| {
+                let from_str = BOARD_ENCODING[mv.from as usize];
+                let to_str = BOARD_ENCODING[mv.to as usize];
+                let mv_str = format!("{}{}", from_str, to_str);
+                mv_str == entry.move_str
+            });
+
+            if let Some(mv) = played_mv {
+                let alternatives = self.ai.get_top_moves(&mut self.state, 5);
+                let features = crate::AI::feature_extractor::extract_features(
+                    &mut self.state,
+                    mv,
+                    &search_result,
+                    prev_score,
+                    elapsed_ms,
+                    &alternatives,
+                );
+
+                prev_score = Some(search_result.score);
+
+                let batch_result = crate::AI::feature_extractor::BatchResult {
+                    features,
+                    expert_commentary: entry.expert_commentary.clone(),
+                };
+
+                if let Ok(val) = serde_json::to_value(&batch_result) {
+                    results.push(val);
+                }
+            } else {
+                println!("[BATCH] Warning: move '{}' not found in legal moves for FEN: {}",
+                    entry.move_str, entry.fen);
+                results.push(serde_json::json!({
+                    "error": format!("Move '{}' not legal in position", entry.move_str),
+                    "fen": entry.fen,
+                }));
+            }
+        }
+
+        let total = results.len();
+        ServerMessage::BatchAnalysis {
+            results,
+            total_moves: total,
+        }
+    }
 }

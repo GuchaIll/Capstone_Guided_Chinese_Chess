@@ -337,6 +337,11 @@ impl Board {
         get_zone(square, side) == 0
     }
 
+    /// Public version of crossed_river for use by analysis modules
+    pub fn crossed_river_pub(square: usize, side: u8) -> bool {
+        get_zone(square, side) == 0
+    }
+
     fn in_own_territory(square: usize, side: u8) -> bool {
         get_zone(square, side) >= 1
     }
