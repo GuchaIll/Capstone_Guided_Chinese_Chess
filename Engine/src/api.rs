@@ -69,6 +69,17 @@ pub enum ClientMessage {
     LegalMoves { square: String },
     #[serde(rename = "suggest")]
     Suggest { difficulty: Option<u8> },
+    #[serde(rename = "analyze_position")]
+    AnalyzePosition { fen: Option<String>, difficulty: Option<u8> },
+    #[serde(rename = "batch_analyze")]
+    BatchAnalyze { moves: Vec<BatchEntryMsg>, difficulty: Option<u8> },
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BatchEntryMsg {
+    pub fen: String,
+    pub move_str: String,
+    pub expert_commentary: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -114,6 +125,15 @@ pub enum ServerMessage {
         to: String,
         score: i32,
         nodes_searched: u64,
+    },
+    #[serde(rename = "analysis")]
+    Analysis {
+        features: serde_json::Value,
+    },
+    #[serde(rename = "batch_analysis")]
+    BatchAnalysis {
+        results: Vec<serde_json::Value>,
+        total_moves: usize,
     },
     #[serde(rename = "error")]
     Error { message: String },
@@ -208,6 +228,12 @@ fn handle_client_message(
         ClientMessage::SetPosition { ref fen } => handle_set_position(session, fen),
         ClientMessage::LegalMoves { ref square } => handle_legal_moves(session, square),
         ClientMessage::Suggest { difficulty } => handle_suggest(session, difficulty, msg_start),
+        ClientMessage::AnalyzePosition { ref fen, difficulty } => {
+            handle_analyze_position(session, fen.as_deref(), difficulty)
+        }
+        ClientMessage::BatchAnalyze { ref moves, difficulty } => {
+            handle_batch_analyze(session, moves, difficulty)
+        }
     }
 }
 
@@ -321,4 +347,24 @@ fn handle_suggest(
         _ => {}
     }
     resp
+}
+
+/// POST analyze_position: deep position analysis with feature extraction
+fn handle_analyze_position(
+    session: &mut GameSession,
+    fen: Option<&str>,
+    difficulty: Option<u8>,
+) -> ServerMessage {
+    println!("[WS] Processing: analyze_position (fen={:?}, difficulty={:?})", fen, difficulty);
+    session.analyze_position(fen, difficulty)
+}
+
+/// POST batch_analyze: analyze a full game (list of FEN+move pairs)
+fn handle_batch_analyze(
+    session: &mut GameSession,
+    moves: &[BatchEntryMsg],
+    difficulty: Option<u8>,
+) -> ServerMessage {
+    println!("[WS] Processing: batch_analyze ({} moves, difficulty={:?})", moves.len(), difficulty);
+    session.batch_analyze(moves, difficulty)
 }

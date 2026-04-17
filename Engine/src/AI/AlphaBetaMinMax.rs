@@ -923,6 +923,58 @@ impl Default for AlphaBetaMinMax {
 }
 
 // ========================
+//     ANALYSIS METHODS
+// ========================
+
+impl AlphaBetaMinMax {
+    /// Analyze a position: run search, extract all features, return combined result.
+    /// The state is NOT modified after this call (search restores state internally).
+    pub fn analyze_position(
+        &mut self,
+        state: &mut GameState,
+        prev_score: Option<i32>,
+    ) -> (SearchResult, crate::AI::position_analyzer::PositionAnalysis, Option<crate::AI::feature_extractor::MoveFeatureVector>) {
+        let search_start = std::time::Instant::now();
+        let result = self.search(state);
+        let elapsed_ms = search_start.elapsed().as_secs_f64() * 1000.0;
+
+        // Position analysis (before move)
+        let analysis = crate::AI::position_analyzer::analyze(state);
+
+        // Feature extraction (if a best move was found)
+        let features = result.best_move.map(|mv| {
+            let alternatives = self.get_top_moves(state, 5);
+            crate::AI::feature_extractor::extract_features(
+                state, &mv, &result, prev_score, elapsed_ms, &alternatives,
+            )
+        });
+
+        (result, analysis, features)
+    }
+
+    /// Get the top N moves with their scores for the current position.
+    /// Runs a shallow search for each legal move to score them.
+    pub fn get_top_moves(&mut self, state: &mut GameState, n: usize) -> Vec<(Move, i32)> {
+        let moves = state.legal_moves();
+        let mut scored: Vec<(Move, i32)> = Vec::new();
+
+        for mv in moves {
+            if !state.apply_move(mv) {
+                continue;
+            }
+            // Quick evaluation (no deep search)
+            let score = -self.evaluate(state);
+            state.undo_move();
+            scored.push((mv, score));
+        }
+
+        scored.sort_by(|a, b| b.1.cmp(&a.1));
+        scored.truncate(n);
+        scored
+    }
+}
+
+// ========================
 //     AI TRAIT IMPL
 // ========================
 
