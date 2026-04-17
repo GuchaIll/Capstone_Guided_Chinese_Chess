@@ -6,6 +6,9 @@ pub mod GameState;
 pub mod AI {
     pub mod AI;
     pub mod AlphaBetaMinMax;
+    pub mod piece_square_tables;
+    pub mod position_analyzer;
+    pub mod feature_extractor;
 }
 pub mod api;
 pub mod session;

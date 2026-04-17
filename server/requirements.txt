@@ -1,0 +1,44 @@
+# ============================================================
+# Guided Chinese Chess - Python Coaching Server
+# requirements.txt
+# ============================================================
+# Install: pip install -r requirements.txt
+# Optional extras:
+#   OpenAI LLM:   pip install openai>=1.0.0
+#   Anthropic LLM: pip install anthropic>=0.25.0
+#   ChromaDB RAG: pip install chromadb>=1.3.4
+# ============================================================
+
+# ---- Web Framework ----
+fastapi==0.121.1
+uvicorn[standard]==0.38.0
+starlette==0.49.3
+
+# ---- WebSocket / Async HTTP ----
+websockets==15.0.1
+aiohttp==3.11.10
+
+# ---- Data Validation ----
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# ---- Environment / Config ----
+python-dotenv==1.1.0
+
+# ---- RAG / Embeddings ----
+chromadb==1.3.4
+sentence-transformers>=2.2.2
+
+# ---- Testing ----
+pytest==8.3.4
+pytest-asyncio==1.3.0
+pytest-cov==7.0.0
+pytest-mock==3.15.1
+
+# ---- LLM Providers (optional - install only the ones you use) ----
+# openai>=1.0.0           # For GPT-4 / GPT-3.5-turbo
+# anthropic>=0.25.0       # For Claude
+# For Ollama: no package needed - uses aiohttp to call local server
+
+# ---- OpenRouter (uses openai-compatible API via aiohttp - already included above) ----
+# No additional package required; uses aiohttp for HTTP calls
