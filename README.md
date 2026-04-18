@@ -50,6 +50,9 @@ Most Xiangqi learners have no access to real-time, personalized coaching. This p
 - Enable / disable individual agents from the UI
 - Accessible at `http://localhost:3000/agents`
 
+
+
+
 ### LLM Flexibility
 - Pluggable provider registry: OpenRouter · OpenAI · Anthropic · Mock (offline fallback)
 - Mock provider ships by default — the app works fully without an API key
@@ -89,7 +92,7 @@ Capstone_Guided_Chinese_Chess/
 │       ├── KiboAPI.ts       # JS control surface + WebSocket receiver
 │       └── main.ts          # Entry point, auto-connect to /ws/kibo
 │
-└── docker-compose.yml       # Four-service orchestration
+└── docker-compose.yml       # Five-service orchestration
 ```
 
 ---
@@ -102,6 +105,7 @@ Capstone_Guided_Chinese_Chess/
 | **chess-coaching** | 5000 | **5001** | Python coaching server (FastAPI) |
 | **chess-client** | 3000 | 3000 / 80 | React board UI (nginx) |
 | **kibo-viewer** | 3001 | 3001 | Kibo 3D avatar viewer (nginx) |
+| **go-coaching** | 8080 | **5002** | Go coaching service (agent framework + dashboard) |
 
 > **Note:** The coaching server's host port is **5001** (not 5000) because macOS Monterey+ reserves port 5000 for AirPlay Receiver. All internal Docker networking still uses port 5000.
 
@@ -116,6 +120,13 @@ Capstone_Guided_Chinese_Chess/
 | `http://localhost:5001/health` | Coaching server health check |
 | `http://localhost:5001/agent-state/graph` | Live agent graph (JSON) |
 | `http://localhost:5001/agents` | Agent registry (JSON) |
+| `http://localhost:5002/dashboard/` | Go Agent Framework dashboard (live agent graph UI) |
+| `http://localhost:5002/dashboard/events` | Real-time SSE stream of agent execution |
+| `http://localhost:5002/dashboard/graph` | Agent graph structure (JSON) |
+| `http://localhost:5002/dashboard/stats` | LLM token usage statistics |
+| `http://localhost:5002/coach` | Go coaching pipeline API |
+| `http://localhost:5002/health` | Go coaching health check |
+| `http://localhost:5002/metrics` | Prometheus metrics |
 
 ---
 

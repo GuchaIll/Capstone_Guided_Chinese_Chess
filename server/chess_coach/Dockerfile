@@ -1,4 +1,13 @@
-# ---- Build stage ----
+# ---- Dashboard SPA build stage ----
+FROM node:22-alpine AS dashboard
+
+WORKDIR /dashboard
+COPY go_agent_framework/dashboard/package.json go_agent_framework/dashboard/package-lock.json ./
+RUN npm ci
+COPY go_agent_framework/dashboard/ ./
+RUN npm run build
+
+# ---- Go build stage ----
 FROM golang:1.26-alpine AS builder
 
 RUN apk add --no-cache git
@@ -26,6 +35,7 @@ WORKDIR /app
 
 COPY --from=builder /chess-coach /app/chess-coach
 COPY chess_coach/skills/ /app/skills/
+COPY --from=dashboard /dashboard/dist/ /app/dashboard/dist/
 
 EXPOSE 8080
 
