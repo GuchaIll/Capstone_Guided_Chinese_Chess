@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from led_board import LEDBoard 
+from led_board import LEDBoard
 
 app = Flask(__name__)
 led = LEDBoard()
@@ -36,6 +36,19 @@ def show_move():
     led.show_moves(piece, row, col)
 
     return jsonify({"status": "Move displayed"})
+
+# starting sequence
+@app.route("/zones", methods=["POST"])
+def zones():
+    led.show_start_zones()
+    return jsonify({"status": "zones shown"})
+
+# ending/winning sequence
+@app.route("/win", methods=["POST"])
+def win():
+    side = request.json.get("side")
+    led.celebrate_win(side)
+    return jsonify({"status": f"{side} celebration"})
 
 
 # =========================
