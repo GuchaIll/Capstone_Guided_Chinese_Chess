@@ -5,7 +5,7 @@ import neopixel
 # LED SETUP
 # =========================================================
 PIXEL_PIN = board.D18
-NUM_PIXELS = 359
+NUM_PIXELS = 359   # highest index in your map is 358
 ORDER = neopixel.GRBW
 
 pixels = neopixel.NeoPixel(
@@ -17,7 +17,8 @@ pixels = neopixel.NeoPixel(
 )
 
 # =========================================================
-# BOARD -> LED MAP
+# BOARD -> LED MAP (10 rows x 9 cols)
+# Assumption: first row missing value is 18
 # =========================================================
 BOARD_LED_MAP = [
     [3,   6,   9,  12,  15,  18,  21,  24,  27],
@@ -36,14 +37,15 @@ ROWS = 10
 COLS = 9
 
 # =========================================================
-# COLORS (RGBW)
+# COLORS
 # =========================================================
 OFF = (0, 0, 0, 0)
-WHITE = (0, 0, 0, 255)
-RED = (255, 0, 0, 0)
-BLUE = (0, 0, 255, 0)
-GREEN = (0, 255, 0, 0)
-ORANGE = (255, 80, 0, 0)
+WHITE = (0, 0, 0, 255)     # empty move
+RED = (255, 0, 0, 0)       # selected piece
+BLUE = (0, 0, 255, 0)      # opponent start
+GREEN = (0, 255, 0, 0)     # best move
+ORANGE = (255, 80, 0, 0)   # capture
+PURPLE = (180, 0, 255, 0)  # opponent destination
 
 # =========================================================
 # PIECE NAME <-> FEN LETTERS
@@ -68,16 +70,6 @@ FEN_TO_NAME = {
     "p": "soldier", "P": "soldier",
 }
 
-PIECE_VALUES = {
-    "k": 1000, "K": 1000,
-    "r": 90,   "R": 90,
-    "c": 50,   "C": 50,
-    "h": 40,   "H": 40,
-    "e": 20,   "E": 20,
-    "a": 20,   "A": 20,
-    "p": 10,   "P": 10,
-}
-
 # =========================================================
 # LED HELPERS
 # =========================================================
@@ -95,24 +87,58 @@ def show_position(board_state, selected=None, moves=None, best_move=None):
     if moves is None:
         moves = []
 
-    # legal moves
     for r, c in moves:
         if board_state[r][c] == ".":
-            set_square(r, c, WHITE)
+            set_square(r, c, WHITE)   # empty move
         else:
-            set_square(r, c, ORANGE)
+            set_square(r, c, ORANGE)  # capture
 
-    # best move overrides white/orange
+    # best move overrides others
     if best_move is not None:
         br, bc = best_move
         set_square(br, bc, GREEN)
 
-    # selected piece overrides everything at its own square
+    # selected piece overrides everything at that square
     if selected is not None:
         sr, sc = selected
         set_square(sr, sc, RED)
 
     pixels.show()
+
+PIECE_VALUES = {
+    "k": 1000, "K": 1000,
+    "r": 90,   "R": 90,
+    "c": 50,   "C": 50,
+    "h": 40,   "H": 40,
+    "e": 20,   "E": 20,
+    "a": 20,   "A": 20,
+    "p": 10,   "P": 10,
+}
+
+def best_move_for_piece(board_state, r, c, moves):
+    if not moves:
+        return None
+
+    best = None
+    best_score = float("-inf")
+
+    for mr, mc in moves:
+        target = board_state[mr][mc]
+
+        score = 0
+
+        # prioritize captures
+        if target != ".":
+            score += 1000 + PIECE_VALUES.get(target, 0)
+
+        # small center preference
+        score += max(0, 4 - abs(mc - 4)) * 0.5
+
+        if score > best_score:
+            best_score = score
+            best = (mr, mc)
+
+    return best
 
 # =========================================================
 # BOARD HELPERS
@@ -150,6 +176,8 @@ def in_palace(r, c, side):
 
 # =========================================================
 # FEN PARSING
+# Xiangqi FEN board part only, e.g.
+# rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR
 # =========================================================
 def parse_xiangqi_fen(fen_str):
     fen_board = fen_str.strip().split()[0]
@@ -188,7 +216,9 @@ def chariot_moves(board_state, r, c):
     moves = []
     side = piece_side(board_state[r][c])
 
-    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+    for dr, dc in directions:
         nr, nc = r + dr, c + dc
         while in_bounds(nr, nc):
             if is_empty(board_state, nr, nc):
@@ -206,7 +236,9 @@ def cannon_moves(board_state, r, c):
     moves = []
     side = piece_side(board_state[r][c])
 
-    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+    for dr, dc in directions:
         nr, nc = r + dr, c + dc
         jumped = False
 
@@ -221,6 +253,7 @@ def cannon_moves(board_state, r, c):
                     if is_enemy(board_state, nr, nc, side):
                         moves.append((nr, nc))
                     break
+
             nr += dr
             nc += dc
 
@@ -257,15 +290,20 @@ def elephant_moves(board_state, r, c):
     moves = []
     side = piece_side(board_state[r][c])
 
-    for dr, dc in [(-2, -2), (-2, 2), (2, -2), (2, 2)]:
+    deltas = [(-2, -2), (-2, 2), (2, -2), (2, 2)]
+
+    for dr, dc in deltas:
         eye_r, eye_c = r + dr // 2, c + dc // 2
         nr, nc = r + dr, c + dc
 
         if not in_bounds(nr, nc):
             continue
+
+        # Elephant eye blocking
         if not is_empty(board_state, eye_r, eye_c):
             continue
 
+        # River restriction
         if side == "red" and nr < 5:
             continue
         if side == "black" and nr > 4:
@@ -295,13 +333,15 @@ def general_moves(board_state, r, c):
         if in_bounds(nr, nc) and in_palace(nr, nc, side):
             add_if_legal(board_state, moves, nr, nc, side)
 
+    # Flying general capture
+    # Look straight down/up same column for enemy general with no pieces between
     enemy_general = "k" if side == "red" else "K"
     step = -1 if side == "red" else 1
     nr = r + step
-
+    blocked = False
     while in_bounds(nr, c):
         if board_state[nr][c] != ".":
-            if board_state[nr][c] == enemy_general:
+            if board_state[nr][c] == enemy_general and not blocked:
                 moves.append((nr, c))
             break
         nr += step
@@ -313,12 +353,19 @@ def soldier_moves(board_state, r, c):
     side = piece_side(board_state[r][c])
 
     if side == "red":
-        add_if_legal(board_state, moves, r - 1, c, side)
+        forward_r, forward_c = r - 1, c
+        add_if_legal(board_state, moves, forward_r, forward_c, side)
+
+        # After crossing river
         if r <= 4:
             add_if_legal(board_state, moves, r, c - 1, side)
             add_if_legal(board_state, moves, r, c + 1, side)
+
     else:
-        add_if_legal(board_state, moves, r + 1, c, side)
+        forward_r, forward_c = r + 1, c
+        add_if_legal(board_state, moves, forward_r, forward_c, side)
+
+        # After crossing river
         if r >= 5:
             add_if_legal(board_state, moves, r, c - 1, side)
             add_if_legal(board_state, moves, r, c + 1, side)
@@ -348,65 +395,23 @@ def get_moves(board_state, r, c):
 
     return []
 
-# =========================================================
-# SIMPLE MOVE HEURISTIC
-# Green = "best" move by this heuristic
-# =========================================================
-def move_score(board_state, from_r, from_c, to_r, to_c):
-    mover = board_state[from_r][from_c]
-    target = board_state[to_r][to_c]
-    mover_name = FEN_TO_NAME[mover]
-    side = piece_side(mover)
+def highlight_opponent_move(from_r, from_c, to_r, to_c):
+    """
+    Show opponent move:
+    - start = blue
+    - end = purple
+    """
 
-    score = 0.0
+    if not in_bounds(from_r, from_c) or not in_bounds(to_r, to_c):
+        print("Invalid opponent move")
+        return
 
-    # Highest priority: captures
-    if target != ".":
-        score += 1000 + PIECE_VALUES.get(target, 0)
+    clear()
 
-    # Mild preference for central columns
-    score += max(0, 4 - abs(to_c - 4)) * 0.5
+    set_square(from_r, from_c, BLUE)
+    set_square(to_r, to_c, PURPLE)
 
-    # Piece-specific nudges
-    if mover_name == "soldier":
-        if side == "red":
-            # moving upward is better for red
-            score += (from_r - to_r) * 3
-            if to_r <= 4:
-                score += 1
-        else:
-            # moving downward is better for black
-            score += (to_r - from_r) * 3
-            if to_r >= 5:
-                score += 1
-
-    elif mover_name in {"horse", "cannon", "chariot"}:
-        # mild mobility / forward activity preference
-        if side == "red":
-            score += (from_r - to_r) * 0.3
-        else:
-            score += (to_r - from_r) * 0.3
-
-    elif mover_name == "general":
-        # prefer staying central in palace
-        score += max(0, 2 - abs(to_c - 4)) * 0.5
-
-    return score
-
-def best_move_for_piece(board_state, r, c, moves):
-    if not moves:
-        return None
-
-    best = None
-    best_score = float("-inf")
-
-    for mr, mc in moves:
-        score = move_score(board_state, r, c, mr, mc)
-        if score > best_score:
-            best_score = score
-            best = (mr, mc)
-
-    return best
+    pixels.show()
 
 # =========================================================
 # INPUT HELPERS
@@ -457,6 +462,24 @@ def main():
                 print(f"FEN parse error: {e}")
             continue
 
+        if cmd.lower().startswith("opp "):
+            parts = cmd.split()
+            if len(parts) != 5:
+                print("Use: opp from_r from_c to_r to_c")
+                continue
+
+            try:
+                fr = int(parts[1])
+                fc = int(parts[2])
+                tr = int(parts[3])
+                tc = int(parts[4])
+            except:
+                print("Invalid numbers")
+                continue
+
+            highlight_opponent_move(fr, fc, tr, tc)
+            continue
+
         if cmd.lower().startswith("moveidx "):
             parts = cmd.split()
             if len(parts) != 3:
@@ -488,7 +511,6 @@ def main():
             best = best_move_for_piece(board_state, r, c, moves)
             show_position(board_state, selected=(r, c), moves=moves, best_move=best)
             print(f"{piece_name} at ({r}, {c}) -> {moves}")
-            print(f"Best move: {best}")
             continue
 
         if cmd.lower().startswith("move "):
@@ -527,8 +549,7 @@ def main():
             best = best_move_for_piece(board_state, r, c, moves)
             show_position(board_state, selected=(r, c), moves=moves, best_move=best)
             print(f"{piece_name} at ({r}, {c}) -> {moves}")
-            print(f"Best move: {best}")
-            continue 
+            continue
 
         print("Unknown command.")
 
