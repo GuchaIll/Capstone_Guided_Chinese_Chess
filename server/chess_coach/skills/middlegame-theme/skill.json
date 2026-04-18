@@ -1,0 +1,23 @@
+{
+  "name": "middlegame_theme",
+  "description": "Retrieve and summarize middlegame themes and tactical patterns.",
+  "steps": [
+    {
+      "name": "retrieve_tactics",
+      "kind": "rag",
+      "config": {
+        "collection": "tactics",
+        "query_from_state": "question",
+        "top_k": 5
+      }
+    },
+    {
+      "name": "summarize",
+      "kind": "llm",
+      "config": {
+        "system_prompt": "You are a chess coach. Explain the relevant middlegame themes and tactical patterns. Be specific about piece coordination, pawn breaks, and attacking plans."
+      },
+      "depends_on": ["retrieve_tactics"]
+    }
+  ]
+}

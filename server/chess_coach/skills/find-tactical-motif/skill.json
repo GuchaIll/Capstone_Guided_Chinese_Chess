@@ -1,0 +1,31 @@
+{
+  "name": "find_tactical_motif",
+  "description": "Analyze a position to detect tactical motifs using engine feature extraction.",
+  "steps": [
+    {
+      "name": "get_patterns",
+      "kind": "tool",
+      "config": {
+        "tool": "get_tactical_patterns",
+        "args_from_state": ["fen"]
+      }
+    },
+    {
+      "name": "detect_motifs",
+      "kind": "tool",
+      "config": {
+        "tool": "find_tactical_motif",
+        "args_from_state": ["fen"]
+      },
+      "depends_on": ["get_patterns"]
+    },
+    {
+      "name": "describe_motifs",
+      "kind": "llm",
+      "config": {
+        "system_prompt": "You are a xiangqi coach explaining tactical patterns. Given the tactical patterns found (forks, pins, cannon screens, hanging pieces), describe each pattern clearly: what pieces are involved, which squares, and the concrete threat. Explain how the student can exploit or defend against each pattern."
+      },
+      "depends_on": ["get_patterns", "detect_motifs"]
+    }
+  ]
+}

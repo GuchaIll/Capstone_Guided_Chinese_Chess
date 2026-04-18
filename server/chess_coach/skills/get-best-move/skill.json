@@ -1,0 +1,15 @@
+{
+  "name": "get_best_move",
+  "description": "Get the engine's recommended best move for a position at limited depth.",
+  "steps": [
+    {
+      "name": "shallow_analysis",
+      "kind": "tool",
+      "config": {
+        "tool": "analyze_position",
+        "args_from_state": ["fen"],
+        "defaults": {"depth": 10}
+      }
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "name": "generate_hint",
+  "description": "Generate a progressive hint for a xiangqi puzzle using engine features and coaching LLM.",
+  "steps": [
+    {
+      "name": "get_features",
+      "kind": "tool",
+      "config": {
+        "tool": "get_position_features",
+        "args_from_state": ["fen"],
+        "defaults": {"features": "hanging_pieces,forks,pins,cannon_screens"}
+      }
+    },
+    {
+      "name": "shallow_search",
+      "kind": "tool",
+      "config": {
+        "tool": "generate_hint",
+        "args_from_state": ["fen"]
+      },
+      "depends_on": ["get_features"]
+    },
+    {
+      "name": "format_hint",
+      "kind": "llm",
+      "config": {
+        "system_prompt": "You are a xiangqi coach giving a hint. You have access to the position's tactical features (hanging pieces, forks, pins, cannon screens) and a shallow engine search result. Make the hint encouraging but not too revealing. Use the tactical features to guide the student toward the right idea without giving away the exact move. If there's a hanging piece, hint about a vulnerable piece. If there's a fork opportunity, hint about a multi-target attack."
+      },
+      "depends_on": ["get_features", "shallow_search"]
+    }
+  ]
+}

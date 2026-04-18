@@ -1,0 +1,23 @@
+{
+  "name": "endgame_principle",
+  "description": "Retrieve and summarize endgame principles and techniques.",
+  "steps": [
+    {
+      "name": "retrieve_endgames",
+      "kind": "rag",
+      "config": {
+        "collection": "endgames",
+        "query_from_state": "question",
+        "top_k": 5
+      }
+    },
+    {
+      "name": "summarize",
+      "kind": "llm",
+      "config": {
+        "system_prompt": "You are a chess coach. Explain the relevant endgame principles clearly. Cover king activity, pawn promotion paths, and piece coordination in the endgame."
+      },
+      "depends_on": ["retrieve_endgames"]
+    }
+  ]
+}

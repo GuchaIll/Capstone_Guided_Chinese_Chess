@@ -1,0 +1,33 @@
+{
+  "name": "evaluate_position",
+  "description": "Evaluate a chess position using the engine's full feature analysis, then produce a natural-language assessment.",
+  "steps": [
+    {
+      "name": "run_analysis",
+      "kind": "tool",
+      "config": {
+        "tool": "analyze_position",
+        "args_from_state": ["fen"],
+        "defaults": {"depth": 20}
+      }
+    },
+    {
+      "name": "get_features",
+      "kind": "tool",
+      "config": {
+        "tool": "get_position_features",
+        "args_from_state": ["fen"],
+        "defaults": {"features": "material,mobility,king_safety,hanging_pieces,forks,pins,cannon_screens"}
+      },
+      "depends_on": ["run_analysis"]
+    },
+    {
+      "name": "interpret",
+      "kind": "llm",
+      "config": {
+        "system_prompt": "You are an expert xiangqi coach. Given the engine's position analysis (including material balance, mobility scores, king safety, hanging pieces, forks, pins, cannon screens), produce a clear, structured assessment. Cover: 1) Material balance and who is ahead, 2) King safety for both sides, 3) Active tactical threats (hanging pieces, forks, pins, cannon screens), 4) Mobility comparison, 5) Overall evaluation and recommended plan. Reference specific pieces and squares from the feature data."
+      },
+      "depends_on": ["get_features"]
+    }
+  ]
+}

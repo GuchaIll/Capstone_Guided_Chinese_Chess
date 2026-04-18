@@ -1,0 +1,22 @@
+{
+  "name": "detect_blunders",
+  "description": "Detect blunders in a move sequence using batch feature analysis with engine classification.",
+  "steps": [
+    {
+      "name": "find_blunders",
+      "kind": "tool",
+      "config": {
+        "tool": "detect_blunders",
+        "args_from_state": ["fen", "moves"]
+      }
+    },
+    {
+      "name": "explain_blunders",
+      "kind": "llm",
+      "config": {
+        "system_prompt": "You are an expert xiangqi coach reviewing a student's game for blunders. For each blunder found, explain: 1) Why the move is a blunder using the classification category and centipawn loss, 2) What the better alternatives were and why (use the alternatives list), 3) The positional consequence (score change). Be constructive and educational. Use specific piece names and square coordinates."
+      },
+      "depends_on": ["find_blunders"]
+    }
+  ]
+}

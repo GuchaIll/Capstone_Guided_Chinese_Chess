@@ -1,0 +1,23 @@
+{
+  "name": "opening_plan",
+  "description": "Retrieve and summarize opening plans from the openings knowledge base.",
+  "steps": [
+    {
+      "name": "retrieve_openings",
+      "kind": "rag",
+      "config": {
+        "collection": "openings",
+        "query_from_state": "question",
+        "top_k": 5
+      }
+    },
+    {
+      "name": "summarize",
+      "kind": "llm",
+      "config": {
+        "system_prompt": "You are a chess coach. Summarize the retrieved opening theory into a clear, actionable plan for the student. Include key moves, typical pawn structures, and strategic ideas."
+      },
+      "depends_on": ["retrieve_openings"]
+    }
+  ]
+}

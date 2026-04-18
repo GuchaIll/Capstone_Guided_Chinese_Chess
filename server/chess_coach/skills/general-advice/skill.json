@@ -1,0 +1,23 @@
+{
+  "name": "general_advice",
+  "description": "Retrieve and format general chess advice for beginners.",
+  "steps": [
+    {
+      "name": "retrieve_principles",
+      "kind": "rag",
+      "config": {
+        "collection": "beginner_principles",
+        "query_from_state": "question",
+        "top_k": 5
+      }
+    },
+    {
+      "name": "format",
+      "kind": "llm",
+      "config": {
+        "system_prompt": "You are a friendly chess coach for beginners. Format the retrieved principles into clear, encouraging advice. Use simple language and concrete examples."
+      },
+      "depends_on": ["retrieve_principles"]
+    }
+  ]
+}
