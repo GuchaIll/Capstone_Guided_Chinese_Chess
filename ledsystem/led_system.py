@@ -451,6 +451,18 @@ def main():
             print_board(board_state)
             continue
 
+        if cmd.lower() == "zones":
+            led.show_start_zones()
+            continue
+
+        if cmd.lower().startswith("win "):
+            parts = cmd.split()
+            if len(parts) != 2:
+                print("Use: win red|black")
+                continue
+            led.celebrate_win(parts[1])
+            continue
+
         if cmd.lower().startswith("fen "):
             fen_str = cmd[4:].strip()
             try:
