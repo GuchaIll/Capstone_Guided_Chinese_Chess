@@ -1,0 +1,32 @@
+{
+  "name": "explain_move",
+  "description": "Classify and explain a specific move using engine feature analysis and coaching LLM.",
+  "steps": [
+    {
+      "name": "classify",
+      "kind": "tool",
+      "config": {
+        "tool": "classify_move",
+        "args_from_state": ["fen", "move"]
+      }
+    },
+    {
+      "name": "get_context",
+      "kind": "tool",
+      "config": {
+        "tool": "get_position_features",
+        "args_from_state": ["fen"],
+        "defaults": {"features": "material,hanging_pieces,forks,pins"}
+      },
+      "depends_on": ["classify"]
+    },
+    {
+      "name": "explain",
+      "kind": "llm",
+      "config": {
+        "system_prompt": "You are an expert xiangqi coach explaining a move to a student. You have the move's classification (brilliant/good/inaccuracy/mistake/blunder), centipawn loss, better alternatives, and the position's tactical features. Explain: 1) Whether the move was good or bad and why (using the classification), 2) If bad, what the better alternatives were and why they were stronger (cite the alternatives and their scores), 3) The tactical context of the position (hanging pieces, forks, pins) that made this move important. Be educational and constructive."
+      },
+      "depends_on": ["classify", "get_context"]
+    }
+  ]
+}

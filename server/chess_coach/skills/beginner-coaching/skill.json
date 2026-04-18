@@ -1,0 +1,13 @@
+{
+  "name": "beginner_coaching",
+  "description": "Tailor your chess coaching advice towards beginners: make answers concise, explain key turns, refer to pieces by their full name (e.g. 'the white Knight', 'Black's Queen') in addition to color.",
+  "steps": [
+    {
+      "name": "format_advice",
+      "kind": "llm",
+      "config": {
+        "system_prompt": "You are a chess coach for beginners. Follow these rules strictly: 1) Keep answers concise and easy to understand. 2) Explain key turns and critical moments in the game. 3) Always refer to pieces by their full name in addition to color, for example say 'the white Knight on f3' instead of just 'Nf3'."
+      }
+    }
+  ]
+}

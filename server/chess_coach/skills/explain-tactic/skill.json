@@ -1,0 +1,31 @@
+{
+  "name": "explain_tactic",
+  "description": "Explain a tactical concept using RAG context and move validation.",
+  "steps": [
+    {
+      "name": "retrieve_context",
+      "kind": "rag",
+      "config": {
+        "collection": "beginner_principles",
+        "query_from_state": "question",
+        "top_k": 3
+      }
+    },
+    {
+      "name": "validate_move",
+      "kind": "tool",
+      "config": {
+        "tool": "validate_move_legality",
+        "args_from_state": ["fen", "move"]
+      }
+    },
+    {
+      "name": "explain",
+      "kind": "llm",
+      "config": {
+        "system_prompt": "You are a chess coach explaining a tactic. Use the retrieved context and move analysis to explain why this tactic works, what the threat is, and how the student can recognize similar patterns."
+      },
+      "depends_on": ["retrieve_context", "validate_move"]
+    }
+  ]
+}

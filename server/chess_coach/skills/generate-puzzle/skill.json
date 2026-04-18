@@ -1,0 +1,50 @@
+{
+  "name": "generate_puzzle",
+  "description": "Generate a complete puzzle from a position: detect tactical patterns, create puzzle with batch-validated solution, rate difficulty, tag themes.",
+  "steps": [
+    {
+      "name": "get_patterns",
+      "kind": "tool",
+      "config": {
+        "tool": "get_tactical_patterns",
+        "args_from_state": ["fen"]
+      }
+    },
+    {
+      "name": "find_motif",
+      "kind": "tool",
+      "config": {
+        "tool": "find_tactical_motif",
+        "args_from_state": ["fen"]
+      },
+      "depends_on": ["get_patterns"]
+    },
+    {
+      "name": "create_puzzle",
+      "kind": "tool",
+      "config": {
+        "tool": "generate_puzzle",
+        "args_from_state": ["fen"]
+      },
+      "depends_on": ["find_motif"]
+    },
+    {
+      "name": "rate",
+      "kind": "tool",
+      "config": {
+        "tool": "rate_difficulty",
+        "args_from_state": ["fen"]
+      },
+      "depends_on": ["create_puzzle"]
+    },
+    {
+      "name": "tag",
+      "kind": "tool",
+      "config": {
+        "tool": "tag_puzzle_themes",
+        "args_from_state": ["fen"]
+      },
+      "depends_on": ["create_puzzle"]
+    }
+  ]
+}
