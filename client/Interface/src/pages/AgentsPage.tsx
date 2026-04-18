@@ -33,7 +33,7 @@ import type { AgentGraphState, StateTransition } from '../types/agentState';
 
 const API_BASE =
   import.meta.env.VITE_COACH_URL ||
-  `${window.location.protocol}//${window.location.hostname}:5000`;
+  `${window.location.protocol}//${window.location.hostname}:5001`;
 
 const NODE_POSITIONS: Record<string, { x: number; y: number }> = {
   UserInput:             { x: 0,    y: 200 },

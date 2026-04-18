@@ -9,7 +9,7 @@ export default defineConfig({
     proxy: {
       // /ws/chat MUST come before /ws so vite matches the more-specific path first
       '/ws/chat': {
-        target: 'ws://localhost:5000',
+        target: 'ws://localhost:5001',
         ws: true,
       },
       '/ws': {
@@ -17,7 +17,7 @@ export default defineConfig({
         ws: true,
       },
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:5001',
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },

@@ -225,8 +225,13 @@ function App() {
 
   const handleVoiceToggle = useCallback(() => {
     if (voiceCommands.wakeWordState === 'idle') {
+      // Not yet started → start listening
       voiceCommands.startWakeWordDetection();
+    } else if (voiceCommands.wakeWordState === 'listening') {
+      // Already listening but wakeword not heard → force awake (push-to-talk)
+      voiceCommands.forceAwake();
     } else {
+      // Awake or processing → stop entirely
       voiceCommands.stopWakeWordDetection();
     }
   }, [voiceCommands]);
