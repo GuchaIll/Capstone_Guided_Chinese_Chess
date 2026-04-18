@@ -1,5 +1,7 @@
 import board
 import neopixel
+import time
+import random
 
 class LEDBoard:
     def __init__(self):
@@ -39,6 +41,9 @@ class LEDBoard:
         self.GREEN = (0,255,0,0)
         self.ORANGE = (255,80,0,0)
         self.PURPLE = (180,0,255,0)
+        self.CYAN   = (0, 255, 255, 0)
+        self.YELLOW = (255, 255, 0, 0)
+        self.PINK   = (255, 0, 120, 0)
 
         self.board_state = [["." for _ in range(9)] for _ in range(10)]
 
@@ -104,6 +109,87 @@ class LEDBoard:
         self.set_square(r, c, self.RED)
 
         self.pixels.show()
+
+    def show_start_zones(self):
+        """
+        Lights:
+        - Palaces (top & bottom) in RED
+        - River (between rows 4 and 5) in CYAN
+        - Territories: top half BLUE, bottom half GREEN
+        """
+
+        self.clear()
+
+        # --- Territories ---
+        # Top side (rows 0-4)
+        for r in range(0, 5):
+            for c in range(self.COLS):
+                self.set_square(r, c, self.BLUE)
+
+        # Bottom side (rows 5-9)
+        for r in range(5, 10):
+            for c in range(self.COLS):
+                self.set_square(r, c, self.GREEN)
+
+        # --- River (rows 4 and 5 boundary) ---
+        # We’ll color BOTH rows 4 and 5 for visibility
+        for r in [4, 5]:
+            for c in range(self.COLS):
+                self.set_square(r, c, self.CYAN)
+
+        # --- Palaces (override colors) ---
+        # Top palace: rows 0-2, cols 3-5
+        for r in range(0, 3):
+            for c in range(3, 6):
+                self.set_square(r, c, self.RED)
+
+        # Bottom palace: rows 7-9, cols 3-5
+        for r in range(7, 10):
+            for c in range(3, 6):
+                self.set_square(r, c, self.RED)
+
+        self.pixels.show()
+
+    # =====================================================
+    # WIN CELEBRATION
+    # =====================================================
+    def celebrate_win(self, side, duration=3.0, interval=0.15):
+        """
+        Flashes all LEDs on the winner's side with fun colors.
+
+        side: "red" or "black"
+        - "black" = top half (rows 0-4)
+        - "red"   = bottom half (rows 5-9)
+
+        duration: total seconds to run
+        interval: how fast to change colors
+        """
+
+        start_time = time.time()
+
+        # Determine which rows belong to the winner
+        if side == "black":
+            rows = range(0, 5)
+        elif side == "red":
+            rows = range(5, 10)
+        else:
+            print("celebrate_win: side must be 'red' or 'black'")
+            return
+
+        palette = [self.RED, self.GREEN, self.BLUE, self.YELLOW, self.PURPLE, self.CYAN, self.PINK, self.ORANGE]
+
+        while time.time() - start_time < duration:
+            color = random.choice(palette)
+
+            # Fill only the winner's side
+            for r in rows:
+                for c in range(self.COLS):
+                    self.set_square(r, c, color)
+
+            self.pixels.show()
+            time.sleep(interval)
+
+        self.clear()
 
     # =====================================================
     # INDEX VERSION
