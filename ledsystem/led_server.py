@@ -70,6 +70,23 @@ def win():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# =========================
+# CV PAUSE (TURN OFF LEDS)
+# =========================
+@app.route("/cv_pause", methods=["POST"])
+def cv_pause():
+    led.cv_pause()
+    return jsonify({"status": "LEDs off for CV"})
+
+
+# =========================
+# CV RESUME
+# =========================
+@app.route("/cv_resume", methods=["POST"])
+def cv_resume():
+    led.cv_resume()
+    return jsonify({"status": "LEDs re-enabled"})
+
 
 # =========================
 # OPPONENT MOVE
