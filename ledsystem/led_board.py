@@ -8,6 +8,7 @@ class LEDBoard:
         self.PIXEL_PIN = board.D18
         self.NUM_PIXELS = 400
         self.ORDER = neopixel.GRBW
+        self.cv_mode = False
 
         self.pixels = neopixel.NeoPixel(
             self.PIXEL_PIN,
@@ -51,6 +52,20 @@ class LEDBoard:
     def clear(self):
         self.pixels.fill(self.OFF)
         self.pixels.show()
+
+    def cv_pause(self):
+        """
+        Turn off LEDs and prevent any updates.
+        Used before capturing camera frame.
+        """
+        self.cv_mode = True
+        self.clear()
+
+    def cv_resume(self):
+        """
+        Re-enable LED updates after CV is done.
+        """
+        self.cv_mode = False
 
     def set_square(self, r, c, color):
         self.pixels[self.BOARD_LED_MAP[r][c]] = color
@@ -218,6 +233,9 @@ class LEDBoard:
 
     # ===================== DISPLAY =====================
     def show_moves(self, piece_name, r, c):
+        if self.cv_mode:
+            return
+
         if self.board_state[r][c]==".":
             print("No piece")
             return
@@ -240,6 +258,8 @@ class LEDBoard:
         self.pixels.show()
 
     def show_opponent_move(self, fr, fc, tr, tc):
+        if self.cv_mode:
+            return
         self.clear()
         self.set_square(fr,fc,self.BLUE)
         self.set_square(tr,tc,self.PURPLE)
@@ -247,6 +267,9 @@ class LEDBoard:
 
     # ===================== ZONES =====================
     def show_start_zones(self):
+        if self.cv_mode:
+            return
+
         self.clear()
 
         for r in range(0,5):
@@ -273,6 +296,9 @@ class LEDBoard:
 
     # ===================== WIN =====================
     def celebrate_win(self, side):
+        if self.cv_mode:
+            return
+
         start = time.time()
         rows = range(0,5) if side=="black" else range(5,10)
         palette = [self.RED,self.GREEN,self.BLUE,self.YELLOW,self.PURPLE,self.CYAN,self.PINK,self.ORANGE]
