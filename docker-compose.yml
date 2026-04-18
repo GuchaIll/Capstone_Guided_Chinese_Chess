@@ -36,7 +36,7 @@ services:
       dockerfile: Dockerfile
     container_name: chess-coaching
     ports:
-      - "5000:5000"
+      - "5001:5000"
     volumes:
       - coaching-logs:/app/logs
       - coaching-profiles:/app/agent_orchestration/.agent/profiles
@@ -81,6 +81,45 @@ services:
       coaching:
         condition: service_healthy
     restart: unless-stopped
+
+  # ---- Kibo Agent Viewer ----
+  # 3D character display controlled by the orchestration engine
+  kibo:
+    build:
+      context: ./Kibo
+      dockerfile: Dockerfile
+    container_name: kibo-viewer
+    ports:
+      - "3001:3001"
+    depends_on:
+      coaching:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ---- Go Coaching Service ----
+  # Go Agent Framework: position analysis, blunder detection, puzzle generation
+  go-coaching:
+    build:
+      context: ./server
+      dockerfile: chess_coach/Dockerfile
+    container_name: go-coaching
+    ports:
+      - "5002:8080"
+    environment:
+      - ENGINE_WS_URL=ws://engine:8080/ws
+      - CHROMADB_URL=http://chromadb:8000
+      - LLM_PROVIDER=${LLM_PROVIDER:-openrouter}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+    depends_on:
+      engine:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   engine-logs:
