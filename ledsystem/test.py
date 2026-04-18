@@ -43,7 +43,7 @@ def walk_manual():
         for c in range(len(BOARD_LED_MAP[0])):
             led_idx = BOARD_LED_MAP[r][c]
 
-            clear()
+            # clear()
             pixels[led_idx] = WHITE
             pixels.show()
 
