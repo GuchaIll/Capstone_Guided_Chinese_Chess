@@ -18,22 +18,22 @@ class LEDBoard:
         )
 
         self.BOARD_LED_MAP = [
-            [3,   6,   9,  12,  15,  18,  21,  24,  27],
-            [61, 58,  55,  52,  49,  46,  43,  40,  37],
-            [73, 76,  79,  82,  85,  88,  91,  94,  97],
-            [146, 143, 140, 137, 134, 131, 128, 125, 122],
-            [158, 161, 164, 167, 170, 173, 176, 179, 182],
-            [216, 213, 210, 207, 204, 201, 198, 195, 192],
-            [227, 230, 233, 236, 239, 242, 245, 248, 251],
-            [286, 283, 280, 277, 274, 271, 268, 265, 262],
-            [298, 301, 304, 307, 310, 313, 316, 319, 322],
-            [359, 356, 353, 350, 347, 344, 341, 338, 335],
+            [3,6,9,12,15,18,21,24,27],
+            [61,58,55,52,49,46,43,40,37],
+            [73,76,79,82,85,88,91,94,97],
+            [146,143,140,137,134,131,128,125,122],
+            [158,161,164,167,170,173,176,179,182],
+            [216,213,210,207,204,201,198,195,192],
+            [227,230,233,236,239,242,245,248,251],
+            [286,283,280,277,274,271,268,265,262],
+            [298,301,304,307,310,313,316,319,322],
+            [359,356,353,350,347,344,341,338,335],
         ]
 
         self.ROWS = 10
         self.COLS = 9
 
-        # colors
+        # Colors
         self.OFF = (0,0,0,0)
         self.WHITE = (0,0,0,255)
         self.RED = (255,0,0,0)
@@ -41,33 +41,45 @@ class LEDBoard:
         self.GREEN = (0,255,0,0)
         self.ORANGE = (255,80,0,0)
         self.PURPLE = (180,0,255,0)
-        self.CYAN   = (0, 255, 255, 0)
-        self.YELLOW = (255, 255, 0, 0)
-        self.PINK   = (255, 0, 120, 0)
+        self.CYAN = (0,255,255,0)
+        self.YELLOW = (255,255,0,0)
+        self.PINK = (255,0,120,0)
 
         self.board_state = [["." for _ in range(9)] for _ in range(10)]
 
-    # =====================================================
-    # BASIC HELPERS
-    # =====================================================
+    # ===================== BASIC =====================
     def clear(self):
         self.pixels.fill(self.OFF)
         self.pixels.show()
 
     def set_square(self, r, c, color):
-        idx = self.BOARD_LED_MAP[r][c]
-        self.pixels[idx] = color
+        self.pixels[self.BOARD_LED_MAP[r][c]] = color
 
     def in_bounds(self, r, c):
         return 0 <= r < self.ROWS and 0 <= c < self.COLS
 
-    # =====================================================
-    # FEN
-    # =====================================================
+    def piece_side(self, piece):
+        return "red" if piece.isupper() else "black"
+
+    def is_empty(self, r, c):
+        return self.board_state[r][c] == "."
+
+    def is_enemy(self, r, c, side):
+        return not self.is_empty(r,c) and self.piece_side(self.board_state[r][c]) != side
+
+    def add_if_legal(self, moves, r, c, side):
+        if self.in_bounds(r,c) and (self.is_empty(r,c) or self.is_enemy(r,c,side)):
+            moves.append((r,c))
+
+    def in_palace(self, r, c, side):
+        if side == "red":
+            return 7 <= r <= 9 and 3 <= c <= 5
+        return 0 <= r <= 2 and 3 <= c <= 5
+
+    # ===================== FEN =====================
     def set_fen(self, fen):
         rows = fen.split()[0].split("/")
         board = []
-
         for row in rows:
             expanded = []
             for ch in row:
@@ -76,134 +88,201 @@ class LEDBoard:
                 else:
                     expanded.append(ch)
             board.append(expanded)
-
         self.board_state = board
 
-    # =====================================================
-    # MOVE DISPLAY
-    # =====================================================
-    def show_moves(self, piece_name, r, c):
-        piece = self.board_state[r][c]
+    # ===================== MOVES =====================
+    def chariot_moves(self, r, c):
+        moves = []
+        side = self.piece_side(self.board_state[r][c])
+        for dr,dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+            nr,nc = r+dr,c+dc
+            while self.in_bounds(nr,nc):
+                if self.is_empty(nr,nc):
+                    moves.append((nr,nc))
+                else:
+                    if self.is_enemy(nr,nc,side):
+                        moves.append((nr,nc))
+                    break
+                nr += dr
+                nc += dc
+        return moves
 
-        if piece == ".":
-            print("No piece there")
-            return
+    def cannon_moves(self, r, c):
+        moves = []
+        side = self.piece_side(self.board_state[r][c])
+        for dr,dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+            nr,nc = r+dr,c+dc
+            jumped = False
+            while self.in_bounds(nr,nc):
+                if not jumped:
+                    if self.is_empty(nr,nc):
+                        moves.append((nr,nc))
+                    else:
+                        jumped = True
+                else:
+                    if not self.is_empty(nr,nc):
+                        if self.is_enemy(nr,nc,side):
+                            moves.append((nr,nc))
+                        break
+                nr += dr
+                nc += dc
+        return moves
 
-        moves = get_moves(self.board_state, r, c)
-        best = best_move_for_piece(self.board_state, r, c, moves)
+    def horse_moves(self, r, c):
+        moves = []
+        side = self.piece_side(self.board_state[r][c])
+        patterns = [
+            ((-1,0),(-2,-1)),((-1,0),(-2,1)),
+            ((1,0),(2,-1)),((1,0),(2,1)),
+            ((0,-1),(-1,-2)),((0,-1),(1,-2)),
+            ((0,1),(-1,2)),((0,1),(1,2)),
+        ]
+        for leg, dest in patterns:
+            lr,lc = r+leg[0],c+leg[1]
+            dr,dc = r+dest[0],c+dest[1]
+            if not self.in_bounds(lr,lc): continue
+            if not self.is_empty(lr,lc): continue
+            self.add_if_legal(moves,dr,dc,side)
+        return moves
 
-        self.clear()
+    def elephant_moves(self, r, c):
+        moves = []
+        side = self.piece_side(self.board_state[r][c])
+        for dr,dc in [(-2,-2),(-2,2),(2,-2),(2,2)]:
+            eye_r,eye_c = r+dr//2,c+dc//2
+            nr,nc = r+dr,c+dc
+            if not self.in_bounds(nr,nc): continue
+            if not self.is_empty(eye_r,eye_c): continue
+            if side=="red" and nr<5: continue
+            if side=="black" and nr>4: continue
+            self.add_if_legal(moves,nr,nc,side)
+        return moves
 
-        # moves
-        for mr, mc in moves:
-            if self.board_state[mr][mc] == ".":
-                self.set_square(mr, mc, self.WHITE)
-            else:
-                self.set_square(mr, mc, self.ORANGE)
+    def advisor_moves(self, r, c):
+        moves = []
+        side = self.piece_side(self.board_state[r][c])
+        for dr,dc in [(-1,-1),(-1,1),(1,-1),(1,1)]:
+            nr,nc = r+dr,c+dc
+            if self.in_bounds(nr,nc) and self.in_palace(nr,nc,side):
+                self.add_if_legal(moves,nr,nc,side)
+        return moves
 
-        # best move
-        if best:
-            self.set_square(best[0], best[1], self.GREEN)
+    def general_moves(self, r, c):
+        moves = []
+        side = self.piece_side(self.board_state[r][c])
+        for dr,dc in [(-1,0),(1,0),(0,-1),(0,1)]:
+            nr,nc = r+dr,c+dc
+            if self.in_bounds(nr,nc) and self.in_palace(nr,nc,side):
+                self.add_if_legal(moves,nr,nc,side)
 
-        # selected
-        self.set_square(r, c, self.RED)
+        # flying general
+        enemy = "k" if side=="red" else "K"
+        step = -1 if side=="red" else 1
+        nr = r+step
+        while self.in_bounds(nr,c):
+            if not self.is_empty(nr,c):
+                if self.board_state[nr][c] == enemy:
+                    moves.append((nr,c))
+                break
+            nr += step
+        return moves
 
-        self.pixels.show()
-
-    def show_start_zones(self):
-        """
-        Lights:
-        - Palaces (top & bottom) in RED
-        - River (between rows 4 and 5) in CYAN
-        - Territories: top half BLUE, bottom half GREEN
-        """
-
-        self.clear()
-
-        # --- Territories ---
-        # Top side (rows 0-4)
-        for r in range(0, 5):
-            for c in range(self.COLS):
-                self.set_square(r, c, self.BLUE)
-
-        # Bottom side (rows 5-9)
-        for r in range(5, 10):
-            for c in range(self.COLS):
-                self.set_square(r, c, self.GREEN)
-
-        # --- River (rows 4 and 5 boundary) ---
-        # We’ll color BOTH rows 4 and 5 for visibility
-        for r in [4, 5]:
-            for c in range(self.COLS):
-                self.set_square(r, c, self.CYAN)
-
-        # --- Palaces (override colors) ---
-        # Top palace: rows 0-2, cols 3-5
-        for r in range(0, 3):
-            for c in range(3, 6):
-                self.set_square(r, c, self.RED)
-
-        # Bottom palace: rows 7-9, cols 3-5
-        for r in range(7, 10):
-            for c in range(3, 6):
-                self.set_square(r, c, self.RED)
-
-        self.pixels.show()
-
-    # =====================================================
-    # WIN CELEBRATION
-    # =====================================================
-    def celebrate_win(self, side, duration=3.0, interval=0.15):
-        """
-        Flashes all LEDs on the winner's side with fun colors.
-
-        side: "red" or "black"
-        - "black" = top half (rows 0-4)
-        - "red"   = bottom half (rows 5-9)
-
-        duration: total seconds to run
-        interval: how fast to change colors
-        """
-
-        start_time = time.time()
-
-        # Determine which rows belong to the winner
-        if side == "black":
-            rows = range(0, 5)
-        elif side == "red":
-            rows = range(5, 10)
+    def soldier_moves(self, r, c):
+        moves = []
+        side = self.piece_side(self.board_state[r][c])
+        if side=="red":
+            self.add_if_legal(moves,r-1,c,side)
+            if r<=4:
+                self.add_if_legal(moves,r,c-1,side)
+                self.add_if_legal(moves,r,c+1,side)
         else:
-            print("celebrate_win: side must be 'red' or 'black'")
+            self.add_if_legal(moves,r+1,c,side)
+            if r>=5:
+                self.add_if_legal(moves,r,c-1,side)
+                self.add_if_legal(moves,r,c+1,side)
+        return moves
+
+    def get_moves(self, r, c):
+        piece = self.board_state[r][c]
+        if piece==".":
+            return []
+        p = piece.lower()
+        if p=="r": return self.chariot_moves(r,c)
+        if p=="c": return self.cannon_moves(r,c)
+        if p=="h": return self.horse_moves(r,c)
+        if p=="e": return self.elephant_moves(r,c)
+        if p=="a": return self.advisor_moves(r,c)
+        if p=="k": return self.general_moves(r,c)
+        if p=="p": return self.soldier_moves(r,c)
+        return []
+
+    # ===================== DISPLAY =====================
+    def show_moves(self, piece_name, r, c):
+        if self.board_state[r][c]==".":
+            print("No piece")
             return
 
-        palette = [self.RED, self.GREEN, self.BLUE, self.YELLOW, self.PURPLE, self.CYAN, self.PINK, self.ORANGE]
-
-        while time.time() - start_time < duration:
-            color = random.choice(palette)
-
-            # Fill only the winner's side
-            for r in rows:
-                for c in range(self.COLS):
-                    self.set_square(r, c, color)
-
-            self.pixels.show()
-            time.sleep(interval)
+        moves = self.get_moves(r,c)
+        best = moves[0] if moves else None
 
         self.clear()
 
-    # =====================================================
-    # INDEX VERSION
-    # =====================================================
-    def show_moves_index(self, piece_name, idx):
-        r = idx // 9
-        c = idx % 9
-        self.show_moves(piece_name, r, c)
+        for mr,mc in moves:
+            if self.is_empty(mr,mc):
+                self.set_square(mr,mc,self.WHITE)
+            else:
+                self.set_square(mr,mc,self.ORANGE)
 
-    # =====================================================
-    # OPPONENT MOVE
-    # =====================================================
+        if best:
+            self.set_square(best[0],best[1],self.GREEN)
+
+        self.set_square(r,c,self.RED)
+        self.pixels.show()
+
     def show_opponent_move(self, fr, fc, tr, tc):
         self.clear()
-        self.set_square(fr, fc, self.BLUE)
-        self.set_square(tr, tc, self.PURPLE)
+        self.set_square(fr,fc,self.BLUE)
+        self.set_square(tr,tc,self.PURPLE)
         self.pixels.show()
+
+    # ===================== ZONES =====================
+    def show_start_zones(self):
+        self.clear()
+
+        for r in range(0,5):
+            for c in range(self.COLS):
+                self.set_square(r,c,self.BLUE)
+
+        for r in range(5,10):
+            for c in range(self.COLS):
+                self.set_square(r,c,self.GREEN)
+
+        for r in [4,5]:
+            for c in range(self.COLS):
+                self.set_square(r,c,self.CYAN)
+
+        for r in range(0,3):
+            for c in range(3,6):
+                self.set_square(r,c,self.RED)
+
+        for r in range(7,10):
+            for c in range(3,6):
+                self.set_square(r,c,self.RED)
+
+        self.pixels.show()
+
+    # ===================== WIN =====================
+    def celebrate_win(self, side):
+        start = time.time()
+        rows = range(0,5) if side=="black" else range(5,10)
+        palette = [self.RED,self.GREEN,self.BLUE,self.YELLOW,self.PURPLE,self.CYAN,self.PINK,self.ORANGE]
+
+        while time.time()-start < 3:
+            color = random.choice(palette)
+            for r in rows:
+                for c in range(self.COLS):
+                    self.set_square(r,c,color)
+            self.pixels.show()
+            time.sleep(0.15)
+
+        self.clear()
