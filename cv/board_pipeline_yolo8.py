@@ -5,6 +5,7 @@ import time
 import math
 from collections import Counter
 from ultralytics import YOLO
+import requests
 
 
 # =========================
@@ -31,19 +32,19 @@ GRID_COLS = 9
 GRID_ROWS = 10
 
 STABLE_TIME_SEC = 0.20
-DIFF_THRESHOLD = 2.5
+DIFF_THRESHOLD = 3
 BLUR_KSIZE = 5
 
-AUTO_CAPTURE_ENABLED = False
+AUTO_CAPTURE_ENABLED = True
 MANUAL_CAPTURE_KEY = ord("c")
 SAVE_CAPTURE_IMAGE = True
-CAPTURE_PATH = "output/stable_capture.jpg"
+CAPTURE_PATH = "stable_capture.jpg"
 
 SHOW_RAW_WINDOW = True
 SHOW_WARPED_WINDOW = True
 SHOW_DETECTIONS_WINDOW = True
 
-MODEL_PATH = "models/best.pt"
+MODEL_PATH = "YOLOX/runs/detect/train/weights/best.pt"
 YOLO_IMGSZ = 960
 YOLO_CONF = 0.25
 YOLO_DEVICE = "cpu"
@@ -55,12 +56,13 @@ REQUIRE_FULL_BOARD_FOR_CAPTURE = True
 KEEP_LAST_VALID_BOARD = True
 
 USE_MANUAL_GRID_CALIBRATION = False
-GRID_CALIBRATION_FILE = "calibration/grid_calibration.npy"
+GRID_CALIBRATION_FILE = "grid_calibration.npy"
 GRID_OUTER_OFFSET = 50
 
 LED_HANDSHAKE_ENABLED = True
 LED_OFF_BEFORE_CAPTURE_SEC = 0.10
 LED_RESTORE_AFTER_CAPTURE = True
+LED_URL = "172.20.10.5:5000"
 
 # Uppercase = red, lowercase = black
 CLASS_TO_FEN = {
@@ -81,6 +83,8 @@ CLASS_TO_FEN = {
 }
 
 VALID_FEN_PIECES = set("RHEAGCSrheagcs")
+DEFAULT_SIDE_TO_MOVE = "w"
+DEFAULT_EXTRA_FEN = "- - 0 1"
 
 
 # =========================
@@ -367,6 +371,7 @@ def update_stability_state(prev_gray, curr_gray, stable_since, diff_threshold):
     score = compute_frame_diff_score(prev_gray, curr_gray)
 
     if score < diff_threshold:
+        print(f'diff: {score:.2f}')
         if stable_since is None:
             stable_since = time.time()
     else:
@@ -570,10 +575,10 @@ def board_to_fen_rows(board):
     return rows_out
 
 
-def board_to_fen(board):
+def board_to_fen(board, side_to_move=DEFAULT_SIDE_TO_MOVE, extra_fen=DEFAULT_EXTRA_FEN):
     rows_out = board_to_fen_rows(board)
     board_part = "/".join(rows_out)
-    return board_part
+    return f"{board_part} {side_to_move} {extra_fen}"
 
 
 def count_pieces(board):
@@ -668,11 +673,17 @@ def put_status_text(img, lines, x=20, y=30, dy=30, color=(0, 255, 255)):
 # =========================
 
 def notify_led_off():
-    print("LED OFF requested")
+    try:
+        requests.post(f"http://{LED_URL}/cv_pause")
+    except:
+        print("Failed to send LED OFF")
 
 
 def notify_led_on():
-    print("LED ON requested")
+    try:
+        requests.post(f"http://{LED_URL}/cv_resume")
+    except:
+        print("Failed to send LED ON")
 
 
 def prepare_frame_for_capture(warped):
@@ -719,6 +730,7 @@ def main():
     last_valid_board = None
     last_valid_fen = None
     last_assigned = []
+    was_stable = False
 
     while True:
         ret, frame = cap.read()
@@ -817,14 +829,16 @@ def main():
                 DIFF_THRESHOLD
             )
 
-            if is_stable_long_enough(stable_since, STABLE_TIME_SEC):
+            is_stable_now = is_stable_long_enough(stable_since, STABLE_TIME_SEC)
+
+            if is_stable_now:
                 stable_text = "STABLE"
-                if AUTO_CAPTURE_ENABLED and not captured_once:
+                if AUTO_CAPTURE_ENABLED and not was_stable:
                     auto_trigger = True
-                    captured_once = True
             else:
                 stable_text = "NOT STABLE"
-                captured_once = False
+            was_stable = is_stable_now
+
         else:
             stable_text = "WARMING UP"
 
