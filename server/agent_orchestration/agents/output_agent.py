@@ -14,9 +14,18 @@ Responsibilities:
   - Manage verbosity level preference (brief / normal / detailed)
   - Aggregate multiple agent responses into a single user-facing output
   - Handle i18n preparation (Chinese + English bilingual support)
-"""
 
+.. deprecated::
+    Replaced by FeedbackAgent in the Go coaching service (server/chess_coach/).
+    Retained as fallback only. See AGENTS.md.
+"""
 from __future__ import annotations
+
+import warnings as _warnings
+_warnings.warn(
+    "OutputAgent is deprecated — use Go FeedbackAgent instead.",
+    DeprecationWarning, stacklevel=2,
+)
 
 from enum import Enum
 from typing import Any

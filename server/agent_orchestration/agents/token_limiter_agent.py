@@ -19,9 +19,18 @@ Budgets:
   per_request:  Max tokens in a single LLM call (default 512)
   per_session:  Max tokens across all calls in one session (default 10000)
   daily:        Max tokens across all sessions in a day (default 50000)
-"""
 
+.. deprecated::
+    Replaced by Prometheus metrics in the Go coaching service (server/chess_coach/).
+    Retained as fallback only. See AGENTS.md.
+"""
 from __future__ import annotations
+
+import warnings as _warnings
+_warnings.warn(
+    "TokenLimiterAgent is deprecated — use Go Prometheus metrics instead.",
+    DeprecationWarning, stacklevel=2,
+)
 
 import logging
 import time

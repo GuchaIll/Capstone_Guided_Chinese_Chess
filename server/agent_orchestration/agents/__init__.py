@@ -3,7 +3,19 @@ Agent modules for the Guided Chinese Chess coaching system.
 
 Each agent inherits from AgentBase and handles a specific responsibility
 in the orchestration pipeline.
+
+.. deprecated::
+    Most agents in this package are deprecated in favour of the Go Agent
+    Framework implementation (server/chess_coach/).  The Python pipeline is
+    retained as a fallback only.  See AGENTS.md for the migration map.
 """
+import warnings
+warnings.warn(
+    "agent_orchestration.agents is deprecated — use the Go coaching service "
+    "(server/chess_coach/) instead.  Retained as fallback only.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 from .base_agent import AgentBase, AgentResponse
 from .intent_classifier import IntentClassifierAgent, Intent

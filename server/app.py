@@ -21,6 +21,7 @@ import json
 import logging
 import os
 import sys
+from typing import Set
 
 from dotenv import load_dotenv
 load_dotenv()  # Load .env before reading any os.environ
@@ -57,6 +58,7 @@ from agent_orchestration.services.state_tracker import state_tracker
 from agent_orchestration.tools.engine_client import EngineClient
 from agent_orchestration.tools.rag_retriever import RAGRetriever
 from agent_orchestration.tools.llm_client import LLMClient
+from agent_orchestration.tools.kibo_detector import detect_animation
 from agent_orchestration.LLM.LLMRegistry import LLMRegistry
 
 # ========================
@@ -64,6 +66,9 @@ from agent_orchestration.LLM.LLMRegistry import LLMRegistry
 # ========================
 
 orchestrator: Orchestrator = None  # Initialized on startup
+
+# Connected Kibo 3D viewers — commands are broadcast to all
+kibo_viewers: Set[object] = set()
 
 
 def create_app():
@@ -237,7 +242,21 @@ def create_app():
 
                     if msg_type == "chat":
                         message = data.get("message", "")
+
+                        # Scan user message for Kibo animation keywords
+                        kibo_cmd = detect_animation(message)
+                        if kibo_cmd:
+                            logger.info(f"[WS/chat] Kibo animation detected: {kibo_cmd}")
+                            await broadcast_to_kibo(kibo_cmd)
+
                         response = await orchestrator.process_input(message)
+
+                        # Also scan coach response for animation keywords
+                        coach_kibo_cmd = detect_animation(response.message)
+                        if coach_kibo_cmd and coach_kibo_cmd != kibo_cmd:
+                            logger.info(f"[WS/chat] Kibo animation from coach: {coach_kibo_cmd}")
+                            await broadcast_to_kibo(coach_kibo_cmd)
+
                         await websocket.send_json({
                             "type": "coach_response",
                             "source": response.source,
@@ -358,6 +377,60 @@ def create_app():
             logger.info("[WS/chat] Client disconnected")
         except Exception as e:
             logger.error(f"[WS/chat] Connection error: {e}")
+
+    # ---- Helper: broadcast command to Kibo viewers ----
+
+    async def broadcast_to_kibo(command: dict) -> None:
+        """Send an animation command to all connected Kibo 3D viewers."""
+        if not kibo_viewers:
+            return
+        payload = json.dumps(command)
+        dead: list = []
+        for ws in kibo_viewers:
+            try:
+                await ws.send_text(payload)  # type: ignore[attr-defined]
+            except Exception:
+                dead.append(ws)
+        for ws in dead:
+            kibo_viewers.discard(ws)
+
+    # ---- WebSocket: /ws/kibo ----
+
+    @app.websocket("/ws/kibo")
+    async def kibo_websocket(websocket: WebSocket):
+        """Kibo 3D viewer WebSocket — receives animation commands.
+
+        The server pushes KiboCommand JSON to the viewer whenever
+        keyword detection triggers an animation.  The viewer can
+        also send {"type": "getStatus"} to request its own status.
+        """
+        await websocket.accept()
+        kibo_viewers.add(websocket)
+        logger.info(f"[WS/kibo] Viewer connected ({len(kibo_viewers)} total)")
+
+        try:
+            while True:
+                raw = await websocket.receive_text()
+                try:
+                    data = json.loads(raw)
+                    msg_type = data.get("type", "")
+
+                    if msg_type == "getStatus":
+                        await websocket.send_json({
+                            "type": "status",
+                            "kibo_viewers": len(kibo_viewers),
+                        })
+                    else:
+                        logger.debug(f"[WS/kibo] Unknown message: {msg_type}")
+                except json.JSONDecodeError:
+                    pass
+        except WebSocketDisconnect:
+            pass
+        except Exception as e:
+            logger.error(f"[WS/kibo] Error: {e}")
+        finally:
+            kibo_viewers.discard(websocket)
+            logger.info(f"[WS/kibo] Viewer disconnected ({len(kibo_viewers)} total)")
 
     # ---- REST Endpoints ----
 

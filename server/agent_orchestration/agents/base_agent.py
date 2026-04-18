@@ -37,6 +37,8 @@ class ResponseType(str, Enum):
     STATE_UPDATE = "state_update"
     LED_COMMAND = "led_command"
     ONBOARDING = "onboarding"
+    COACHING = "coaching"
+    INFO = "info"
 
 
 @dataclass

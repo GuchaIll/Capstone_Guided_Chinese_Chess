@@ -17,9 +17,18 @@ Storage Backend:
 
 The Memory Agent is queried by the Coach Agent for adaptive coaching
 and by the Puzzle Master for difficulty calibration.
-"""
 
+.. deprecated::
+    Replaced by User Memory Store tool in the Go coaching service (server/chess_coach/).
+    Retained as fallback only. See AGENTS.md.
+"""
 from __future__ import annotations
+
+import warnings as _warnings
+_warnings.warn(
+    "MemoryAgent is deprecated — use Go User Memory Store tool instead.",
+    DeprecationWarning, stacklevel=2,
+)
 
 import json
 import os

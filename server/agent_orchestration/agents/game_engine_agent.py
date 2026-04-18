@@ -14,9 +14,18 @@ Responsibilities:
 
 This agent does NOT generate coaching content -- it only manages
 board state via the engine. Coaching is handled by CoachAgent.
-"""
 
+.. deprecated::
+    Replaced by Guard agent + engine tools in the Go coaching service (server/chess_coach/).
+    Retained as fallback only. See AGENTS.md.
+"""
 from __future__ import annotations
+
+import warnings as _warnings
+_warnings.warn(
+    "GameEngineAgent is deprecated — use Go Guard agent + engine tools instead.",
+    DeprecationWarning, stacklevel=2,
+)
 
 from typing import Any, Optional
 

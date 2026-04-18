@@ -16,9 +16,18 @@ Responsibilities:
   - Cache frequently retrieved documents for reuse within a session
   - Provide a unified retrieve() interface for other agents
   - Support hybrid search (dense + sparse) when backend supports it
-"""
 
+.. deprecated::
+    Replaced by ChromaDB Retriever tool in the Go coaching service (server/chess_coach/).
+    Retained as fallback only. See AGENTS.md.
+"""
 from __future__ import annotations
+
+import warnings as _warnings
+_warnings.warn(
+    "RAGManagerAgent is deprecated — use Go ChromaDB Retriever tool instead.",
+    DeprecationWarning, stacklevel=2,
+)
 
 from dataclasses import dataclass, field
 from typing import Any, Optional

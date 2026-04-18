@@ -17,9 +17,18 @@ Uses:
   - RAGManagerAgent for retrieving domain knowledge
   - LLM client for generating natural language explanations
   - MemoryAgent for player history and skill tracking
-"""
 
+.. deprecated::
+    Replaced by CoachAgent in the Go coaching service (server/chess_coach/).
+    Retained as fallback only. See AGENTS.md.
+"""
 from __future__ import annotations
+
+import warnings as _warnings
+_warnings.warn(
+    "CoachAgent (Python) is deprecated — use Go CoachAgent instead.",
+    DeprecationWarning, stacklevel=2,
+)
 
 from typing import Any, Optional
 

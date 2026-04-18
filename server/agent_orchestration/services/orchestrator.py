@@ -39,6 +39,7 @@ from ..agents.memory_agent import MemoryAgent
 from ..agents.output_agent import OutputAgent
 from ..agents.token_limiter_agent import TokenLimiterAgent
 from ..agents.onboarding_agent import OnboardingAgent, OnboardingStep
+from ..tools.go_client import GoCoachingClient
 
 
 # ========================
@@ -61,10 +62,15 @@ class Orchestrator:
         engine_client: Any = None,
         rag_retriever: Any = None,
         llm_client: Any = None,
+        go_coaching_url: str | None = None,
     ):
         self.logger = logging.getLogger("orchestrator")
         self.state = SessionState()
         self._llm_client = llm_client  # Stored for smoke testing
+
+        # ---- Go Coaching Bridge ----
+        self._go_client = GoCoachingClient(base_url=go_coaching_url)
+        self._go_available: bool | None = None  # Lazy-checked on first request
 
         # ---- Initialize Agents ----
         self.memory_agent = MemoryAgent()
@@ -158,6 +164,7 @@ class Orchestrator:
     async def shutdown(self) -> None:
         """Gracefully shut down all agents."""
         self.logger.info("Orchestrator shutting down...")
+        await self._go_client.close()
         for name, agent in self._agents.items():
             try:
                 await agent.on_game_end(self.state.game_result)
@@ -189,6 +196,18 @@ class Orchestrator:
         # If onboarding is not complete, route to OnboardingAgent
         if not self.state.onboarding_complete:
             return await self._handle_onboarding(user_input)
+
+        # ---- Go Coaching Bridge ----
+        # Try the Go service first; fall back to the Python pipeline if
+        # the Go service is unavailable or returns an error.
+        go_response = await self._try_go_coaching(user_input)
+        if go_response is not None:
+            self.state.add_conversation(
+                go_response.source, go_response.message,
+                response_type=go_response.response_type.value,
+            )
+            self.state_tracker.end_request(go_response.message)
+            return go_response
 
         # Step 1: Classify intent
         self.state_tracker.transition(
@@ -275,6 +294,44 @@ class Orchestrator:
         self.state_tracker.end_request(output.message)
 
         return output
+
+    # ---- Go Coaching Bridge ----
+
+    async def _try_go_coaching(self, user_input: str) -> AgentResponse | None:
+        """Attempt to delegate to the Go coaching service.
+
+        Returns an AgentResponse on success, or None if the Go service
+        is unavailable / returned an error (triggering Python fallback).
+        """
+        # Lazy health-check: probe once, then cache result for this session
+        if self._go_available is None:
+            self._go_available = await self._go_client.is_available()
+            if self._go_available:
+                self.logger.info("Go coaching service is available — using as primary")
+            else:
+                self.logger.info("Go coaching service unavailable — using Python fallback")
+
+        if not self._go_available:
+            return None
+
+        try:
+            resp = await self._go_client.coach(
+                fen=self.state.board_fen,
+                user_input=user_input,
+                move_history=list(self.state.move_history),
+                difficulty=self.state.difficulty,
+            )
+            if resp.response_type == ResponseType.ERROR:
+                self.logger.warning(
+                    "Go service returned error, falling back to Python: %s",
+                    resp.message,
+                )
+                return None
+            return resp
+        except Exception as exc:
+            self.logger.warning("Go coaching bridge failed: %s", exc)
+            self._go_available = False  # Stop retrying this session
+            return None
 
     # ---- Turn Phase Handlers ----
 

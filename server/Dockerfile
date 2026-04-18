@@ -17,15 +17,16 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     pip install torch --index-url https://download.pytorch.org/whl/cpu \
     && pip install -r requirements.txt
 
+# Pre-download the embedding model so startup doesn't depend on network speed.
+# Placed BEFORE `COPY . .` so code changes don't invalidate this ~820s layer.
+ARG EMBEDDING_MODEL=BAAI/bge-m3
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('${EMBEDDING_MODEL}')"
+
 # Copy application code
 COPY . .
 
 # Create required directories
 RUN mkdir -p logs agent_orchestration/.agent/profiles chroma_db
-
-# Pre-download the embedding model so startup doesn't depend on network speed
-ARG EMBEDDING_MODEL=BAAI/bge-m3
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('${EMBEDDING_MODEL}')"
 
 EXPOSE 5000
 

@@ -16,9 +16,18 @@ Puzzle Types:
   - Tactical: Find the best move (checkmate in N, winning capture)
   - Defensive: Find the only move that avoids losing material
   - Positional: Choose the best strategic move (harder, requires RAG context)
-"""
 
+.. deprecated::
+    Replaced by PuzzleCuratorAgent in the Go coaching service (server/chess_coach/).
+    Retained as fallback only. See AGENTS.md.
+"""
 from __future__ import annotations
+
+import warnings as _warnings
+_warnings.warn(
+    "PuzzleMasterAgent is deprecated — use Go PuzzleCuratorAgent instead.",
+    DeprecationWarning, stacklevel=2,
+)
 
 from dataclasses import dataclass, field
 from enum import Enum

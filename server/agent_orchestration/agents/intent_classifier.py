@@ -17,9 +17,18 @@ Intents:
 Approach:
   Phase 1: Keyword/regex-based classification (no LLM dependency)
   Phase 2: LLM-based router with few-shot examples for ambiguous inputs
-"""
 
+.. deprecated::
+    Replaced by OrchestratorAgent in the Go coaching service (server/chess_coach/).
+    Retained as fallback only. See AGENTS.md.
+"""
 from __future__ import annotations
+
+import warnings as _warnings
+_warnings.warn(
+    "IntentClassifierAgent is deprecated — use Go OrchestratorAgent instead.",
+    DeprecationWarning, stacklevel=2,
+)
 
 import re
 from enum import Enum
