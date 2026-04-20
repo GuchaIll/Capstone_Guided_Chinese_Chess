@@ -29,6 +29,8 @@ logger = logging.getLogger("bridge_subscriber")
 # ── Import LED functions from the canonical ledsystem module ─────────
 # These work only on Raspberry Pi with NeoPixel hardware.  When running
 # off-Pi for testing we stub them out.
+PURPLE = (180, 0, 255, 0)
+
 try:
     from ledsystem import (
         clear,
@@ -37,10 +39,8 @@ try:
         parse_xiangqi_fen,
         get_moves,
         best_move_for_piece,
-        highlight_opponent_move,
         pixels,
         BLUE,
-        PURPLE,
         GREEN,
         RED,
     )
@@ -79,7 +79,6 @@ except ImportError:
         return None
 
     BLUE = (0, 0, 255, 0)
-    PURPLE = (180, 0, 255, 0)
     GREEN = (0, 255, 0, 0)
     RED = (255, 0, 0, 0)
 
