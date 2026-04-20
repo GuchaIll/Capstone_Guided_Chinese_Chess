@@ -15,8 +15,11 @@ def set_fen():
     if not fen:
         return jsonify({"error": "Missing FEN"}), 400
 
-    led.set_fen(fen)
-    return jsonify({"status": "FEN updated"})
+    try:
+        led.set_fen(fen)
+        return jsonify({"status": "FEN updated"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # =========================
@@ -26,16 +29,63 @@ def set_fen():
 def show_move():
     data = request.json
 
-    piece = data.get("piece")
     row = data.get("row")
     col = data.get("col")
 
-    if piece is None or row is None or col is None:
+    if row is None or col is None:
         return jsonify({"error": "Missing inputs"}), 400
 
-    led.show_moves(piece, row, col)
+    try:
+        led.show_moves("", int(row), int(col))
+        return jsonify({"status": "Move displayed"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    return jsonify({"status": "Move displayed"})
+
+# =========================
+# STARTING SEQUENCE
+# =========================
+@app.route("/zones", methods=["POST"])
+def zones():
+    try:
+        led.show_start_zones()
+        return jsonify({"status": "zones shown"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# =========================
+# WIN SEQUENCE
+# =========================
+@app.route("/win", methods=["POST"])
+def win():
+    side = request.json.get("side")
+
+    if not side:
+        return jsonify({"error": "Missing side"}), 400
+
+    try:
+        led.celebrate_win(side)
+        return jsonify({"status": f"{side} celebration"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# =========================
+# CV PAUSE (TURN OFF LEDS)
+# =========================
+@app.route("/cv_pause", methods=["POST"])
+def cv_pause():
+    led.cv_pause()
+    return jsonify({"status": "LEDs off for CV"})
+
+
+# =========================
+# CV RESUME
+# =========================
+@app.route("/cv_resume", methods=["POST"])
+def cv_resume():
+    led.cv_resume()
+    return jsonify({"status": "LEDs re-enabled"})
 
 
 # =========================
@@ -53,9 +103,13 @@ def opponent_move():
     if None in [fr, fc, tr, tc]:
         return jsonify({"error": "Missing inputs"}), 400
 
-    led.show_opponent_move(fr, fc, tr, tc)
-
-    return jsonify({"status": "Opponent move displayed"})
+    try:
+        led.show_opponent_move(
+            int(fr), int(fc), int(tr), int(tc)
+        )
+        return jsonify({"status": "Opponent move displayed"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
