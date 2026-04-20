@@ -3,6 +3,8 @@ import cv2
 import numpy as np
 import time
 import math
+import json
+import urllib.request
 from collections import Counter
 from ultralytics import YOLO
 
@@ -61,6 +63,8 @@ GRID_OUTER_OFFSET = 50
 LED_HANDSHAKE_ENABLED = True
 LED_OFF_BEFORE_CAPTURE_SEC = 0.10
 LED_RESTORE_AFTER_CAPTURE = True
+
+BRIDGE_URL = os.getenv("BRIDGE_URL", "http://localhost:5003")
 
 # Uppercase = red, lowercase = black
 CLASS_TO_FEN = {
@@ -669,11 +673,42 @@ def put_status_text(img, lines, x=20, y=30, dy=30, color=(0, 255, 255)):
 # LED handshake
 # =========================
 
+def _bridge_post(path, payload):
+    """POST JSON to the state bridge. Fails silently if bridge is down."""
+    try:
+        data = json.dumps(payload).encode()
+        req = urllib.request.Request(
+            f"{BRIDGE_URL}{path}",
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=2) as res:
+            status = res.getcode()
+            if status >= 400:
+                print(f"[bridge] {path} failed: {status}")
+                return False
+            return True
+    except urllib.error.HTTPError as e:
+        print(f"[bridge] {path} HTTP error: {e.code}")
+    except urllib.error.URLError as e:
+        print(f"[bridge] {path} connection failed: {e.reason}")
+    except Exception as exc:
+        print(f"[bridge] {path} unexpected error: {exc}")
+    return False
+
+
+def publish_fen(fen):
+    _bridge_post("/state/fen", {"fen": fen, "source": "cv"})
+
+
 def notify_led_off():
+    _bridge_post("/state/led-command", {"command": "off"})
     print("LED OFF requested")
 
 
 def notify_led_on():
+    _bridge_post("/state/led-command", {"command": "on"})
     print("LED ON requested")
 
 
@@ -908,6 +943,7 @@ def main():
         print(board_to_text(board))
         print("fen:")
         print(fen)
+        publish_fen(fen)
         if issues:
             print("issues:")
             for item in issues:

@@ -4,6 +4,8 @@ import cv2
 import numpy as np
 import time
 import math
+import json
+import urllib.request
 from collections import Counter
 
 import torch
@@ -66,6 +68,8 @@ KEEP_LAST_VALID_BOARD = True
 USE_MANUAL_GRID_CALIBRATION = False
 GRID_CALIBRATION_FILE = "calibration/grid_calibration.npy"
 GRID_OUTER_OFFSET = 50
+
+BRIDGE_URL = os.getenv("BRIDGE_URL", "http://localhost:5003")
 
 # YOLOX class names must match your training order exactly
 YOLOX_CLASS_NAMES = [
@@ -747,6 +751,28 @@ def put_status_text(img, lines, x=20, y=30, dy=30, color=(0, 255, 255)):
 
 
 # =========================
+# bridge helpers
+# =========================
+
+def _bridge_post(path, payload):
+    """POST JSON to the state bridge. Fails silently if bridge is down."""
+    try:
+        data = json.dumps(payload).encode()
+        req = urllib.request.Request(
+            f"{BRIDGE_URL}{path}",
+            data=data,
+            headers={"Content-Type": "application/json"},
+        )
+        urllib.request.urlopen(req, timeout=2)
+    except Exception as exc:
+        print(f"[bridge] {path} failed: {exc}")
+
+
+def publish_fen(fen):
+    _bridge_post("/state/fen", {"fen": fen, "source": "cv"})
+
+
+# =========================
 # main
 # =========================
 
@@ -959,6 +985,7 @@ def main():
         print(board_to_text(board))
         print("fen:")
         print(fen)
+        publish_fen(fen)
         if issues:
             print("issues:")
             for item in issues:
