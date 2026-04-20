@@ -3,9 +3,10 @@ import cv2
 import numpy as np
 import time
 import math
+import json
+import urllib.request
 from collections import Counter
 from ultralytics import YOLO
-import requests
 
 
 # =========================
@@ -32,19 +33,19 @@ GRID_COLS = 9
 GRID_ROWS = 10
 
 STABLE_TIME_SEC = 0.20
-DIFF_THRESHOLD = 3
+DIFF_THRESHOLD = 2.5
 BLUR_KSIZE = 5
 
-AUTO_CAPTURE_ENABLED = True
+AUTO_CAPTURE_ENABLED = False
 MANUAL_CAPTURE_KEY = ord("c")
 SAVE_CAPTURE_IMAGE = True
-CAPTURE_PATH = "stable_capture.jpg"
+CAPTURE_PATH = "output/stable_capture.jpg"
 
 SHOW_RAW_WINDOW = True
 SHOW_WARPED_WINDOW = True
 SHOW_DETECTIONS_WINDOW = True
 
-MODEL_PATH = "YOLOX/runs/detect/train/weights/best.pt"
+MODEL_PATH = "models/best.pt"
 YOLO_IMGSZ = 960
 YOLO_CONF = 0.25
 YOLO_DEVICE = "cpu"
@@ -56,17 +57,14 @@ REQUIRE_FULL_BOARD_FOR_CAPTURE = True
 KEEP_LAST_VALID_BOARD = True
 
 USE_MANUAL_GRID_CALIBRATION = False
-GRID_CALIBRATION_FILE = "grid_calibration.npy"
+GRID_CALIBRATION_FILE = "calibration/grid_calibration.npy"
 GRID_OUTER_OFFSET = 50
-STABILITY_CROP_OFFSET = 0
-OUTPUT_ONLY_ON_NEW_FEN = True
-PRINT_SKIPPED_SAME_FEN = True
-REQUIRED_CONSISTENT_READS = 2
 
 LED_HANDSHAKE_ENABLED = True
 LED_OFF_BEFORE_CAPTURE_SEC = 0.10
 LED_RESTORE_AFTER_CAPTURE = True
-LED_URL = "172.20.10.5:5000"
+
+BRIDGE_URL = os.getenv("BRIDGE_URL", "http://localhost:5003")
 
 # Uppercase = red, lowercase = black
 CLASS_TO_FEN = {
@@ -359,13 +357,8 @@ def detect_and_warp_aruco(frame, detector, dst):
 # stability trigger
 # =========================
 
-def preprocess_for_stability(warped, board_corners=None, crop_offset=0):
-    region = warped
-
-    if board_corners is not None:
-        region = crop_with_offset(warped, board_corners, crop_offset)
-
-    gray = cv2.cvtColor(region, cv2.COLOR_BGR2GRAY)
+def preprocess_for_stability(warped):
+    gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
     gray = cv2.GaussianBlur(gray, (BLUR_KSIZE, BLUR_KSIZE), 0)
     return gray
 
@@ -380,7 +373,6 @@ def update_stability_state(prev_gray, curr_gray, stable_since, diff_threshold):
     score = compute_frame_diff_score(prev_gray, curr_gray)
 
     if score < diff_threshold:
-        print(f'diff: {score:.2f}')
         if stable_since is None:
             stable_since = time.time()
     else:
@@ -584,9 +576,10 @@ def board_to_fen_rows(board):
     return rows_out
 
 
-def board_to_fen(board):
+def board_to_fen(board, side_to_move=DEFAULT_SIDE_TO_MOVE, extra_fen=DEFAULT_EXTRA_FEN):
     rows_out = board_to_fen_rows(board)
-    return "/".join(rows_out)
+    board_part = "/".join(rows_out)
+    return f"{board_part} {side_to_move} {extra_fen}"
 
 
 def count_pieces(board):
@@ -680,18 +673,43 @@ def put_status_text(img, lines, x=20, y=30, dy=30, color=(0, 255, 255)):
 # LED handshake
 # =========================
 
-def notify_led_off():
+def _bridge_post(path, payload):
+    """POST JSON to the state bridge. Fails silently if bridge is down."""
     try:
-        requests.post(f"http://{LED_URL}/cv_pause", timeout=0.3)
-    except:
-        print("Failed to send LED OFF")
+        data = json.dumps(payload).encode()
+        req = urllib.request.Request(
+            f"{BRIDGE_URL}{path}",
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=2) as res:
+            status = res.getcode()
+            if status >= 400:
+                print(f"[bridge] {path} failed: {status}")
+                return False
+            return True
+    except urllib.error.HTTPError as e:
+        print(f"[bridge] {path} HTTP error: {e.code}")
+    except urllib.error.URLError as e:
+        print(f"[bridge] {path} connection failed: {e.reason}")
+    except Exception as exc:
+        print(f"[bridge] {path} unexpected error: {exc}")
+    return False
+
+
+def publish_fen(fen):
+    _bridge_post("/state/fen", {"fen": fen, "source": "cv"})
+
+
+def notify_led_off():
+    _bridge_post("/state/led-command", {"command": "off"})
+    print("LED OFF requested")
 
 
 def notify_led_on():
-    try:
-        requests.post(f"http://{LED_URL}/cv_resume", timeout=0.3)
-    except:
-        print("Failed to send LED ON")
+    _bridge_post("/state/led-command", {"command": "on"})
+    print("LED ON requested")
 
 
 def prepare_frame_for_capture(warped):
@@ -738,12 +756,6 @@ def main():
     last_valid_board = None
     last_valid_fen = None
     last_assigned = []
-    last_emitted_fen = None
-    last_emitted_board_text = None
-    candidate_fen = None
-    candidate_board_text = None
-    candidate_count = 0
-    was_stable = False
 
     while True:
         ret, frame = cap.read()
@@ -832,11 +844,7 @@ def main():
             rows=GRID_ROWS
         )
 
-        warped_gray = preprocess_for_stability(
-            warped,
-            board_corners=current_board_corners,
-            crop_offset=STABILITY_CROP_OFFSET
-        )
+        warped_gray = preprocess_for_stability(warped)
 
         if prev_warped_gray is not None:
             diff_score, stable_since = update_stability_state(
@@ -846,16 +854,14 @@ def main():
                 DIFF_THRESHOLD
             )
 
-            is_stable_now = is_stable_long_enough(stable_since, STABLE_TIME_SEC)
-
-            if is_stable_now:
+            if is_stable_long_enough(stable_since, STABLE_TIME_SEC):
                 stable_text = "STABLE"
-                if AUTO_CAPTURE_ENABLED and not was_stable:
+                if AUTO_CAPTURE_ENABLED and not captured_once:
                     auto_trigger = True
+                    captured_once = True
             else:
                 stable_text = "NOT STABLE"
-            was_stable = is_stable_now
-
+                captured_once = False
         else:
             stable_text = "WARMING UP"
 
@@ -926,68 +932,6 @@ def main():
             assigned = last_assigned[:]
             issues = ["rejected current frame, using last valid board"] + issues
 
-        board_text = board_to_text(board)
-
-        if OUTPUT_ONLY_ON_NEW_FEN:
-            if last_emitted_fen == fen:
-                candidate_fen = None
-                candidate_board_text = None
-                candidate_count = 0
-                if PRINT_SKIPPED_SAME_FEN:
-                    print()
-                    print("=" * 60)
-                    print("CAPTURE SKIPPED")
-                    print("reason: same fen as last output")
-                    print("fen:")
-                    print(fen)
-                if SHOW_DETECTIONS_WINDOW:
-                    det_vis = draw_assignments(draw_grid_points(capture_frame, grid), assigned)
-                    det_vis = draw_points(det_vis, current_board_corners, color=(255, 255, 0), label_prefix="B")
-                    overlay_lines = [
-                        f"trigger: {'manual' if manual_trigger else 'auto'}",
-                        "same fen as last output",
-                        f"fen: {fen}",
-                    ]
-                    det_vis = put_status_text(det_vis, overlay_lines, color=(0, 165, 255))
-                    cv2.imshow("detections and assignments", det_vis)
-                continue
-
-            if REQUIRED_CONSISTENT_READS > 1:
-                if candidate_fen == fen:
-                    candidate_count += 1
-                else:
-                    candidate_fen = fen
-                    candidate_board_text = board_text
-                    candidate_count = 1
-
-                if candidate_count < REQUIRED_CONSISTENT_READS:
-                    if PRINT_SKIPPED_SAME_FEN:
-                        print()
-                        print("=" * 60)
-                        print("CAPTURE SKIPPED")
-                        print(f"reason: candidate fen seen {candidate_count}/{REQUIRED_CONSISTENT_READS} time(s)")
-                        print("fen:")
-                        print(fen)
-                    if SHOW_DETECTIONS_WINDOW:
-                        det_vis = draw_assignments(draw_grid_points(capture_frame, grid), assigned)
-                        det_vis = draw_points(det_vis, current_board_corners, color=(255, 255, 0), label_prefix="B")
-                        overlay_lines = [
-                            f"trigger: {'manual' if manual_trigger else 'auto'}",
-                            f"candidate fen {candidate_count}/{REQUIRED_CONSISTENT_READS}",
-                            f"fen: {fen}",
-                        ]
-                        det_vis = put_status_text(det_vis, overlay_lines, color=(0, 165, 255))
-                        cv2.imshow("detections and assignments", det_vis)
-                    continue
-
-                board_text = candidate_board_text
-                candidate_fen = None
-                candidate_board_text = None
-                candidate_count = 0
-
-        last_emitted_fen = fen
-        last_emitted_board_text = board_text
-
         print()
         print("=" * 60)
         print("CAPTURE TRIGGERED")
@@ -996,40 +940,10 @@ def main():
         print("mapped:", len(mapped))
         print("assigned:", len(assigned))
         print("board:")
-        print(board_text)
+        print(board_to_text(board))
         print("fen:")
         print(fen)
-        if issues:
-            print("issues:")
-            for item in issues:
-                print("-", item)
-
-        if SHOW_DETECTIONS_WINDOW:
-            det_vis = draw_assignments(draw_grid_points(capture_frame, grid), assigned)
-            det_vis = draw_points(det_vis, current_board_corners, color=(255, 255, 0), label_prefix="B")
-            overlay_lines = [
-                f"trigger: {'manual' if manual_trigger else 'auto'}",
-                "same fen as last output",
-                f"fen: {fen}",
-            ]
-            det_vis = put_status_text(det_vis, overlay_lines, color=(0, 165, 255))
-            cv2.imshow("detections and assignments", det_vis)
-            continue
-
-        last_emitted_fen = fen
-        last_emitted_board_text = board_text
-
-        print()
-        print("=" * 60)
-        print("CAPTURE TRIGGERED")
-        print("trigger:", "manual" if manual_trigger else "auto")
-        print("detections:", len(detections))
-        print("mapped:", len(mapped))
-        print("assigned:", len(assigned))
-        print("board:")
-        print(board_text)
-        print("fen:")
-        print(fen)
+        publish_fen(fen)
         if issues:
             print("issues:")
             for item in issues:
