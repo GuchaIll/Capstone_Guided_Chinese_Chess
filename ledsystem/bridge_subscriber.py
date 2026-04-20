@@ -1,12 +1,12 @@
 """Bridge subscriber — connects the LED system to the State Bridge via SSE.
 
 Listens to the bridge's /state/events SSE stream and drives the physical
-LEDs in response to game events.  Falls back to the existing CLI mode
-with ``--mode cli``.
+LEDs by calling the LED server HTTP API (led_server.py on port 5000).
 
 Usage on Raspberry Pi:
     python bridge_subscriber.py                           # bridge mode (default)
     python bridge_subscriber.py --bridge-url http://192.168.1.50:5003
+    python bridge_subscriber.py --led-url http://localhost:5000
     python bridge_subscriber.py --mode cli                # legacy interactive CLI
 """
 
@@ -26,61 +26,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger("bridge_subscriber")
 
-# ── Import LED functions from the canonical ledsystem module ─────────
-# These work only on Raspberry Pi with NeoPixel hardware.  When running
-# off-Pi for testing we stub them out.
-PURPLE = (180, 0, 255, 0)
+# ── LED server URL (led_server.py Flask app) ─────────────────────────
+LED_URL = "http://localhost:5000"
 
-try:
-    from ledsystem import (
-        clear,
-        set_square,
-        show_position,
-        parse_xiangqi_fen,
-        get_moves,
-        best_move_for_piece,
-        pixels,
-        BLUE,
-        GREEN,
-        RED,
-    )
 
-    HAS_LED = True
-except ImportError:
-    logger.warning("LED hardware not available — running in dry-run mode")
-    HAS_LED = False
-
-    def clear() -> None:  # type: ignore[misc]
-        pass
-
-    def set_square(r: int, c: int, color: tuple) -> None:  # type: ignore[misc]
-        pass
-
-    def show_position(board_state, selected=None, moves=None, best_move=None) -> None:  # type: ignore[misc]
-        pass
-
-    def parse_xiangqi_fen(fen_str: str):  # type: ignore[misc]
-        rows = fen_str.split()[0].split("/")
-        board = []
-        for row in rows:
-            expanded = []
-            for ch in row:
-                if ch.isdigit():
-                    expanded.extend(["."] * int(ch))
-                else:
-                    expanded.append(ch)
-            board.append(expanded)
-        return board
-
-    def get_moves(board_state, r, c):  # type: ignore[misc]
-        return []
-
-    def best_move_for_piece(board_state, r, c, moves):  # type: ignore[misc]
-        return None
-
-    BLUE = (0, 0, 255, 0)
-    GREEN = (0, 255, 0, 0)
-    RED = (255, 0, 0, 0)
+def _led_post(path: str, body: dict | None = None) -> bool:
+    """POST to the LED server. Returns True on success."""
+    url = f"{LED_URL}{path}"
+    data = json.dumps(body).encode() if body else b"{}"
+    req = Request(url, data=data, method="POST")
+    req.add_header("Content-Type", "application/json")
+    try:
+        with urlopen(req, timeout=5) as resp:  # noqa: S310
+            return resp.status == 200
+    except (URLError, OSError) as exc:
+        logger.warning("LED server call failed: %s %s — %s", path, body, exc)
+        return False
 
 
 # ── Algebraic square to (row, col) conversion ───────────────────────
@@ -138,93 +99,82 @@ def sse_stream(url: str):
         delay = min(delay * 1.5, MAX_RECONNECT_DELAY)
 
 
-# ── Event handlers ───────────────────────────────────────────────────
+# ── Event handlers (call LED server HTTP API) ────────────────────────
 
-# Board state cache — updated on every FEN event
-_board_state: list[list[str]] = []
+_last_fen: str = ""
 
 
 def handle_fen_update(data: dict) -> None:
-    """FEN changed (from engine or CV) — refresh LED board display."""
-    global _board_state
+    """FEN changed — store in LED server so subsequent move queries work."""
+    global _last_fen
     fen = data.get("fen", "")
     if not fen:
         return
-    _board_state = parse_xiangqi_fen(fen)
-    show_position(_board_state)
+    _last_fen = fen
+    _led_post("/fen", {"fen": fen})
     logger.info("Board updated from %s: %s", data.get("source", "?"), fen[:40])
 
 
 def handle_piece_selected(data: dict) -> None:
-    """Engine replied with legal moves for a square — highlight them."""
+    """Engine replied with legal moves for a square — show on LEDs."""
     square = data.get("square", "")
-    targets = data.get("targets", [])
     rc = _sq_to_rc(square)
-    if rc is None or not _board_state:
+    if rc is None:
         return
     r, c = rc
-    # Convert target algebraic squares to (row, col)
-    move_rcs = [_sq_to_rc(t) for t in targets]
-    move_rcs = [m for m in move_rcs if m is not None]
-    # Use local heuristic for best-move highlight
-    best = best_move_for_piece(_board_state, r, c, move_rcs)
-    show_position(_board_state, selected=(r, c), moves=move_rcs, best_move=best)
-    logger.info("Piece selected at %s — %d legal moves", square, len(move_rcs))
+    _led_post("/move", {"row": r, "col": c})
+    logger.info("Piece selected at %s — moves shown", square)
 
 
 def handle_move_made(data: dict) -> None:
-    """A move was made — highlight from/to squares."""
+    """A move was made — highlight from/to squares for opponent moves."""
     from_sq = data.get("from", "")
     to_sq = data.get("to", "")
     source = data.get("source", "")
+
+    # Update FEN first if present
+    fen = data.get("fen", "")
+    if fen:
+        handle_fen_update({"fen": fen, "source": source})
 
     # If the opponent (AI or remote) moved, highlight in blue/purple
     if source in ("ai", "opponent"):
         from_rc = _sq_to_rc(from_sq)
         to_rc = _sq_to_rc(to_sq)
         if from_rc and to_rc:
-            clear()
-            set_square(from_rc[0], from_rc[1], BLUE)
-            set_square(to_rc[0], to_rc[1], PURPLE)
-            if HAS_LED:
-                from ledsystem import pixels as px
-                px.show()
+            _led_post("/opponent", {
+                "from_r": from_rc[0], "from_c": from_rc[1],
+                "to_r": to_rc[0], "to_c": to_rc[1],
+            })
             logger.info("Opponent move %s→%s highlighted", from_sq, to_sq)
-
-    # Also update board from new FEN if present
-    fen = data.get("fen", "")
-    if fen:
-        handle_fen_update({"fen": fen, "source": source})
 
 
 def handle_best_move(data: dict) -> None:
-    """Coaching agent recommended a best move — show green highlight."""
+    """Coaching agent recommended a best move — show moves from that square."""
     from_sq = data.get("from", "")
-    to_sq = data.get("to", "")
-    to_rc = _sq_to_rc(to_sq)
     from_rc = _sq_to_rc(from_sq)
-    if to_rc and _board_state:
-        show_position(_board_state)  # redraw base
-        set_square(to_rc[0], to_rc[1], GREEN)
-        if from_rc:
-            set_square(from_rc[0], from_rc[1], RED)
-        if HAS_LED:
-            from ledsystem import pixels as px
-            px.show()
-        logger.info("Best move highlighted: %s→%s", from_sq, to_sq)
+    if from_rc:
+        _led_post("/move", {"row": from_rc[0], "col": from_rc[1]})
+        logger.info("Best move highlighted from %s", from_sq)
 
 
 def handle_led_command(data: dict) -> None:
     """CV system requests LED off (camera capture) or on."""
     cmd = data.get("command", "")
     if cmd == "off" or cmd == "clear":
-        clear()
-        logger.info("LEDs cleared (command: %s)", cmd)
+        _led_post("/cv_pause", {})
+        logger.info("LEDs paused (command: %s)", cmd)
     elif cmd == "on":
-        # Restore current board
-        if _board_state:
-            show_position(_board_state)
-            logger.info("LEDs restored")
+        _led_post("/cv_resume", {})
+        logger.info("LEDs resumed")
+
+
+def handle_game_reset(_data: dict) -> None:
+    """Game reset — store starting FEN."""
+    _led_post("/fen", {"fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"})
+    _led_post("/cv_pause", {})  # clear LEDs
+    _led_post("/cv_resume", {})
+    logger.info("Game reset")
 
 
 EVENT_HANDLERS = {
@@ -234,15 +184,17 @@ EVENT_HANDLERS = {
     "move_made": handle_move_made,
     "best_move": handle_best_move,
     "led_command": handle_led_command,
-    "game_reset": lambda _: clear(),
+    "game_reset": handle_game_reset,
 }
 
 
 # ── Main ─────────────────────────────────────────────────────────────
 
-def run_bridge_mode(bridge_url: str) -> None:
+def run_bridge_mode(bridge_url: str, led_url: str) -> None:
+    global LED_URL
+    LED_URL = led_url
     url = f"{bridge_url.rstrip('/')}/state/events"
-    logger.info("Starting bridge subscriber — LED hardware: %s", HAS_LED)
+    logger.info("Starting bridge subscriber — LED server: %s", led_url)
 
     for event in sse_stream(url):
         event_type = event.get("type", "")
@@ -267,6 +219,10 @@ def main() -> None:
         "--bridge-url", default="http://localhost:5003",
         help="State bridge base URL (default: http://localhost:5003)",
     )
+    parser.add_argument(
+        "--led-url", default="http://localhost:5000",
+        help="LED server base URL (default: http://localhost:5000)",
+    )
     args = parser.parse_args()
 
     if args.mode == "cli":
@@ -278,7 +234,7 @@ def main() -> None:
             print("CLI mode requires ledsystem.py with NeoPixel hardware.", file=sys.stderr)
             sys.exit(1)
     else:
-        run_bridge_mode(args.bridge_url)
+        run_bridge_mode(args.bridge_url, args.led_url)
 
 
 if __name__ == "__main__":
