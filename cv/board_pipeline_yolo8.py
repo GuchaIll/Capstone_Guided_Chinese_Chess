@@ -58,6 +58,10 @@ KEEP_LAST_VALID_BOARD = True
 USE_MANUAL_GRID_CALIBRATION = False
 GRID_CALIBRATION_FILE = "grid_calibration.npy"
 GRID_OUTER_OFFSET = 50
+STABILITY_CROP_OFFSET = 0
+OUTPUT_ONLY_ON_NEW_FEN = True
+PRINT_SKIPPED_SAME_FEN = True
+REQUIRED_CONSISTENT_READS = 2
 
 LED_HANDSHAKE_ENABLED = True
 LED_OFF_BEFORE_CAPTURE_SEC = 0.10
@@ -355,8 +359,13 @@ def detect_and_warp_aruco(frame, detector, dst):
 # stability trigger
 # =========================
 
-def preprocess_for_stability(warped):
-    gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
+def preprocess_for_stability(warped, board_corners=None, crop_offset=0):
+    region = warped
+
+    if board_corners is not None:
+        region = crop_with_offset(warped, board_corners, crop_offset)
+
+    gray = cv2.cvtColor(region, cv2.COLOR_BGR2GRAY)
     gray = cv2.GaussianBlur(gray, (BLUR_KSIZE, BLUR_KSIZE), 0)
     return gray
 
@@ -575,10 +584,9 @@ def board_to_fen_rows(board):
     return rows_out
 
 
-def board_to_fen(board, side_to_move=DEFAULT_SIDE_TO_MOVE, extra_fen=DEFAULT_EXTRA_FEN):
+def board_to_fen(board):
     rows_out = board_to_fen_rows(board)
-    board_part = "/".join(rows_out)
-    return f"{board_part} {side_to_move} {extra_fen}"
+    return "/".join(rows_out)
 
 
 def count_pieces(board):
@@ -674,14 +682,14 @@ def put_status_text(img, lines, x=20, y=30, dy=30, color=(0, 255, 255)):
 
 def notify_led_off():
     try:
-        requests.post(f"http://{LED_URL}/cv_pause")
+        requests.post(f"http://{LED_URL}/cv_pause", timeout=0.3)
     except:
         print("Failed to send LED OFF")
 
 
 def notify_led_on():
     try:
-        requests.post(f"http://{LED_URL}/cv_resume")
+        requests.post(f"http://{LED_URL}/cv_resume", timeout=0.3)
     except:
         print("Failed to send LED ON")
 
@@ -730,6 +738,11 @@ def main():
     last_valid_board = None
     last_valid_fen = None
     last_assigned = []
+    last_emitted_fen = None
+    last_emitted_board_text = None
+    candidate_fen = None
+    candidate_board_text = None
+    candidate_count = 0
     was_stable = False
 
     while True:
@@ -819,7 +832,11 @@ def main():
             rows=GRID_ROWS
         )
 
-        warped_gray = preprocess_for_stability(warped)
+        warped_gray = preprocess_for_stability(
+            warped,
+            board_corners=current_board_corners,
+            crop_offset=STABILITY_CROP_OFFSET
+        )
 
         if prev_warped_gray is not None:
             diff_score, stable_since = update_stability_state(
@@ -909,6 +926,68 @@ def main():
             assigned = last_assigned[:]
             issues = ["rejected current frame, using last valid board"] + issues
 
+        board_text = board_to_text(board)
+
+        if OUTPUT_ONLY_ON_NEW_FEN:
+            if last_emitted_fen == fen:
+                candidate_fen = None
+                candidate_board_text = None
+                candidate_count = 0
+                if PRINT_SKIPPED_SAME_FEN:
+                    print()
+                    print("=" * 60)
+                    print("CAPTURE SKIPPED")
+                    print("reason: same fen as last output")
+                    print("fen:")
+                    print(fen)
+                if SHOW_DETECTIONS_WINDOW:
+                    det_vis = draw_assignments(draw_grid_points(capture_frame, grid), assigned)
+                    det_vis = draw_points(det_vis, current_board_corners, color=(255, 255, 0), label_prefix="B")
+                    overlay_lines = [
+                        f"trigger: {'manual' if manual_trigger else 'auto'}",
+                        "same fen as last output",
+                        f"fen: {fen}",
+                    ]
+                    det_vis = put_status_text(det_vis, overlay_lines, color=(0, 165, 255))
+                    cv2.imshow("detections and assignments", det_vis)
+                continue
+
+            if REQUIRED_CONSISTENT_READS > 1:
+                if candidate_fen == fen:
+                    candidate_count += 1
+                else:
+                    candidate_fen = fen
+                    candidate_board_text = board_text
+                    candidate_count = 1
+
+                if candidate_count < REQUIRED_CONSISTENT_READS:
+                    if PRINT_SKIPPED_SAME_FEN:
+                        print()
+                        print("=" * 60)
+                        print("CAPTURE SKIPPED")
+                        print(f"reason: candidate fen seen {candidate_count}/{REQUIRED_CONSISTENT_READS} time(s)")
+                        print("fen:")
+                        print(fen)
+                    if SHOW_DETECTIONS_WINDOW:
+                        det_vis = draw_assignments(draw_grid_points(capture_frame, grid), assigned)
+                        det_vis = draw_points(det_vis, current_board_corners, color=(255, 255, 0), label_prefix="B")
+                        overlay_lines = [
+                            f"trigger: {'manual' if manual_trigger else 'auto'}",
+                            f"candidate fen {candidate_count}/{REQUIRED_CONSISTENT_READS}",
+                            f"fen: {fen}",
+                        ]
+                        det_vis = put_status_text(det_vis, overlay_lines, color=(0, 165, 255))
+                        cv2.imshow("detections and assignments", det_vis)
+                    continue
+
+                board_text = candidate_board_text
+                candidate_fen = None
+                candidate_board_text = None
+                candidate_count = 0
+
+        last_emitted_fen = fen
+        last_emitted_board_text = board_text
+
         print()
         print("=" * 60)
         print("CAPTURE TRIGGERED")
@@ -917,7 +996,38 @@ def main():
         print("mapped:", len(mapped))
         print("assigned:", len(assigned))
         print("board:")
-        print(board_to_text(board))
+        print(board_text)
+        print("fen:")
+        print(fen)
+        if issues:
+            print("issues:")
+            for item in issues:
+                print("-", item)
+
+        if SHOW_DETECTIONS_WINDOW:
+            det_vis = draw_assignments(draw_grid_points(capture_frame, grid), assigned)
+            det_vis = draw_points(det_vis, current_board_corners, color=(255, 255, 0), label_prefix="B")
+            overlay_lines = [
+                f"trigger: {'manual' if manual_trigger else 'auto'}",
+                "same fen as last output",
+                f"fen: {fen}",
+            ]
+            det_vis = put_status_text(det_vis, overlay_lines, color=(0, 165, 255))
+            cv2.imshow("detections and assignments", det_vis)
+            continue
+
+        last_emitted_fen = fen
+        last_emitted_board_text = board_text
+
+        print()
+        print("=" * 60)
+        print("CAPTURE TRIGGERED")
+        print("trigger:", "manual" if manual_trigger else "auto")
+        print("detections:", len(detections))
+        print("mapped:", len(mapped))
+        print("assigned:", len(assigned))
+        print("board:")
+        print(board_text)
         print("fen:")
         print(fen)
         if issues:
