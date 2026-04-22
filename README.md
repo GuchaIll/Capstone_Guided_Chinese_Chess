@@ -1,6 +1,6 @@
-# Guided Chinese Chess (象棋)
+# Kibo - Guided Chinese Chess Learning
 
-An intelligent, interactive Xiangqi (Chinese Chess) platform that combines a high-performance game engine, a multi-agent AI coaching system, physical LED board guidance, computer-vision move detection, and a voice-controlled React interface.
+An intelligent, interactive Xiangqi (Chinese Chess) agent that combines a high-performance game engine, a multi-agentic AI coaching system, physical LED board guidance, computer-vision move detection, and a voice-controlled React interface that teaches you chinese chess fundamentals.
 
 **Team:** Charlie Ai · Claire Lee · Yoyo Zhong
 
@@ -8,7 +8,7 @@ An intelligent, interactive Xiangqi (Chinese Chess) platform that combines a hig
 
 ## Vision
 
-Most Xiangqi learners have no access to real-time, personalized coaching. This project bridges that gap by pairing every game with an AI coach that detects blunders, explains tactical patterns, generates training puzzles, and delivers guidance through a physical LED board — all without the player having to type a single message. Pressing **End Turn** on the physical board triggers the full pipeline automatically.
+Most Xiangqi learners have no access to real-time, personalized coaching. This project bridges that gap by pairing every game with an AI coach that detects blunders, explains tactical patterns, generates training puzzles, and delivers guidance through a physical LED board and LLM orchestrate speech guidance. Pressing **End Turn** on the physical board triggers the full pipeline automatically.
 
 ---
 
