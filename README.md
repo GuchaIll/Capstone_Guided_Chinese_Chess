@@ -49,6 +49,8 @@ Kibo doesn't just play against you; it *teaches* you. Our Go-based pipeline proc
     <img src="img/agents.png" alt="agents" >
   </a>
 </p>
+
+
 ### Immersive Interface
 - **3D Coach Avatar:** A Three.js animated character (Kibo) who reacts to your play — dancing for wins and providing visual cues for advice.
 - **Voice Control:** Fully browser-native STT/TTS. Talk to Kibo to move pieces or ask for advice.
