@@ -1,0 +1,114 @@
+name: Code Quality
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  # ── Rust: clippy + fmt ──────────────────────────────────────────────
+  rust:
+    name: Rust (clippy + fmt)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+
+      - name: cargo fmt --check
+        run: cargo fmt --all -- --check
+
+      - name: cargo clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  # ── Go: golangci-lint ──────────────────────────────────────────────
+  go:
+    name: Go (golangci-lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: server/chess_coach/go.mod
+          cache-dependency-path: server/chess_coach/go.sum
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: server/chess_coach
+
+  # ── Python: ruff (lint + format check) ────────────────────────────
+  python:
+    name: Python (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: ruff check
+        run: ruff check server/ cv/
+
+      - name: ruff format --check
+        run: ruff format --check server/ cv/
+
+  # ── SonarCloud: multi-language analysis ───────────────────────────
+  sonarcloud:
+    name: SonarCloud
+    runs-on: ubuntu-latest
+    # SonarCloud needs the full git history for new-code detection
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+
+      # Generate Clippy report in JSON format for SonarCloud import
+      - name: cargo clippy (JSON report)
+        run: |
+          cargo clippy --all-targets --message-format=json 2>/dev/null \
+            | jq -s '[.[] | select(.reason=="compiler-message")]' \
+            > clippy-report.json
+        continue-on-error: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Generate ruff SARIF report for SonarCloud import
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: ruff check (JSON report)
+        run: ruff check server/ cv/ --output-format=json > ruff-report.json || true
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

@@ -6,33 +6,33 @@ Kibo is an intelligent, multi-agent Xiangqi (Chinese Chess) ecosystem designed t
 
 ---
 
-## 🌟 Vision
+## Vision
 
 Most Xiangqi learners struggle with a "feedback gap" — they know they lost, but they don't know *why*. Kibo closes this gap by transforming every move into a learning opportunity. Through a physical-to-digital loop, Kibo detects blunders in real-time, explains complex tactical patterns through voice and 3D avatars, and generates custom puzzles based on your actual mistakes.
 
 ---
 
-## 🚀 Core Features
+## Core Features
 
-### 🛠️ The Physical-Digital Loop
+### The Physical-Digital Loop
 - **Computer Vision (CV):** Powered by YOLO v8, Kibo identifies piece positions via camera. No manual entry required — just press "End Turn."
 - **LED Guidance:** A NeoPixel-embedded board mirrors the AI's thoughts. It highlights legal moves, engine suggestions (Green), and AI threats (Blue/Purple).
 - **Validation:** The Rust engine cross-references the physical state with game rules, preventing illegal moves before they happen.
 
-### 🧠 9-Agent Coaching Intelligence
+### 9-Agent Coaching Intelligence
 Kibo doesn't just play against you; it *teaches* you. Our Go-based pipeline processes every move through three distinct paths:
 - **The Blunder Guard:** Immediately halts play if you make a high-loss move (>150cp), forcing a "teachable moment."
 - **The Fast Path:** Provides instant engine evaluations for standard moves.
 - **The Master Path:** Triggered by tactical swings or complex patterns, an LLM-led "Coach" synthesizes a strategic explanation, verified by a "Guard" agent for accuracy.
 
-### 🎙️ Immersive Interface
+### Immersive Interface
 - **3D Coach Avatar:** A Three.js animated character (Kibo) who reacts to your play — dancing for wins and providing visual cues for advice.
 - **Voice Control:** Fully browser-native STT/TTS. Talk to Kibo to move pieces or ask for advice.
 - **Plug-and-Play AI:** Ships with a "Mock Mode" for offline play, but supports OpenRouter, OpenAI, and Anthropic for high-level coaching.
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```mermaid
 graph TD
