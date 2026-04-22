@@ -43,7 +43,12 @@ Kibo doesn't just play against you; it *teaches* you. Our Go-based pipeline proc
 - **The Blunder Guard:** Immediately halts play if you make a high-loss move (>150cp), forcing a "teachable moment."
 - **The Fast Path:** Provides instant engine evaluations for standard moves.
 - **The Master Path:** Triggered by tactical swings or complex patterns, an LLM-led "Coach" synthesizes a strategic explanation, verified by a "Guard" agent for accuracy.
-
+- 
+<p align="center">
+  <a href="https://drive.google.com/file/d/1cGfy4v5rDAi409OZ9evruLFTVsEpsxWs/view?usp=sharing">
+    <img src="img/agents.png" alt="▶ Watch board demo video" width="50%">
+  </a>
+</p>
 ### Immersive Interface
 - **3D Coach Avatar:** A Three.js animated character (Kibo) who reacts to your play — dancing for wins and providing visual cues for advice.
 - **Voice Control:** Fully browser-native STT/TTS. Talk to Kibo to move pieces or ask for advice.
