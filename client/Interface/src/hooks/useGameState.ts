@@ -185,6 +185,10 @@ export function useGameState() {
     }));
   }, []);
 
+  const setResult = useCallback((result: GameState['result']) => {
+    setGameState(prev => ({ ...prev, result }));
+  }, []);
+
   const undoMove = useCallback(() => {
     setGameState(prev => {
       if (prev.moveHistory.length === 0) return prev;
@@ -229,5 +233,6 @@ export function useGameState() {
     setGameStateFromFen,
     undoMove,
     pushMoveRecord,
+    setResult,
   };
 }

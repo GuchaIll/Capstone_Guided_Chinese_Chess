@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import axios from 'axios';
 import { MoveRecord, SuggestedMove, PIECE_INFO } from '../types';
-import type { AgentGraphState } from '../types/agentState';
 import type { SpeechService } from '../services/speech/SpeechService';
 
 // ========================
@@ -12,15 +11,6 @@ interface OnboardingButton {
   label: string;
   value: string;
   description: string;
-}
-
-interface OnboardingData {
-  step: string;
-  buttons: OnboardingButton[];
-  onboarding_complete: boolean;
-  progress?: { current: number; total: number };
-  preferences?: Record<string, string>;
-  error?: string;
 }
 
 interface ChatMessage {
@@ -35,7 +25,6 @@ interface ChatPanelProps {
   aiThinking: boolean;
   suggestedMove: SuggestedMove | null;
   gameStateFen: string;
-  onAgentGraphUpdate?: (data: AgentGraphState) => void;
   speechService?: SpeechService | null;
 }
 
@@ -52,25 +41,19 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel
   moveHistory,
   aiThinking,
   suggestedMove,
-  gameStateFen,
-  onAgentGraphUpdate,
+  
   speechService,
 }, ref) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [onboardingComplete] = useState(false);
   const [activeButtons, setActiveButtons] = useState<OnboardingButton[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const coachWsRef = useRef<WebSocket | null>(null);
-  const coachConnectedRef = useRef(false);
+  const sessionIdRef = useRef(`session-${Date.now()}`);
 
-  const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-  const defaultCoachWsUrl = `${wsProtocol}://${window.location.host}/ws/chat`;
-  const coachWsUrl = import.meta.env.VITE_COACH_WS_URL || defaultCoachWsUrl;
-
-  const httpProtocol = window.location.protocol === 'https:' ? 'https' : 'http';
-  const defaultCoachUrl = `${httpProtocol}://${window.location.host}/api`;
+  const httpProtocol = globalThis.location.protocol === 'https:' ? 'https' : 'http';
+  const defaultCoachUrl = `${httpProtocol}://${globalThis.location.host}`;
   const coachUrl = import.meta.env.VITE_COACH_URL || defaultCoachUrl;
 
   // Expose sendVoiceMessage and sendMoveEvent to parent via ref
@@ -80,36 +63,35 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel
       setMessages(prev => [...prev, { role: 'user', content: msg }]);
       setIsTyping(true);
 
-      if (coachConnectedRef.current && coachWsRef.current) {
-        coachWsRef.current.send(JSON.stringify({ type: 'chat', message: msg }));
-      } else {
-        axios.post(`${coachUrl}/chat`, {
-          message: msg,
-          state: gameStateFen,
-          history: moveHistory.map(m => `${m.from}${m.to}`).join(','),
-        }).then(res => {
-          const response = res.data.response || 'Sorry, I could not understand that.';
+      axios.post(`${coachUrl}/dashboard/chat`, {
+        message: msg,
+        session_id: sessionIdRef.current,
+      }).then(res => {
+        const response = res.data.response || 'Sorry, I could not understand that.';
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        speechService?.speak(response).catch(() => {});
+      }).catch(() => {
+        setMessages(prev => [...prev, { role: 'assistant', content: 'Failed to communicate with the coaching agent.' }]);
+      }).finally(() => setIsTyping(false));
+    },
+    sendMoveEvent: (move: string, fen: string, side: string, _result: string, isCheck: boolean, score: number) => {
+      setIsTyping(true);
+      axios.post(`${coachUrl}/dashboard/chat`, {
+        message: `${side} played ${move}. Check: ${isCheck}, score: ${score}. Comment on this move.`,
+        fen,
+        move,
+        session_id: sessionIdRef.current,
+      }).then(res => {
+        const response = res.data.response;
+        if (response) {
           setMessages(prev => [...prev, { role: 'assistant', content: response }]);
           speechService?.speak(response).catch(() => {});
-        }).catch(() => {
-          setMessages(prev => [...prev, { role: 'assistant', content: 'Failed to communicate with the coaching agent.' }]);
-        }).finally(() => setIsTyping(false));
-      }
+        }
+      }).catch(() => {
+        // Silently ignore move event failures
+      }).finally(() => setIsTyping(false));
     },
-    sendMoveEvent: (move: string, fen: string, side: string, result: string, isCheck: boolean, score: number) => {
-      if (coachConnectedRef.current && coachWsRef.current) {
-        coachWsRef.current.send(JSON.stringify({
-          type: 'move_event',
-          move,
-          fen,
-          side,
-          result,
-          is_check: isCheck,
-          score,
-        }));
-      }
-    },
-  }), [coachUrl, gameStateFen, moveHistory, speechService]);
+  }), [coachUrl, speechService]);
 
   // ---- Scroll ----
   const scrollToBottom = () => {
@@ -120,136 +102,27 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel
     scrollToBottom();
   }, [messages, isTyping, activeButtons]);
 
-  // ---- Coach WebSocket ----
-  const handleCoachMessage = useCallback((event: MessageEvent) => {
-    try {
-      const data = JSON.parse(event.data);
-      console.log('[ChatPanel] Coach WS received:', data.type, data);
-
-      if (data.type === 'onboarding') {
-        const obData: OnboardingData = data.data || {};
-
-        // If this is a fresh onboarding start (e.g. new game), reset state
-        if (!obData.onboarding_complete && obData.step !== 'complete') {
-          setOnboardingComplete(false);
-          setMessages([]);
-        }
-
-        // Add the message to chat
-        setMessages(prev => [...prev, {
-          role: 'onboarding',
-          content: data.message || '',
-          buttons: obData.buttons || [],
-          progress: obData.progress,
-        }]);
-
-        // Update active buttons for the latest question
-        setActiveButtons(obData.buttons || []);
-
-        // Check completion
-        if (obData.onboarding_complete) {
-          setOnboardingComplete(true);
-          setActiveButtons([]);
-        }
-
-      } else if (data.type === 'coach_response') {
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: data.message || 'No response.',
-        }]);
-        // TTS: speak assistant response
-        if (speechService && data.message) {
-          speechService.speak(data.message).catch(() => {});
-        }
-      } else if (data.type === 'system') {
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: data.message || '',
-        }]);
-      } else if (data.type === 'error') {
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: `Error: ${data.message || 'Unknown error'}`,
-        }]);
-      }
-
-      setIsTyping(false);
-    } catch {
-      console.log('[ChatPanel] Non-JSON coach message:', event.data);
-    }
-  }, []);
-
-  useEffect(() => {
-    let ws: WebSocket | null = null;
-    let reconnectTimer: number | null = null;
-
-    const connect = () => {
-      try {
-        ws = new WebSocket(coachWsUrl);
-
-        ws.onopen = () => {
-          console.log('[ChatPanel] Coach WS connected');
-          coachWsRef.current = ws;
-          coachConnectedRef.current = true;
-        };
-
-        ws.onmessage = handleCoachMessage;
-
-        ws.onclose = () => {
-          console.log('[ChatPanel] Coach WS disconnected');
-          coachWsRef.current = null;
-          coachConnectedRef.current = false;
-          reconnectTimer = window.setTimeout(connect, 5000);
-        };
-
-        ws.onerror = (err) => {
-          console.error('[ChatPanel] Coach WS error:', err);
-        };
-      } catch (e) {
-        console.error('[ChatPanel] Coach WS connect failed:', e);
-        reconnectTimer = window.setTimeout(connect, 5000);
-      }
-    };
-
-    connect();
-
-    return () => {
-      if (reconnectTimer) clearTimeout(reconnectTimer);
-      if (ws) {
-        ws.onclose = null;
-        ws.close();
-      }
-    };
-  }, [coachWsUrl, handleCoachMessage]);
-
-  // ---- Send onboarding answer via WS ----
+  // ---- Send onboarding answer ----
   const sendOnboardingAnswer = useCallback((value: string, label: string) => {
     setMessages(prev => [...prev, { role: 'user', content: label }]);
     setActiveButtons([]);
     setIsTyping(true);
 
-    if (coachConnectedRef.current && coachWsRef.current) {
-      coachWsRef.current.send(JSON.stringify({
-        type: 'onboarding_answer',
-        selection: value,
-      }));
-    } else {
-      axios.post(`${coachUrl}/chat`, { message: value })
-        .then(res => {
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: res.data.response || 'Received.',
-          }]);
-          setIsTyping(false);
-        })
-        .catch(() => {
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: 'Failed to reach coaching server.',
-          }]);
-          setIsTyping(false);
-        });
-    }
+    axios.post(`${coachUrl}/dashboard/chat`, { message: value, session_id: sessionIdRef.current })
+      .then(res => {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: res.data.response || 'Received.',
+        }]);
+        setIsTyping(false);
+      })
+      .catch(() => {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: 'Failed to reach coaching server.',
+        }]);
+        setIsTyping(false);
+      });
   }, [coachUrl]);
 
   // ---- Send chat message ----
@@ -261,37 +134,23 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel
     setChatInput('');
     setIsTyping(true);
 
-    if (coachConnectedRef.current && coachWsRef.current) {
-      coachWsRef.current.send(JSON.stringify({
-        type: 'chat',
+    try {
+      const response = await axios.post(`${coachUrl}/dashboard/chat`, {
         message: text,
-      }));
-    } else {
-      try {
-        const response = await axios.post(`${coachUrl}/chat`, {
-          message: text,
-          state: gameStateFen,
-          history: moveHistory.map(m => `${m.from}${m.to}`).join(','),
-        });
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: response.data.response || 'Sorry, I could not understand that.',
-        }]);
-        if (onAgentGraphUpdate) {
-          try {
-            const graphRes = await axios.get(`${coachUrl}/agent-state/graph`);
-            onAgentGraphUpdate(graphRes.data);
-          } catch { /* silent */ }
-        }
-      } catch (error) {
-        console.error('Chat error:', error);
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: 'Failed to communicate with the coaching agent.',
-        }]);
-      } finally {
-        setIsTyping(false);
-      }
+        session_id: sessionIdRef.current,
+      });
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: response.data.response || 'Sorry, I could not understand that.',
+      }]);
+    } catch (error) {
+      console.error('Chat error:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Failed to communicate with the coaching agent.',
+      }]);
+    } finally {
+      setIsTyping(false);
     }
   };
 
@@ -323,7 +182,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel
         <div className="flex-1 space-y-4 mb-4">
           {messages.length === 0 && !suggestedMove && (
             <div className="text-slate-500 text-xs text-center mt-10">
-              Connecting to coaching agent...
+              Ask the coaching agent a question about your game...
             </div>
           )}
 

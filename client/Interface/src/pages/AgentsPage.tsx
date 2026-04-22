@@ -1,13 +1,13 @@
 /**
- * /agents — Agent Pipeline Inspector page
+ * /agents — Agent Pipeline Inspector page  (Go Orchestration)
  *
- * Full-page view for monitoring the multi-agent orchestration workflow.
+ * Full-page view for monitoring the Go multi-agent orchestration workflow.
  * Features:
  *  - Live React Flow graph of all agents and their current status
- *  - Transition log with LLM output and reasoning
- *  - Live-polling every 2s from GET /agent-state/graph
+ *  - Transition log with real-time SSE events
+ *  - Graph topology from GET /dashboard/graph
+ *  - SSE event stream from GET /dashboard/events
  *  - Stats bar: requests processed, avg latency, active agent
- *  - Agents registry table (GET /agents) with enable/disable toggles
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -25,28 +25,15 @@ import {
 import '@xyflow/react/dist/style.css';
 import { Link } from 'react-router-dom';
 import AgentNodeComponent from '../components/AgentNode';
-import type { AgentGraphState, StateTransition } from '../types/agentState';
+import type { DashboardEvent, GraphInfo } from '../types/agentState';
 
 // ========================
 //   CONSTANTS
 // ========================
 
-const API_BASE =
-  import.meta.env.VITE_COACH_URL ||
-  `${window.location.protocol}//${window.location.hostname}:5001`;
-
-const NODE_POSITIONS: Record<string, { x: number; y: number }> = {
-  UserInput:             { x: 0,    y: 200 },
-  IntentClassifierAgent: { x: 240,  y: 200 },
-  GameEngineAgent:       { x: 520,  y: 60  },
-  CoachAgent:            { x: 520,  y: 200 },
-  PuzzleMasterAgent:     { x: 520,  y: 340 },
-  RAGManagerAgent:       { x: 800,  y: 100 },
-  MemoryAgent:           { x: 800,  y: 280 },
-  TokenLimiterAgent:     { x: 800,  y: 420 },
-  OutputAgent:           { x: 1060, y: 200 },
-  OnboardingAgent:       { x: 240,  y: 380 },
-};
+const DASHBOARD_BASE =
+  import.meta.env.VITE_DASHBOARD_URL ||
+  `${window.location.protocol}//${window.location.hostname}:5002/dashboard`;
 
 const nodeTypes = { agentNode: AgentNodeComponent };
 
@@ -54,102 +41,113 @@ const nodeTypes = { agentNode: AgentNodeComponent };
 //   TYPES
 // ========================
 
-interface AgentRegistryEntry {
-  name: string;
-  enabled: boolean;
-}
+type ActiveTab = 'graph' | 'log';
 
-type ActiveTab = 'graph' | 'log' | 'registry';
+interface NodeStatus {
+  status: 'idle' | 'active' | 'completed' | 'error';
+  visited: boolean;
+  subProcess?: string | null;
+}
 
 // ========================
 //   HELPERS
 // ========================
 
-function buildNodes(graphState: AgentGraphState): Node[] {
-  return graphState.nodes.map((n) => ({
-    id: n.id,
-    type: 'agentNode',
-    position: NODE_POSITIONS[n.id] || { x: 0, y: 0 },
-    data: {
-      label: n.label,
-      status: n.status,
-      visited: n.visited,
-      group: n.group,
-      agentType: n.type,
-    },
-  }));
+/** Auto-layout: simple left-to-right with parallel agents stacked vertically. */
+function autoLayout(graphInfo: GraphInfo): Record<string, { x: number; y: number }> {
+  const positions: Record<string, { x: number; y: number }> = {};
+  if (!graphInfo.nodes?.length) return positions;
+
+  // Build adjacency from edges to determine topological order
+  const nodeIds = graphInfo.nodes.map(n => n.id);
+  const inDeg: Record<string, number> = {};
+  const adj: Record<string, string[]> = {};
+  nodeIds.forEach(id => { inDeg[id] = 0; adj[id] = []; });
+  (graphInfo.edges || []).forEach(e => {
+    adj[e.source]?.push(e.target);
+    inDeg[e.target] = (inDeg[e.target] || 0) + 1;
+  });
+
+  // BFS-based layering
+  const layers: string[][] = [];
+  const queue = nodeIds.filter(id => (inDeg[id] || 0) === 0);
+  const visited = new Set<string>();
+  while (queue.length > 0) {
+    const layer = [...queue];
+    layers.push(layer);
+    queue.length = 0;
+    for (const nid of layer) {
+      visited.add(nid);
+      for (const child of (adj[nid] || [])) {
+        inDeg[child]--;
+        if (inDeg[child] <= 0 && !visited.has(child)) {
+          queue.push(child);
+        }
+      }
+    }
+  }
+  // Place any unvisited nodes in a final layer
+  const remaining = nodeIds.filter(id => !visited.has(id));
+  if (remaining.length) layers.push(remaining);
+
+  const xStep = 260;
+  const yStep = 120;
+  layers.forEach((layer, col) => {
+    const yOffset = -((layer.length - 1) * yStep) / 2;
+    layer.forEach((id, row) => {
+      positions[id] = { x: col * xStep, y: 200 + yOffset + row * yStep };
+    });
+  });
+
+  return positions;
 }
 
-function buildEdges(graphState: AgentGraphState): Edge[] {
-  return graphState.edges.map((e, i) => ({
-    id: `e-${i}-${e.source}-${e.target}`,
-    source: e.source,
-    target: e.target,
-    label: e.active ? e.label : '',
-    type: 'smoothstep',
-    animated: e.active,
-    markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14 },
-    style: {
-      stroke: e.active ? '#34d399' : '#334155',
-      strokeWidth: e.active ? 2.5 : 1.5,
-      opacity: e.active ? 1 : 0.35,
-    },
-    labelStyle: {
-      fill: e.active ? '#34d399' : '#64748b',
-      fontSize: 9,
-      fontWeight: e.active ? 700 : 400,
-    },
-  }));
+function buildNodes(
+  graphInfo: GraphInfo,
+  nodeStatuses: Record<string, NodeStatus>,
+  positions: Record<string, { x: number; y: number }>,
+): Node[] {
+  return graphInfo.nodes.map((n) => {
+    const st = nodeStatuses[n.id] || { status: 'idle', visited: false };
+    return {
+      id: n.id,
+      type: 'agentNode',
+      position: positions[n.id] || { x: 0, y: 0 },
+      data: {
+        label: n.id,
+        status: st.status === 'completed' ? 'completed' : st.status === 'active' ? 'active' : st.status === 'error' ? 'error' : 'idle',
+        visited: st.visited,
+        group: 'core',
+        agentType: 'agent',
+      },
+    };
+  });
 }
 
-function getDefaultNodes(): Node[] {
-  const defaults = [
-    { id: 'UserInput', label: 'User Input', type: 'input', group: 'io' },
-    { id: 'IntentClassifierAgent', label: 'Intent Classifier', type: 'classifier', group: 'core' },
-    { id: 'GameEngineAgent', label: 'Game Engine', type: 'agent', group: 'core' },
-    { id: 'CoachAgent', label: 'Coach', type: 'agent', group: 'core' },
-    { id: 'PuzzleMasterAgent', label: 'Puzzle Master', type: 'agent', group: 'core' },
-    { id: 'RAGManagerAgent', label: 'RAG Manager', type: 'agent', group: 'support' },
-    { id: 'MemoryAgent', label: 'Memory', type: 'agent', group: 'support' },
-    { id: 'TokenLimiterAgent', label: 'Token Limiter', type: 'agent', group: 'support' },
-    { id: 'OutputAgent', label: 'Output', type: 'output', group: 'io' },
-    { id: 'OnboardingAgent', label: 'Onboarding', type: 'agent', group: 'core' },
-  ] as const;
-
-  return defaults.map((d) => ({
-    id: d.id,
-    type: 'agentNode',
-    position: NODE_POSITIONS[d.id] || { x: 0, y: 0 },
-    data: { label: d.label, status: 'idle', visited: false, group: d.group, agentType: d.type },
-  }));
-}
-
-function getDefaultEdges(): Edge[] {
-  const defs = [
-    { source: 'UserInput', target: 'IntentClassifierAgent', label: 'classify' },
-    { source: 'UserInput', target: 'OnboardingAgent', label: 'onboarding' },
-    { source: 'IntentClassifierAgent', target: 'GameEngineAgent', label: 'MOVE/UNDO/RESIGN' },
-    { source: 'IntentClassifierAgent', target: 'CoachAgent', label: 'WHY/HINT/TEACH/CHAT' },
-    { source: 'IntentClassifierAgent', target: 'PuzzleMasterAgent', label: 'puzzle_mode' },
-    { source: 'GameEngineAgent', target: 'CoachAgent', label: 'blunder' },
-    { source: 'CoachAgent', target: 'RAGManagerAgent', label: 'retrieve' },
-    { source: 'CoachAgent', target: 'MemoryAgent', label: 'profile' },
-    { source: 'PuzzleMasterAgent', target: 'GameEngineAgent', label: 'validate' },
-    { source: 'GameEngineAgent', target: 'OutputAgent', label: 'format' },
-    { source: 'CoachAgent', target: 'OutputAgent', label: 'format' },
-    { source: 'PuzzleMasterAgent', target: 'OutputAgent', label: 'format' },
-    { source: 'OnboardingAgent', target: 'MemoryAgent', label: 'save profile' },
-  ];
-  return defs.map((d, i) => ({
-    id: `e-def-${i}`,
-    source: d.source,
-    target: d.target,
-    label: '',
-    type: 'smoothstep',
-    animated: false,
-    markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14 },
-    style: { stroke: '#334155', strokeWidth: 1.5, opacity: 0.35 },
-  }));
+function buildEdges(graphInfo: GraphInfo, activeAgents: Set<string>): Edge[] {
+  return (graphInfo.edges || []).map((e, i) => {
+    const isActive = activeAgents.has(e.source) || activeAgents.has(e.target);
+    return {
+      id: `e-${i}-${e.source}-${e.target}`,
+      source: e.source,
+      target: e.target,
+      label: e.parallel ? 'parallel' : '',
+      type: 'smoothstep',
+      animated: isActive,
+      markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14 },
+      style: {
+        stroke: isActive ? '#34d399' : e.parallel ? '#6c8ebf' : '#334155',
+        strokeWidth: isActive ? 2.5 : 1.5,
+        strokeDasharray: e.parallel ? '6 3' : undefined,
+        opacity: isActive ? 1 : 0.45,
+      },
+      labelStyle: {
+        fill: isActive ? '#34d399' : '#64748b',
+        fontSize: 9,
+        fontWeight: isActive ? 700 : 400,
+      },
+    };
+  });
 }
 
 // ========================
@@ -157,113 +155,169 @@ function getDefaultEdges(): Edge[] {
 // ========================
 
 export default function AgentsPage() {
-  const [graphState, setGraphState] = useState<AgentGraphState | null>(null);
-  const [registry, setRegistry] = useState<Record<string, AgentRegistryEntry>>({});
+  const [graphInfo, setGraphInfo] = useState<GraphInfo | null>(null);
+  const [nodeStatuses, setNodeStatuses] = useState<Record<string, NodeStatus>>({});
   const [activeTab, setActiveTab] = useState<ActiveTab>('graph');
-  const [liveLog, setLiveLog] = useState<StateTransition[]>([]);
+  const [eventLog, setEventLog] = useState<DashboardEvent[]>([]);
   const [requestCount, setRequestCount] = useState(0);
   const [avgLatency, setAvgLatency] = useState(0);
   const [serverOnline, setServerOnline] = useState(false);
-  const [togglingAgent, setTogglingAgent] = useState<string | null>(null);
+  const [chatInput, setChatInput] = useState('');
+  const [chatSending, setChatSending] = useState(false);
   const logEndRef = useRef<HTMLDivElement>(null);
-  const requestCountRef = useRef(0);
+  const latenciesRef = useRef<number[]>([]);
+  const positions = useMemo(() => graphInfo ? autoLayout(graphInfo) : {}, [graphInfo]);
 
-  // ---- Live polling ----
-  const fetchGraph = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/agent-state/graph`);
-      if (!res.ok) { setServerOnline(false); return; }
-      const data: AgentGraphState = await res.json();
-      setGraphState(data);
-      setServerOnline(true);
-
-      // Accumulate log entries (deduplicate by id)
-      if (data.transitions.length > 0) {
-        setLiveLog(prev => {
-          const existingIds = new Set(prev.map(t => t.id));
-          const newOnes = data.transitions.filter(t => !existingIds.has(t.id));
-          if (newOnes.length === 0) return prev;
-          const merged = [...prev, ...newOnes].slice(-200);
-          return merged;
-        });
+  // ---- Fetch graph topology once ----
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`${DASHBOARD_BASE}/graph`);
+        if (!res.ok) { setServerOnline(false); return; }
+        const info: GraphInfo = await res.json();
+        if (!active) return;
+        setGraphInfo(info);
+        setServerOnline(true);
+      } catch {
+        setServerOnline(false);
       }
-    } catch {
+    })();
+    return () => { active = false; };
+  }, []);
+
+  // ---- SSE event stream ----
+  useEffect(() => {
+    const es = new EventSource(`${DASHBOARD_BASE}/events`);
+
+    es.onopen = () => setServerOnline(true);
+    es.onerror = () => setServerOnline(false);
+
+    es.onmessage = (msg) => {
+      try {
+        const evt: DashboardEvent = JSON.parse(msg.data);
+        // Accumulate log (keep last 300 events)
+        setEventLog(prev => [...prev, evt].slice(-300));
+
+        switch (evt.type) {
+          case 'graph_start':
+            // Reset all nodes to idle for new request
+            setNodeStatuses({});
+            setRequestCount(c => c + 1);
+            break;
+          case 'graph_end':
+            if (evt.duration_ms) {
+              latenciesRef.current.push(evt.duration_ms);
+              const arr = latenciesRef.current;
+              setAvgLatency(Math.round(arr.reduce((a, b) => a + b, 0) / arr.length));
+            }
+            // Mark all as idle (or keep completed)
+            setNodeStatuses(prev => {
+              const next = { ...prev };
+              Object.keys(next).forEach(k => {
+                if (next[k].status === 'active') {
+                  next[k] = { ...next[k], status: 'completed' };
+                }
+              });
+              return next;
+            });
+            break;
+          case 'agent_start':
+            if (evt.agent) {
+              setNodeStatuses(prev => ({
+                ...prev,
+                [evt.agent!]: { status: 'active', visited: true },
+              }));
+            }
+            break;
+          case 'agent_end':
+            if (evt.agent) {
+              const status = evt.status === 'error' ? 'error' as const : 'completed' as const;
+              setNodeStatuses(prev => ({
+                ...prev,
+                [evt.agent!]: { status, visited: true, subProcess: null },
+              }));
+            }
+            break;
+          case 'subprocess_start':
+            if (evt.agent) {
+              setNodeStatuses(prev => ({
+                ...prev,
+                [evt.agent!]: {
+                  ...prev[evt.agent!],
+                  status: 'active',
+                  visited: true,
+                  subProcess: evt.sub_process || null,
+                },
+              }));
+            }
+            break;
+          case 'subprocess_end':
+            if (evt.agent) {
+              setNodeStatuses(prev => ({
+                ...prev,
+                [evt.agent!]: {
+                  ...prev[evt.agent!],
+                  subProcess: null,
+                },
+              }));
+            }
+            break;
+          default:
+            break;
+        }
+      } catch { /* ignore malformed */ }
+    };
+
+    return () => {
+      es.close();
       setServerOnline(false);
-    }
+    };
   }, []);
-
-  const fetchLog = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/agent-state/log?last_n=200`);
-      if (!res.ok) return;
-      const data = await res.json();
-      setLiveLog(data.transitions || []);
-    } catch { /* silent */ }
-  }, []);
-
-  const fetchRegistry = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/agents`);
-      if (!res.ok) return;
-      const data = await res.json();
-      setRegistry(data);
-    } catch { /* silent */ }
-  }, []);
-
-  // Initial load + polling
-  useEffect(() => {
-    fetchGraph();
-    fetchLog();
-    fetchRegistry();
-    const poll = setInterval(fetchGraph, 2000);
-    const logPoll = setInterval(fetchLog, 5000);
-    const regPoll = setInterval(fetchRegistry, 10000);
-    return () => { clearInterval(poll); clearInterval(logPoll); clearInterval(regPoll); };
-  }, [fetchGraph, fetchLog, fetchRegistry]);
-
-  // Track stats from log
-  useEffect(() => {
-    const requestEnds = liveLog.filter(t => t.trigger === 'request_end' || t.to_agent === 'OutputAgent');
-    if (requestEnds.length > requestCountRef.current) {
-      requestCountRef.current = requestEnds.length;
-      setRequestCount(requestEnds.length);
-      const durations = requestEnds.filter(t => t.duration_ms > 0).map(t => t.duration_ms);
-      if (durations.length > 0) {
-        setAvgLatency(Math.round(durations.reduce((a, b) => a + b, 0) / durations.length));
-      }
-    }
-  }, [liveLog]);
 
   // Auto-scroll log
   useEffect(() => {
     if (activeTab === 'log') {
       logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [liveLog, activeTab]);
+  }, [eventLog, activeTab]);
 
-  // Agent toggle
-  const toggleAgent = useCallback(async (name: string, currentlyEnabled: boolean) => {
-    setTogglingAgent(name);
+  // ---- Send chat from inspector ----
+  const handleSendChat = useCallback(async () => {
+    if (!chatInput.trim() || chatSending) return;
+    const text = chatInput.trim();
+    setChatInput('');
+    setChatSending(true);
     try {
-      const enable = !currentlyEnabled;
-      await fetch(`${API_BASE}/agents/${name}/toggle?enable=${enable}`, { method: 'POST' });
-      await fetchRegistry();
+      await fetch(`${DASHBOARD_BASE}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      });
     } catch { /* silent */ }
-    setTogglingAgent(null);
-  }, [fetchRegistry]);
+    setChatSending(false);
+  }, [chatInput, chatSending]);
+
+  // Active agents set for edge highlighting
+  const activeAgents = useMemo(() => {
+    const s = new Set<string>();
+    Object.entries(nodeStatuses).forEach(([k, v]) => {
+      if (v.status === 'active') s.add(k);
+    });
+    return s;
+  }, [nodeStatuses]);
 
   // React Flow data
   const nodes: Node[] = useMemo(
-    () => graphState ? buildNodes(graphState) : getDefaultNodes(),
-    [graphState]
+    () => graphInfo ? buildNodes(graphInfo, nodeStatuses, positions) : [],
+    [graphInfo, nodeStatuses, positions],
   );
   const edges: Edge[] = useMemo(
-    () => graphState ? buildEdges(graphState) : getDefaultEdges(),
-    [graphState]
+    () => graphInfo ? buildEdges(graphInfo, activeAgents) : [],
+    [graphInfo, activeAgents],
   );
 
-  const activeAgent = graphState?.active_agent;
-  const requestId = graphState?.request_id;
+  const activeAgent = Object.entries(nodeStatuses).find(([, v]) => v.status === 'active')?.[0] ?? null;
 
   return (
     <div className="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col overflow-hidden font-display">
@@ -292,12 +346,10 @@ export default function AgentsPage() {
             <Stat label="Avg Latency" value={avgLatency > 0 ? `${avgLatency}ms` : '--'} />
             <Stat
               label="Active Agent"
-              value={activeAgent && activeAgent !== 'idle' ? activeAgent.replace('Agent', '') : 'Idle'}
-              highlight={!!activeAgent && activeAgent !== 'idle'}
+              value={activeAgent || 'Idle'}
+              highlight={!!activeAgent}
             />
-            {requestId && (
-              <Stat label="Last Req" value={`REQ:${requestId}`} mono />
-            )}
+            <Stat label="Events" value={eventLog.length.toString()} mono />
           </div>
 
           {/* Online indicator */}
@@ -317,7 +369,7 @@ export default function AgentsPage() {
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Tab bar */}
           <div className="h-9 bg-slate-900/60 border-b border-white/10 flex items-center px-4 gap-1 shrink-0">
-            {(['graph', 'log', 'registry'] as ActiveTab[]).map(tab => (
+            {(['graph', 'log'] as ActiveTab[]).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -387,45 +439,58 @@ export default function AgentsPage() {
 
           {activeTab === 'log' && (
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {liveLog.length === 0 ? (
+              {eventLog.length === 0 ? (
                 <div className="text-slate-500 text-xs text-center mt-16">
-                  No transitions recorded yet. Send a message in the coaching chat to see the pipeline.
+                  No events recorded yet. Send a message below or use the coaching chat to see the pipeline.
                 </div>
               ) : (
                 <>
-                  {liveLog.slice().reverse().map((t) => (
-                    <TransitionCard key={t.id} t={t} />
+                  {eventLog.slice().reverse().map((evt, idx) => (
+                    <EventCard key={`${evt.ts}-${idx}`} evt={evt} />
                   ))}
                   <div ref={logEndRef} />
                 </>
               )}
             </div>
           )}
-
-          {activeTab === 'registry' && (
-            <RegistryPanel
-              registry={registry}
-              onToggle={toggleAgent}
-              toggling={togglingAgent}
-            />
-          )}
         </div>
 
-        {/* Right sidebar: live transition feed (always visible on graph tab) */}
+        {/* Right sidebar: live event feed + chat input (always visible on graph tab) */}
         {activeTab === 'graph' && (
           <aside className="w-80 border-l border-white/10 bg-slate-900/50 flex flex-col overflow-hidden shrink-0">
             <div className="px-4 py-2.5 border-b border-white/10 flex items-center justify-between">
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Live Transitions</span>
-              <span className="text-[9px] text-slate-600">{liveLog.length} total</span>
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Live Events</span>
+              <span className="text-[9px] text-slate-600">{eventLog.length} total</span>
             </div>
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {liveLog.length === 0 ? (
+              {eventLog.length === 0 ? (
                 <div className="text-slate-600 text-[10px] text-center mt-8">Waiting for pipeline activity...</div>
               ) : (
-                liveLog.slice().reverse().slice(0, 50).map((t) => (
-                  <MiniTransitionCard key={t.id} t={t} />
+                eventLog.slice().reverse().slice(0, 50).map((evt, idx) => (
+                  <MiniEventCard key={`${evt.ts}-${idx}`} evt={evt} />
                 ))
               )}
+            </div>
+            {/* Inline chat input to trigger pipeline */}
+            <div className="border-t border-white/10 p-3">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSendChat()}
+                  placeholder="Send to pipeline..."
+                  className="flex-1 bg-slate-800 border border-white/10 rounded px-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-purple-500/50"
+                  disabled={chatSending}
+                />
+                <button
+                  onClick={handleSendChat}
+                  disabled={chatSending || !chatInput.trim()}
+                  className="px-3 py-1.5 bg-purple-600 text-white text-xs font-bold rounded hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Send
+                </button>
+              </div>
             </div>
           </aside>
         )}
@@ -451,18 +516,32 @@ function Stat({ label, value, highlight = false, mono = false }: {
   );
 }
 
-function TransitionCard({ t }: { t: StateTransition }) {
+const EVENT_TYPE_COLORS: Record<string, string> = {
+  graph_start: 'text-cyan-400',
+  graph_end: 'text-cyan-400',
+  agent_start: 'text-emerald-400',
+  agent_end: 'text-emerald-400',
+  subprocess_start: 'text-amber-400',
+  subprocess_end: 'text-amber-400',
+  thought: 'text-purple-400',
+  tool_call: 'text-blue-400',
+  tool_result: 'text-blue-400',
+  skill_use: 'text-yellow-400',
+  delegation: 'text-pink-400',
+  chat_response: 'text-green-400',
+};
+
+function EventCard({ evt }: { evt: DashboardEvent }) {
   const [expanded, setExpanded] = useState(false);
-  const hasExtra = !!(t.llm_output || t.reasoning || t.error);
-  const ts = t.timestamp ? (t.timestamp < 1e12 ? t.timestamp * 1000 : t.timestamp) : 0;
+  const hasExtra = !!(evt.message || evt.detail);
+  const ts = evt.ts ? (evt.ts < 1e12 ? evt.ts * 1000 : evt.ts) : 0;
   const timeLabel = ts ? new Date(ts).toLocaleTimeString() : '';
-  const metaEntries = t.metadata ? Object.entries(t.metadata) : [];
-  const hasMetadata = metaEntries.length > 0;
+  const isError = evt.status === 'error';
 
   return (
     <div
       className={`rounded-lg border p-3 text-[10px] font-mono cursor-pointer transition-colors ${
-        t.error
+        isError
           ? 'bg-red-950/40 border-red-500/30 hover:bg-red-950/60'
           : 'bg-slate-900/60 border-white/10 hover:bg-slate-800/60'
       }`}
@@ -470,49 +549,53 @@ function TransitionCard({ t }: { t: StateTransition }) {
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-slate-500 text-[9px]">{t.from_agent}</span>
-          <span className="text-emerald-400">→</span>
-          <span className="text-slate-100 font-bold">{t.to_agent}</span>
+          <span className={`font-bold ${EVENT_TYPE_COLORS[evt.type] || 'text-slate-400'}`}>
+            {evt.type}
+          </span>
+          {evt.agent && (
+            <>
+              <span className="text-slate-500">·</span>
+              <span className="text-slate-100 font-bold">{evt.agent}</span>
+            </>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {timeLabel && <span className="text-slate-600">{timeLabel}</span>}
-          {t.duration_ms > 0 && <span className="text-slate-600">{t.duration_ms.toFixed(0)}ms</span>}
+          {evt.duration_ms != null && evt.duration_ms > 0 && (
+            <span className="text-slate-600">{evt.duration_ms.toFixed(0)}ms</span>
+          )}
+          {evt.status && (
+            <span className={`text-[8px] px-1.5 py-0.5 rounded ${
+              evt.status === 'error' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'
+            }`}>
+              {evt.status}
+            </span>
+          )}
           {hasExtra && (
             <span className="text-purple-400 text-[8px]">{expanded ? '▲' : '▼'}</span>
           )}
         </div>
       </div>
-      <div className="flex items-center gap-3 mt-1 text-[9px]">
-        <span className="text-purple-400">{t.trigger}</span>
-        {t.intent && <span className="text-yellow-500/80">intent:{t.intent}</span>}
-        {t.response_type && <span className="text-blue-400/80">{t.response_type}</span>}
-        {t.user_input_preview && <span className="text-slate-400/80">input:{t.user_input_preview}</span>}
-      </div>
+      {evt.sub_process && (
+        <div className="flex items-center gap-2 mt-1 text-[9px]">
+          <span className="text-amber-400">subprocess: {evt.sub_process}</span>
+          {evt.sub_kind && <span className="text-amber-300/60">({evt.sub_kind})</span>}
+        </div>
+      )}
       {expanded && (
         <div className="mt-2 space-y-1.5">
-          {hasMetadata && (
-            <div className="p-2 bg-slate-900/60 rounded text-[9px] leading-relaxed">
-              <span className="text-slate-300 font-bold">Metadata: </span>
-              <span className="text-slate-400">
-                {metaEntries.map(([key, value]) => `${key}=${String(value)}`).join("  ")}
-              </span>
-            </div>
-          )}
-          {t.llm_output && (
+          {evt.message && (
             <div className="p-2 bg-black/30 rounded text-[9px] leading-relaxed">
-              <span className="text-purple-300 font-bold">LLM: </span>
-              <span className="text-slate-400">{t.llm_output}</span>
+              <span className="text-purple-300 font-bold">Message: </span>
+              <span className="text-slate-400">{evt.message}</span>
             </div>
           )}
-          {t.reasoning && (
+          {evt.detail && (
             <div className="p-2 bg-black/20 rounded text-[9px] leading-relaxed">
-              <span className="text-amber-300 font-bold">Reasoning: </span>
-              <span className="text-amber-400/70">{t.reasoning}</span>
-            </div>
-          )}
-          {t.error && (
-            <div className="p-2 bg-red-950/40 rounded text-[9px] text-red-400">
-              Error: {t.error}
+              <span className="text-amber-300 font-bold">Detail: </span>
+              <span className="text-slate-400">
+                {JSON.stringify(evt.detail, null, 2)}
+              </span>
             </div>
           )}
         </div>
@@ -521,98 +604,31 @@ function TransitionCard({ t }: { t: StateTransition }) {
   );
 }
 
-function MiniTransitionCard({ t }: { t: StateTransition }) {
+function MiniEventCard({ evt }: { evt: DashboardEvent }) {
+  const isError = evt.status === 'error';
   return (
     <div className={`p-2 rounded border text-[9px] font-mono ${
-      t.error ? 'bg-red-950/30 border-red-500/20' : 'bg-white/5 border-white/5'
+      isError ? 'bg-red-950/30 border-red-500/20' : 'bg-white/5 border-white/5'
     }`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">
-          <span className="text-slate-500 truncate max-w-[70px]">{t.from_agent.replace('Agent', '')}</span>
-          <span className="text-emerald-400">→</span>
-          <span className="text-slate-200 font-bold truncate max-w-[80px]">{t.to_agent.replace('Agent', '')}</span>
+          <span className={`font-bold ${EVENT_TYPE_COLORS[evt.type] || 'text-slate-400'}`}>
+            {evt.type.replace('_', ' ')}
+          </span>
+          {evt.agent && (
+            <>
+              <span className="text-slate-500">·</span>
+              <span className="text-slate-200 font-bold truncate max-w-[80px]">{evt.agent}</span>
+            </>
+          )}
         </div>
-        {t.duration_ms > 0 && (
-          <span className="text-slate-600 shrink-0">{t.duration_ms.toFixed(0)}ms</span>
+        {evt.duration_ms != null && evt.duration_ms > 0 && (
+          <span className="text-slate-600 shrink-0">{evt.duration_ms.toFixed(0)}ms</span>
         )}
       </div>
-      <div className="flex items-center gap-1.5 mt-0.5">
-        <span className="text-purple-400/80">{t.trigger}</span>
-        {t.intent && <span className="text-yellow-500/60">·{t.intent}</span>}
-        {t.error && <span className="text-red-400">·ERROR</span>}
-      </div>
-    </div>
-  );
-}
-
-function RegistryPanel({
-  registry,
-  onToggle,
-  toggling,
-}: {
-  registry: Record<string, AgentRegistryEntry>;
-  onToggle: (name: string, enabled: boolean) => void;
-  toggling: string | null;
-}) {
-  const entries = Object.values(registry);
-
-  // Sort: enabled first, then by name
-  const sorted = [...entries].sort((a, b) => {
-    if (a.enabled !== b.enabled) return a.enabled ? -1 : 1;
-    return a.name.localeCompare(b.name);
-  });
-
-  return (
-    <div className="flex-1 overflow-y-auto p-6">
-      <div className="max-w-2xl mx-auto">
-        <h2 className="text-sm font-bold text-slate-200 mb-1">Agent Registry</h2>
-        <p className="text-xs text-slate-500 mb-6">
-          Enable or disable individual agents in the pipeline. Disabled agents are skipped and return a no-op response.
-        </p>
-
-        {entries.length === 0 ? (
-          <div className="text-slate-500 text-xs text-center py-12">
-            No agents registered. Is the coaching server running?
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {sorted.map((agent) => (
-              <div
-                key={agent.name}
-                className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${
-                  agent.enabled
-                    ? 'bg-white/5 border-white/10'
-                    : 'bg-slate-900/40 border-white/5 opacity-60'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${agent.enabled ? 'bg-emerald-400' : 'bg-slate-600'}`} />
-                  <div>
-                    <p className="text-sm font-bold text-slate-200">{agent.name}</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">
-                      {agent.enabled ? 'Active in pipeline' : 'Disabled — skipped during dispatch'}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => onToggle(agent.name, agent.enabled)}
-                  disabled={toggling === agent.name}
-                  className={`px-4 h-8 rounded-lg text-[10px] font-bold uppercase tracking-widest border transition-all active:scale-95 ${
-                    toggling === agent.name
-                      ? 'opacity-50 cursor-not-allowed bg-slate-700 border-slate-600 text-slate-400'
-                      : agent.enabled
-                      ? 'bg-red-900/30 border-red-500/30 text-red-400 hover:bg-red-900/60'
-                      : 'bg-emerald-900/30 border-emerald-500/30 text-emerald-400 hover:bg-emerald-900/60'
-                  }`}
-                >
-                  {toggling === agent.name ? '...' : agent.enabled ? 'Disable' : 'Enable'}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {evt.message && (
+        <div className="mt-0.5 text-slate-500 truncate max-w-full">{evt.message}</div>
+      )}
     </div>
   );
 }

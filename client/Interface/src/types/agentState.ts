@@ -1,4 +1,46 @@
-/** Types for the agent state graph visualization. */
+/** Types for the Go agent framework dashboard visualization. */
+
+// ---- Go Dashboard SSE Event ----
+
+export interface DashboardEvent {
+  type: string;
+  ts: number;
+  graph?: string;
+  agent?: string;
+  session?: string;
+  status?: string;
+  sub_process?: string;
+  sub_kind?: string;
+  duration_ms?: number;
+  message?: string;
+  detail?: Record<string, unknown>;
+}
+
+// ---- Go /dashboard/graph response ----
+
+export interface GraphNodeInfo {
+  id: string;
+  description?: string;
+  tools?: string[];
+  skills?: string[];
+  rag?: string[];
+  agents?: string[];
+  model?: string;
+}
+
+export interface GraphEdgeInfo {
+  source: string;
+  target: string;
+  parallel: boolean;
+}
+
+export interface GraphInfo {
+  name: string;
+  nodes: GraphNodeInfo[];
+  edges: GraphEdgeInfo[];
+}
+
+// ---- ReactFlow presentation types ----
 
 export interface AgentNodeState {
   id: string;

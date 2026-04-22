@@ -4,6 +4,7 @@ import ChessBoard from './components/ChessBoard';
 import ChatPanel from './components/ChatPanel';
 import type { ChatPanelHandle } from './components/ChatPanel';
 import AgentStateGraph from './components/AgentStateGraph';
+import GameOverModal from './components/GameOverModal';
 import { VoiceButton, VoiceFeedback, VoiceSettings } from './components/VoiceControl';
 import { useGameState } from './hooks/useGameState';
 import { useWebSocket } from './hooks/useWebSocket';
@@ -14,12 +15,12 @@ import type { AgentGraphState } from './types/agentState';
 import './App.css';
 
 function App() {
-  const { gameState, resetGame, setGameStateFromFen, pushMoveRecord } = useGameState();
+  const { gameState, resetGame, setGameStateFromFen, pushMoveRecord, setResult } = useGameState();
   const [legalTargets, setLegalTargets] = useState<string[]>([]);
   const [suggestedMove, setSuggestedMove] = useState<SuggestedMove | null>(null);
   const [aiThinking, setAiThinking] = useState(false);
   const [showAgentGraph] = useState(false);
-  const [agentGraphData, setAgentGraphData] = useState<AgentGraphState | null>(null);
+  const [agentGraphData] = useState<AgentGraphState | null>(null);
   const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   const [playMode, setPlayMode] = useState<'guided' | 'free'>('guided');
   const suggestionRequestedRef = useRef(false);
@@ -80,6 +81,11 @@ function App() {
             data.score || 0,
           );
 
+          // Update game result if the game ended
+          if (data.result && data.result !== 'in_progress') {
+            setResult(data.result);
+          }
+
           // Now trigger AI turn since server confirmed side switched to BLACK
           if (isConnectedRef.current && data.result === 'in_progress') {
             console.log('[App] Player move confirmed, scheduling AI turn');
@@ -119,6 +125,11 @@ function App() {
           data.is_check || false,
           data.score || 0,
         );
+
+        // Update game result if the game ended
+        if (data.result && data.result !== 'in_progress') {
+          setResult(data.result);
+        }
       } else if (data.type === 'error') {
         console.error('[App] Server error:', data.message);
         setAiThinking(false);
@@ -126,7 +137,7 @@ function App() {
     } catch {
       console.log('[App] Received non-JSON message:', message);
     }
-  }, [setGameStateFromFen, pushMoveRecord, triggerAiTurn]);
+  }, [setGameStateFromFen, pushMoveRecord, triggerAiTurn, setResult]);
 
   const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
   const defaultEngineWsUrl = `${wsProtocol}://${window.location.host}/ws`;
@@ -278,7 +289,6 @@ function App() {
              aiThinking={aiThinking}
              suggestedMove={suggestedMove}
              gameStateFen={gameState.fen}
-             onAgentGraphUpdate={setAgentGraphData}
              speechService={speechService}
           />
         </div>
@@ -359,6 +369,17 @@ function App() {
         speechService={speechService}
         isOpen={showVoiceSettings}
         onClose={() => setShowVoiceSettings(false)}
+      />
+
+      {/* Game Over Modal */}
+      <GameOverModal
+        result={gameState.result}
+        playerSide="red"
+        onNewGame={handleReset}
+        onAnalyze={() => {
+          // Dismiss modal and let user review the board / chat analysis
+          setResult('in_progress');
+        }}
       />
     </div>
   );
