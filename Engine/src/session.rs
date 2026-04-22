@@ -432,4 +432,39 @@ impl GameSession {
             total_moves: total,
         }
     }
+
+    /// Detect puzzle characteristics in a given FEN position.
+    ///
+    /// Runs a deep analyze on the position to get both the `PositionAnalysis`
+    /// and the engine's best-move suggestion, then passes both to
+    /// `puzzle_detector::detect_puzzle` and returns a `PuzzleDetection` payload.
+    pub fn detect_puzzle(&mut self, fen: &str, depth: u8) -> ServerMessage {
+        use crate::AI::position_analyzer;
+        use crate::AI::puzzle_detector;
+
+        // Load the FEN into the state.
+        self.state = ChessGameState::from_fen(fen);
+
+        // Run analysis to build PositionAnalysis.
+        let analysis = position_analyzer::analyze(&mut self.state);
+
+        // Run a shallow search to get the best move suggestion.
+        // `set_difficulty` maps directly to search depth (1-10).
+        self.ai.set_difficulty(depth.clamp(1, 10));
+        let search = self.ai.generate_move(&mut self.state);
+        let best_move = search.best_move.map(|mv| {
+            let from = BOARD_ENCODING[mv.from as usize];
+            let to   = BOARD_ENCODING[mv.to as usize];
+            format!("{}{}", from, to)
+        });
+
+        let detection = puzzle_detector::detect_puzzle(&analysis, depth, best_move);
+
+        match serde_json::to_value(&detection) {
+            Ok(val) => ServerMessage::PuzzleDetection { detection: val },
+            Err(e)  => ServerMessage::Error {
+                message: format!("puzzle_detection: serialization error: {}", e),
+            },
+        }
+    }
 }

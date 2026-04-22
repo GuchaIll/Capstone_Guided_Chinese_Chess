@@ -9,6 +9,8 @@ pub mod AI {
     pub mod piece_square_tables;
     pub mod position_analyzer;
     pub mod feature_extractor;
+    pub mod explainability_gen;
+    pub mod puzzle_detector;
 }
 pub mod api;
 pub mod session;

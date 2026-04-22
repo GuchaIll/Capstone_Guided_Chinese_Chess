@@ -73,6 +73,9 @@ pub enum ClientMessage {
     AnalyzePosition { fen: Option<String>, difficulty: Option<u8> },
     #[serde(rename = "batch_analyze")]
     BatchAnalyze { moves: Vec<BatchEntryMsg>, difficulty: Option<u8> },
+    /// Detect tactical puzzle characteristics in a position.
+    #[serde(rename = "detect_puzzle")]
+    DetectPuzzle { fen: String, depth: Option<u8> },
 }
 
 #[derive(Debug, Deserialize)]
@@ -134,6 +137,10 @@ pub enum ServerMessage {
     BatchAnalysis {
         results: Vec<serde_json::Value>,
         total_moves: usize,
+    },
+    #[serde(rename = "puzzle_detection")]
+    PuzzleDetection {
+        detection: serde_json::Value,
     },
     #[serde(rename = "error")]
     Error { message: String },
@@ -233,6 +240,9 @@ fn handle_client_message(
         }
         ClientMessage::BatchAnalyze { ref moves, difficulty } => {
             handle_batch_analyze(session, moves, difficulty)
+        }
+        ClientMessage::DetectPuzzle { ref fen, depth } => {
+            handle_detect_puzzle(session, fen, depth)
         }
     }
 }
@@ -357,6 +367,17 @@ fn handle_analyze_position(
 ) -> ServerMessage {
     println!("[WS] Processing: analyze_position (fen={:?}, difficulty={:?})", fen, difficulty);
     session.analyze_position(fen, difficulty)
+}
+
+/// POST detect_puzzle: analyse a position for tactical puzzle characteristics
+fn handle_detect_puzzle(
+    session: &mut GameSession,
+    fen: &str,
+    depth: Option<u8>,
+) -> ServerMessage {
+    let d = depth.unwrap_or(5);
+    println!("[WS] Processing: detect_puzzle (fen={:?}, depth={})", fen, d);
+    session.detect_puzzle(fen, d)
 }
 
 /// POST batch_analyze: analyze a full game (list of FEN+move pairs)
