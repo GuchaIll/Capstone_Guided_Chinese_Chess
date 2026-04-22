@@ -38,3 +38,6 @@ docker-compose.override.yml
 
 recovered~
 recovered_*/
+.VSCodeCounter
+
+__pycache__/
