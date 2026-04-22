@@ -1,0 +1,555 @@
+schema_version: 1
+generated_from: rag_migration.md
+updated_at: 2026-04-22
+notes:
+  - "This manifest is acquisition-first: unresolved resources are intentionally recorded with canonical_url: null instead of guessed URLs."
+  - "Wave 1 sources are the recommended first batch for building the initial Xiangqi RAG corpus."
+  - "expected_collections must stay aligned with the active Go coach collections: openings, tactics, endgames, beginner_principles."
+
+sources:
+  - source_id: xqinenglish_opening_basics_05
+    title: "Basics of Xiangqi 05 The Opening Phase"
+    site_name: xqinenglish
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=108:basics-of-xiangqi-05-the-opening-phase&catid=110&Itemid=504&lang=en"
+    url_status: resolved
+    phase: opening
+    format: html
+    extraction_method: html_content_div
+    raw_subdir: xqinenglish
+    priority: P0
+    wave: 1
+    status: planned
+    expected_collections: [openings, beginner_principles]
+    tags: [opening, principles, beginner]
+    notes: "General opening principles and phase definition. Resolve canonical xqinenglish article URL first."
+
+  - source_id: xqinenglish_choosing_opening
+    title: "Choosing your Xiangqi Opening"
+    site_name: xqinenglish
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=107:choosing-your-xiangqi-opening&catid=110&Itemid=504&lang=en"
+    url_status: resolved
+    phase: opening
+    format: html
+    extraction_method: html_content_div
+    raw_subdir: xqinenglish
+    priority: P0
+    wave: 1
+    status: planned
+    expected_collections: [openings, beginner_principles]
+    tags: [opening, repertoire, beginner]
+    notes: "How to select an opening line based on characteristics."
+
+  - source_id: xqinenglish_intro_opening
+    title: "Introduction to the Xiangqi Opening"
+    site_name: xqinenglish
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=106:introduction-to-the-xiangqi-opening&catid=110&Itemid=504&lang=en"
+    url_status: resolved
+    phase: opening
+    format: html
+    extraction_method: html_content_div
+    raw_subdir: xqinenglish
+    priority: P0
+    wave: 1
+    status: planned
+    expected_collections: [openings, beginner_principles]
+    tags: [opening, principles]
+    notes: "Introductory opening overview; good bootstrap source for opening and beginner retrieval."
+
+  - source_id: xiangqi_com_opening_principles_10
+    title: "10 Most Important Opening Principles"
+    site_name: xiangqi.com
+    canonical_url: "https://www.xiangqi.com/articles/ten-most-important-chinese-chess-opening-principles"
+    url_status: resolved
+    phase: opening
+    format: html
+    extraction_method: css_selector_content
+    raw_subdir: xiangqi_com
+    priority: P0
+    wave: 2
+    status: planned
+    expected_collections: [openings, beginner_principles]
+    tags: [opening, principles]
+    notes: "Prefer one chunk per principle plus an article-level overview chunk."
+
+  - source_id: boardgamearena_tips_xiangqi
+    title: "Tips xiangqi"
+    site_name: boardgamearena
+    canonical_url: "https://en.doc.boardgamearena.com/Tips_xiangqi"
+    url_status: resolved
+    phase: opening
+    format: html
+    extraction_method: html_main_content
+    raw_subdir: boardgamearena
+    priority: P1
+    wave: 2
+    status: planned
+    expected_collections: [beginner_principles, openings]
+    tags: [opening, tips, beginner]
+    notes: "Opening tips for new players. Likely a compact beginner-facing article."
+
+  - source_id: chessdb_opening_api
+    title: "Xiangqi Cloud Database (ChessDB)"
+    site_name: chessdb
+    canonical_url: "https://www.chessdb.cn/query/"
+    url_status: resolved
+    phase: opening
+    format: json_api
+    extraction_method: chessdb_queryall_api
+    raw_subdir: chessdb
+    priority: P1
+    wave: 2
+    status: planned
+    expected_collections: [openings]
+    tags: [opening, database, api]
+    api:
+      query_template: "https://www.chessdb.cn/cdb_api/?action=queryall&board={fen}"
+      seed_input_required: true
+    notes: "Use curated opening FEN seeds; save raw request/response JSON for each query."
+
+  - source_id: xiangqi_master_modern_two_horses_defense
+    title: "Modern Two Horses Defense"
+    site_name: xiangqi_master
+    canonical_url: "https://xiangqimaster.wordpress.com/2016/09/19/xiangqi-opening-7-how-to-play-xiangqi-opening-with-modern-two-horses-defense-ping-feng-ma-part-7/"
+    url_status: resolved
+    phase: opening
+    format: html
+    extraction_method: html_main_content
+    raw_subdir: xiangqi_master
+    priority: P1
+    wave: 2
+    status: planned
+    expected_collections: [openings]
+    tags: [opening, named_system, two_horses_defense]
+    notes: "Specific opening system tutorial; preserve named variation metadata."
+
+  - source_id: xiangqi_com_midgame_step_by_step
+    title: "Step-by-step: How to win Chinese Chess Midgame"
+    site_name: xiangqi.com
+    canonical_url: "https://www.xiangqi.com/articles/step-by-step-how-to-win-chinese-chess-midgame"
+    url_status: resolved
+    phase: middlegame
+    format: html
+    extraction_method: css_selector_content
+    raw_subdir: xiangqi_com
+    priority: P0
+    wave: 2
+    status: planned
+    expected_collections: [tactics, beginner_principles]
+    tags: [middlegame, strategy]
+    notes: "Chunk by strategic theme, not by raw paragraph count."
+
+  - source_id: xiangqi_com_midgame_capture_pieces
+    title: "How to capture pieces in Chinese Chess midgame"
+    site_name: xiangqi.com
+    canonical_url: "https://www.xiangqi.com/articles/how-to-capture-pieces-in-chinese-chess-midgame"
+    url_status: resolved
+    phase: middlegame
+    format: html
+    extraction_method: css_selector_content
+    raw_subdir: xiangqi_com
+    priority: P0
+    wave: 2
+    status: planned
+    expected_collections: [tactics]
+    tags: [middlegame, tactics, capture]
+    notes: "Focus on tactical motifs such as forks and forcing captures."
+
+  - source_id: xqinenglish_strategical_advice_middle_game
+    title: "Strategical Advice in the Xiangqi Middle Game"
+    site_name: xqinenglish
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=152:strategical-advice-in-the-xiangqi-middle-game&catid=111&Itemid=510&lang=en"
+    url_status: resolved
+    phase: middlegame
+    format: html
+    extraction_method: html_content_div
+    raw_subdir: xqinenglish
+    priority: P0
+    wave: 1
+    status: planned
+    expected_collections: [tactics, beginner_principles]
+    tags: [middlegame, strategy]
+    notes: "Comprehensive strategic principles; likely high-value for general coaching retrieval."
+
+  - source_id: xqinenglish_intro_midgame
+    title: "Introduction to the Xiangqi Midgame"
+    site_name: xqinenglish
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=104:introduction-to-the-midgame&catid=225&Itemid=510&lang=en"
+    url_status: resolved
+    phase: middlegame
+    format: html
+    extraction_method: html_content_div
+    raw_subdir: xqinenglish
+    priority: P0
+    wave: 1
+    status: planned
+    expected_collections: [tactics, beginner_principles]
+    tags: [middlegame, beginner]
+    notes: "Overview of middlegame strategy and tactics."
+
+  - source_id: xqinenglish_tactics_01c_clearance
+    title: "Tactics 01c - Clearance Tactic"
+    site_name: xqinenglish
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=166:basic-midgame-tactics-01c-clearance&catid=111&Itemid=510&lang=en"
+    url_status: resolved
+    phase: middlegame
+    format: html
+    extraction_method: html_content_div
+    raw_subdir: xqinenglish
+    priority: P0
+    wave: 1
+    status: planned
+    expected_collections: [tactics, beginner_principles]
+    tags: [middlegame, tactics, clearance]
+    notes: "Preserve motif definition and worked examples as separate chunks when possible."
+
+  - source_id: xqinenglish_tactics_07c_dislodge
+    title: "Tactics 07c - Dislodge"
+    site_name: xqinenglish
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=179:basic-midgame-tactics-07c-dislodge&catid=111&Itemid=510&lang=en"
+    url_status: resolved
+    phase: middlegame
+    format: html
+    extraction_method: html_content_div
+    raw_subdir: xqinenglish
+    priority: P0
+    wave: 1
+    status: planned
+    expected_collections: [tactics, beginner_principles]
+    tags: [middlegame, tactics, dislodge]
+    notes: "Capture terminology variants like dislodging, chasing away, and deflection if present."
+
+  - source_id: wxf_36_stratagems
+    title: "Xiangqi and the 36 Stratagems"
+    site_name: wxf
+    canonical_url: "https://www.wxf-xiangqi.org/index.php?option=com_content&view=article&id=235:en36stratagems00&catid=110&lang=en&tmpl=component&print=1&layout=default&Itemid=329"
+    url_status: resolved
+    phase: middlegame
+    format: video_or_transcript
+    extraction_method: transcript_or_metadata_capture
+    raw_subdir: wxf
+    priority: P2
+    wave: 3
+    status: planned
+    expected_collections: [tactics, beginner_principles]
+    tags: [middlegame, stratagems, strategy]
+    notes: "Use transcript extraction only if reliable text is available; otherwise keep as metadata-only until reviewed."
+
+  - source_id: xqinenglish_endgame_basics_08
+    title: "Basics of Xiangqi 08 The Endgame"
+    site_name: xqinenglish
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=109:basics-of-xiangqi-08-the-endgame&catid=110&Itemid=504&lang=en"
+    url_status: resolved
+    phase: endgame
+    format: html
+    extraction_method: html_content_div
+    raw_subdir: xqinenglish
+    priority: P0
+    wave: 1
+    status: planned
+    expected_collections: [endgames, beginner_principles]
+    tags: [endgame, beginner]
+    notes: "General endgame primer; useful across explain-puzzle and endgame-principle retrieval."
+
+  - source_id: xqinenglish_puzzles_henry_hong_congfa
+    title: "Puzzles by Henry Hong Congfa"
+    site_name: xqinenglish
+    canonical_url: null
+    url_status: unresolved
+    phase: endgame
+    format: html_table
+    extraction_method: puzzle_table_parser
+    raw_subdir: xqinenglish
+    priority: P0
+    wave: 2
+    status: planned
+    expected_collections: [endgames]
+    tags: [endgame, puzzles, compositions]
+    notes: "Emit one normalized document per puzzle with extracted board state and solution when available."
+
+  - source_id: xqinenglish_endgame_puzzles_chinese_characters
+    title: "Introduction to Endgame puzzles with Chinese Characters"
+    site_name: xqinenglish
+    canonical_url: null
+    url_status: unresolved
+    phase: endgame
+    format: html
+    extraction_method: specialized_character_puzzle_parser
+    raw_subdir: xqinenglish
+    priority: P2
+    wave: 3
+    status: planned
+    expected_collections: [endgames]
+    tags: [endgame, puzzles, character_shapes]
+    notes: "Likely requires manual normalization because formations have semantic visual structure."
+
+  - source_id: xqinenglish_tjm_practical_endgames
+    title: "TJM Practical Endgames"
+    site_name: xqinenglish
+    canonical_url: null
+    url_status: unresolved
+    phase: endgame
+    format: html
+    extraction_method: html_content_div
+    raw_subdir: xqinenglish
+    priority: P0
+    wave: 1
+    status: planned
+    expected_collections: [endgames]
+    tags: [endgame, practical_endgames]
+    notes: "Chunk by endgame category or practical motif."
+
+  - source_id: xiangqi_com_eleven_endgame_compositions
+    title: "The Eleven Endgame Compositions"
+    site_name: xiangqi.com
+    canonical_url: "https://www.xiangqi.com/articles/the-eleven-endgame-compositions-of-xiangqi-chinese-chess"
+    url_status: resolved
+    phase: endgame
+    format: html
+    extraction_method: css_selector_content
+    raw_subdir: xiangqi_com
+    priority: P1
+    wave: 2
+    status: planned
+    expected_collections: [endgames]
+    tags: [endgame, compositions, puzzles]
+    notes: "Preserve corrected solutions and composition names."
+
+  - source_id: felicity_egtb
+    title: "Felicity Xiangqi endgame tablebase"
+    site_name: github
+    canonical_url: "https://github.com/nguyenpham/FelicityEgtb"
+    url_status: resolved
+    phase: endgame
+    format: github_repo
+    extraction_method: github_docs_and_metadata
+    raw_subdir: github
+    priority: P1
+    wave: 2
+    status: planned
+    expected_collections: [endgames]
+    tags: [endgame, tablebase, github]
+    notes: "Prefer explanatory docs and generated guidance over raw binary or database internals."
+
+  - source_id: android_chinese_chess_easy_to_expert
+    title: "Chinese Chess - easy to expert"
+    site_name: android_app
+    canonical_url: null
+    url_status: unresolved
+    phase: endgame
+    format: app_data
+    extraction_method: emulator_or_api_analysis
+    raw_subdir: app_data
+    priority: P3
+    wave: 3
+    status: deferred
+    expected_collections: [endgames]
+    tags: [endgame, mobile_app, puzzles]
+    notes: "Defer until extraction path and licensing posture are clear."
+
+  - source_id: xqinenglish_proverbs_84_play
+    title: "Xiangqi Proverbs: 84 Gems of Wisdom for Play"
+    site_name: xqinenglish
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=924:xiangqi-chinese-chess-proverbs-84-gems-of-wisdom-for-play&catid=277&Itemid=583&lang=en"
+    url_status: resolved
+    phase: general
+    format: html_list
+    extraction_method: proverb_list_parser
+    raw_subdir: xqinenglish
+    priority: P0
+    wave: 1
+    status: planned
+    expected_collections: [beginner_principles, tactics]
+    tags: [proverbs, principles, strategy]
+    notes: "One proverb per chunk; optionally add theme-group summary chunks."
+
+  - source_id: xqinenglish_proverbs_47_life
+    title: "Xiangqi Proverbs: 47 Gems of Wisdom for Life"
+    site_name: xqinenglish
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=925:xiangqi-chinese-chess-proverbs-47-gems-of-wisdom-for-life&catid=277&Itemid=583&lang=en"
+    url_status: resolved
+    phase: general
+    format: html_list
+    extraction_method: proverb_list_parser
+    raw_subdir: xqinenglish
+    priority: P1
+    wave: 2
+    status: planned
+    expected_collections: [beginner_principles]
+    tags: [proverbs, principles, life]
+    notes: "Keep life-lesson framing in metadata for downstream filtering."
+
+  - source_id: xqinenglish_sunzi_ch06d
+    title: "Sun Zi's Art of War applied to Xiangqi - Chapter 06d - Weak Points and Strong"
+    site_name: xqinenglish
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=598:sun-zi39s-art-of-war-chapter-06d-weak-points-and-strong&catid=113&Itemid=510&lang=en"
+    url_status: resolved
+    phase: general
+    format: html
+    extraction_method: html_content_div
+    raw_subdir: xqinenglish
+    priority: P1
+    wave: 2
+    status: planned
+    expected_collections: [tactics, beginner_principles]
+    tags: [strategy, philosophy, sunzi]
+    notes: "Strategy/philosophy crossover source; route chunks by section content."
+
+  - source_id: xqinenglish_basic_checkmate_methods
+    title: "Basic Xiangqi Checkmate Methods"
+    site_name: xqinenglish
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=446:basic-xiangqi-checkmate-methods&catid=273&Itemid=572&lang=en"
+    url_status: resolved
+    phase: general
+    format: html
+    extraction_method: html_content_div
+    raw_subdir: xqinenglish
+    priority: P0
+    wave: 1
+    status: planned
+    expected_collections: [endgames, beginner_principles]
+    tags: [checkmate, principles, endgame]
+    notes: "Strong fit for explain_tactic and explain_puzzle_objective style retrieval."
+
+  - source_id: chess_polyglot_xiangqi_proverbs
+    title: "Xiangqi proverbs"
+    site_name: the_chess_polyglot
+    canonical_url: "https://thechesspolyglot.netlify.app/xiangqi-proverbs/"
+    url_status: resolved
+    phase: general
+    format: html
+    extraction_method: html_main_content
+    raw_subdir: chess_polyglot
+    priority: P1
+    wave: 2
+    status: planned
+    expected_collections: [beginner_principles]
+    tags: [proverbs, principles]
+    notes: "Deduplicate carefully against xqinenglish proverb sources."
+
+  - source_id: awesome_xiangqi
+    title: "Awesome Xiangqi"
+    site_name: github
+    canonical_url: "https://github.com/lucaferranti/awesome-xiangqi"
+    url_status: resolved
+    phase: general
+    format: markdown
+    extraction_method: github_readme_capture
+    raw_subdir: github
+    priority: P2
+    wave: 3
+    status: planned
+    expected_collections: []
+    tags: [resource_catalog, github]
+    notes: "Use primarily as a discovery source for additional resources, not as a first-pass learning corpus."
+
+  - source_id: xqinenglish_basics_of_play
+    title: "Basics of Xiangqi Play"
+    site_name: xqinenglish
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=107:basics-of-xiangqi-play&catid=110&Itemid=504&lang=en"
+    url_status: resolved
+    phase: all_phases
+    format: html
+    extraction_method: html_content_div
+    raw_subdir: xqinenglish
+    priority: P0
+    wave: 1
+    status: planned
+    expected_collections: [beginner_principles, openings, endgames]
+    tags: [beginner, guide, all_phases]
+    notes: "Basic rules and how to win. Good seed source for beginner_principles."
+
+  - source_id: xqinenglish_how_to_play_basics_02
+    title: "How to Play Xiangqi (Basics 02)"
+    site_name: xqinenglish
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=105:how-to-play-xiangqi-basics-02&catid=110&Itemid=504&lang=en"
+    url_status: resolved
+    phase: all_phases
+    format: html
+    extraction_method: html_content_div
+    raw_subdir: xqinenglish
+    priority: P0
+    wave: 1
+    status: planned
+    expected_collections: [beginner_principles]
+    tags: [beginner, rules, guide]
+    notes: "Step-by-step guide to setting up and playing."
+
+  - source_id: wxf_introduction_to_xiangqi
+    title: "Introduction to Xiangqi"
+    site_name: wxf
+    canonical_url: "https://www.wxf-xiangqi.org/index.php?option=com_content&view=article&id=208:introduction-to-xiangqien&catid=72&lang=en&tmpl=component&print=1&layout=default&Itemid=304"
+    url_status: resolved
+    phase: all_phases
+    format: pdf_or_pptx
+    extraction_method: pdf_or_pptx_text_extractor
+    raw_subdir: wxf
+    priority: P1
+    wave: 2
+    status: planned
+    expected_collections: [beginner_principles, openings, endgames]
+    tags: [official, guide, pdf]
+    notes: "Official introductory material. Store original file and extracted text side by side."
+
+  - source_id: xiangqi_com_resources_hub
+    title: "Xiangqi.com Resources"
+    site_name: xiangqi.com
+    canonical_url: "https://www.xiangqi.com/resources"
+    url_status: resolved
+    phase: all_phases
+    format: html_hub
+    extraction_method: hub_page_link_extractor
+    raw_subdir: xiangqi_com
+    priority: P1
+    wave: 2
+    status: planned
+    expected_collections: []
+    tags: [resource_catalog, hub]
+    notes: "Use as a discovery page first; ingest linked lesson pages rather than the hub body itself."
+
+  - source_id: brainking_chinese_chess_forum
+    title: "Chinese Chess Forum"
+    site_name: brainking
+    canonical_url: "https://brainking.com/de/print/Board?bc=92&bscx=379305"
+    url_status: resolved
+    phase: all_phases
+    format: html_forum
+    extraction_method: forum_thread_parser
+    raw_subdir: brainking
+    priority: P3
+    wave: 3
+    status: planned
+    expected_collections: [beginner_principles]
+    tags: [forum, resources]
+    notes: "High-noise source. Manual filtering required before ingestion."
+
+  - source_id: wxf_website
+    title: "World Xiangqi Federation Website"
+    site_name: wxf
+    canonical_url: "https://www.wxf-xiangqi.org/"
+    url_status: resolved
+    phase: all_phases
+    format: html_and_pdf
+    extraction_method: website_and_pdf_capture
+    raw_subdir: wxf
+    priority: P1
+    wave: 2
+    status: planned
+    expected_collections: [beginner_principles, endgames]
+    tags: [official, rules, federation]
+    notes: "Prioritize official rules and beginner-facing PDFs over tournament news."
+
+  - source_id: pychess_xiangqi
+    title: "PyChess"
+    site_name: pychess
+    canonical_url: "https://www.pychess.org/"
+    url_status: resolved
+    phase: all_phases
+    format: dynamic_web
+    extraction_method: network_api_analysis
+    raw_subdir: pychess
+    priority: P2
+    wave: 3
+    status: planned
+    expected_collections: [beginner_principles, tactics, endgames]
+    tags: [dynamic_site, lessons, puzzles]
+    notes: "Treat as a structured-source investigation task after static HTML sources are stable."

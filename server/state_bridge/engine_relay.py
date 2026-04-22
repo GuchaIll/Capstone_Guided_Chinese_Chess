@@ -36,6 +36,8 @@ class EngineRelay:
         self.bus = bus
         self._ws: websockets.WebSocketClientProtocol | None = None
         self._outbox: asyncio.Queue[str] = asyncio.Queue()
+        # Request-response support: pending futures keyed by expected msg type.
+        self._pending: dict[str, asyncio.Future] = {}
 
     # ------------------------------------------------------------------
     # Public API — called by the bridge app to send commands to engine
@@ -61,6 +63,83 @@ class EngineRelay:
 
     async def send_reset(self) -> None:
         await self._send({"type": "reset"})
+
+    # ── Request-response methods (wait for engine reply) ─────────────
+
+    async def _send_and_wait(self, msg: dict, expect_type: str,
+                             timeout: float = 15.0) -> dict:
+        """Send *msg* and wait for the first inbound message with
+        type == *expect_type*, returning it as a dict."""
+        loop = asyncio.get_running_loop()
+        fut: asyncio.Future[dict] = loop.create_future()
+        self._pending[expect_type] = fut
+        await self._send(msg)
+        try:
+            return await asyncio.wait_for(fut, timeout)
+        except asyncio.TimeoutError:
+            self._pending.pop(expect_type, None)
+            raise
+        finally:
+            self._pending.pop(expect_type, None)
+
+    async def send_analyze(self, fen: str, depth: int) -> dict:
+        """Analyze a position — waits for the engine reply."""
+        return await self._send_and_wait(
+            {"type": "analyze_position", "fen": fen, "difficulty": depth},
+            expect_type="analysis",
+            timeout=60.0,
+        )
+
+    async def send_batch_analyze(self, moves: list[dict]) -> dict:
+        """Batch analyze moves — waits for the engine reply."""
+        return await self._send_and_wait(
+            {"type": "batch_analyze", "moves": moves},
+            expect_type="batch_analysis",
+            timeout=60.0,
+        )
+
+    async def send_suggest(self, fen: str, depth: int) -> dict:
+        """Request best move suggestion — waits for the engine reply."""
+        await self._send({"type": "set_position", "fen": fen})
+        return await self._send_and_wait(
+            {"type": "suggest", "difficulty": depth},
+            expect_type="suggestion",
+            timeout=30.0,
+        )
+
+    async def send_detect_puzzle(self, fen: str, depth: int) -> dict:
+        """Analyse a position for tactical puzzle characteristics — waits for reply."""
+        return await self._send_and_wait(
+            {"type": "detect_puzzle", "fen": fen, "depth": depth},
+            expect_type="puzzle_detection",
+            timeout=60.0,
+        )
+
+    async def send_validate_fen(self, fen: str) -> dict:
+        """Validate a FEN by attempting set_position — waits for reply."""
+        return await self._send_and_wait(
+            {"type": "set_position", "fen": fen},
+            expect_type="state",  # successful set_position returns "state"
+        )
+
+    async def send_legal_moves_for_square(self, fen: str, square: str) -> dict:
+        """Set position then get legal moves for a square — waits for reply."""
+        await self._send({"type": "set_position", "fen": fen})
+        # Wait a bit for set_position to be processed
+        await asyncio.sleep(0.05)
+        return await self._send_and_wait(
+            {"type": "legal_moves", "square": square},
+            expect_type="legal_moves",
+        )
+
+    async def send_make_move(self, fen: str, move: str) -> dict:
+        """Set position then make a move — waits for move_result."""
+        await self._send({"type": "set_position", "fen": fen})
+        await asyncio.sleep(0.05)
+        return await self._send_and_wait(
+            {"type": "move", "move": move},
+            expect_type="move_result",
+        )
 
     # ------------------------------------------------------------------
     # Background task — run as asyncio.create_task(relay.run())
@@ -142,6 +221,22 @@ class EngineRelay:
 
     async def _handle_message(self, msg: dict) -> None:
         msg_type = msg.get("type")
+
+        # ── Resolve pending request-response futures ─────────────────
+        if msg_type in self._pending:
+            fut = self._pending.pop(msg_type)
+            if not fut.done():
+                fut.set_result(msg)
+                # For "state" and "legal_moves" we still fall through to
+                # update the bridge state and publish events.
+                if msg_type not in ("state", "legal_moves", "move_result", "ai_move"):
+                    return
+        # Also resolve "state" futures when we get an error (validate_fen).
+        if msg_type == "error" and "state" in self._pending:
+            fut = self._pending.pop("state")
+            if not fut.done():
+                fut.set_result(msg)
+                # Still fall through to log the error.
 
         if msg_type == "state":
             fen = msg["fen"]
