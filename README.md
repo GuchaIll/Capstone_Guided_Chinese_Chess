@@ -8,7 +8,7 @@ An intelligent, interactive Xiangqi (Chinese Chess) learning platform that combi
 
 ## Vision
 
-Most Xiangqi learners have no access to real-time, personalized coaching. This project bridges that gap by pairing every game with an AI coach (Kibo) that detects blunders, explains moves, generates tactical puzzles, and teaches domain knowledge — adapting its depth and tone to each player's skill level. The long-term vision includes physical board integration via Raspberry Pi LED guidance and a computer-vision board-state detector.
+Most Xiangqi learners have no access to real-time, personalized coaching. This is an ongoign capstone project bridges that gap by pairing every game with an AI coach (Kibo) that detects blunders, explains moves, generates tactical puzzles, and teaches domain knowledge — adapting its depth and tone to each player's skill level. The long-term vision includes physical board integration via Raspberry Pi LED guidance and a computer-vision board-state detector.
 
 ---
 
@@ -34,9 +34,12 @@ Most Xiangqi learners have no access to real-time, personalized coaching. This p
 | **Onboarding** | 5-step new-player questionnaire to calibrate coaching |
 
 ### Kibo — 3D Coach Avatar
+Kibo is a digital avatar that transforms chess gameplay into a personalized, interactive experience and reflects on your progress over time, surfacing insights about your growth as a player
+Makes every game feel like a coaching session
+
 - Three.js GLTF character with full animation state machine
-- States: Idle · Walking · Running · Sitting · Standing · Dance · Death
-- Emotes: Wave · Jump · Yes · No · Punch · ThumbsUp
+- States: Idle · Cheer · Dance  · Dance · Knocked down
+- Emotes: Wave · Jump · Head Shake · Head Nod · ThumbsUp
 - Keyword-driven: coaching server broadcasts animation commands in real time when the LLM response contains action keywords (e.g. "great move!" → ThumbsUp)
 
 ### Voice Interaction
@@ -49,8 +52,6 @@ Most Xiangqi learners have no access to real-time, personalized coaching. This p
 - Polling log of all agent-to-agent transitions with intent, latency, and LLM output
 - Enable / disable individual agents from the UI
 - Accessible at `http://localhost:3000/agents`
-
-
 
 
 ### LLM Flexibility
