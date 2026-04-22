@@ -4,7 +4,9 @@ Kibo is an intelligent, multi-agent Xiangqi (Chinese Chess) ecosystem designed t
 
 **The Team:** Charlie Ai · Claire Lee · Yoyo Zhong
 
-![Kibo guided analysis board interface](img/Board.png)
+<p align="center">
+  <img src="img/Board.png" alt="Kibo guided analysis board interface" width="50%">
+</p>
 
 ---
 
@@ -21,7 +23,9 @@ Most Xiangqi learners struggle with a "feedback gap" — they know they lost, bu
 - **LED Guidance:** A NeoPixel-embedded board mirrors the AI's thoughts. It highlights legal moves, engine suggestions (Green), and AI threats (Blue/Purple).
 - **Validation:** The Rust engine cross-references the physical state with game rules, preventing illegal moves before they happen.
 
-![Computer vision detecting Xiangqi pieces on the physical board](img/cv.jpg)
+<p align="center">
+  <img src="img/cv.jpg" alt="Computer vision detecting Xiangqi pieces on the physical board">
+</p>
 
 See the physical board in action: [Board demo video](https://drive.google.com/file/d/1cGfy4v5rDAi409OZ9evruLFTVsEpsxWs/view?usp=sharing).
 
@@ -36,13 +40,13 @@ Kibo doesn't just play against you; it *teaches* you. Our Go-based pipeline proc
 - **Voice Control:** Fully browser-native STT/TTS. Talk to Kibo to move pieces or ask for advice.
 - **Plug-and-Play AI:** Ships with a "Mock Mode" for offline play, but supports OpenRouter, OpenAI, and Anthropic for high-level coaching.
 
-![Kibo 3D coaching avatar](img/kibo.jpg)
+<p align="center">
+  <img src="img/kibo.jpg" alt="Kibo 3D coaching avatar">
+</p>
 
 ---
 
 ## System Architecture
-
-![High-level system architecture](img/block_diagram.png)
 
 ```mermaid
 graph TD
@@ -55,37 +59,6 @@ graph TD
     F -->|Voice/Animations| G[Kibo 3D Avatar]
 ```
 
-The retrieval pipeline that powers coaching explanations and contextual guidance is shown below.
-
-![RAG collection and retrieval flow](img/schema_diagram.png)
-
-```
-Physical Board (Raspberry Pi)
-  └─ Player presses End Turn
-         │
-         ▼
-  ┌─────────────────────────────────────────────────────────────────────────┐
-  │  React Frontend  :3000                                                  │
-  │  ├─ WebSocket → Rust Engine (moves, suggestions, AI turns)             │
-  │  ├─ SSE ← State Bridge (board updates, best-move hints, error modals)  │
-  │  └─ REST POST → Go Coach (coaching chat, blunder feedback)             │
-  └─────────────────────────────────────────────────────────────────────────┘
-         │ SSE                │ REST                       │ WS
-         ▼                    ▼                            ▼
-  ┌──────────────┐   ┌─────────────────┐         ┌────────────────┐
-  │ State Bridge │◄─►│  Rust Engine    │         │  Go Coach      │
-  │   :5003      │   │   :8080/ws      │         │   :5002        │
-  │  (event hub) │   │  (game logic)   │         │  (9-agent LLM  │
-  └──────┬───────┘   └────────────────┘         │   pipeline)    │
-         │                                        └───────┬────────┘
-         │ SSE                                            │ REST (tools)
-         ▼                                                ▼
-  ┌──────────────┐                              ┌─────────────────┐
-  │  LED Board   │                              │  ChromaDB :8000 │
-  │  (Pi :5000)  │                              │  Embedding:8100 │
-  └──────────────┘                              └─────────────────┘
-```
-
 ### Technical Stack
 
 | Component | Technology | Responsibility |
@@ -96,6 +69,133 @@ Physical Board (Raspberry Pi)
 | **Intelligence** | ChromaDB / RAG | Tactical knowledge & opening database |
 | **Interface** | React / Three.js | 3D avatar, voice UI, and game dashboard |
 | **Hardware** | Raspberry Pi / CV | LED control & YOLO v8 piece detection |
+
+---
+
+## Hardware & Software Overview
+
+<p align="center">
+  <img src="img/block_diagram.png" alt="High-level system architecture block diagram">
+</p>
+
+Kibo is a physical-digital system. The hardware layer is a Raspberry Pi running on the same network as the main machine; the software layer runs entirely in Docker on any laptop or desktop.
+
+### Hardware Components
+
+| Component | Details |
+|---|---|
+| **Raspberry Pi 4** | Hosts the LED server (`:5000`), bridge subscriber, and CV pipeline |
+| **NeoPixel GRBW Strip** | 400 individually addressable LEDs embedded beneath the board, wired to GPIO D18 |
+| **USB / CSI Camera** | Aimed at the board; feeds frames to YOLO v8 for piece detection |
+| **Xiangqi Board** | Physical 9×10 board with ArUco marker corners for perspective correction |
+| **End Turn Button** | GPIO button on the Pi that triggers a CV capture and sends the new state to the bridge |
+
+### Software Components
+
+| Component | Technology | Role |
+|---|---|---|
+| **Rust Engine** | Warp / WebSocket | Authoritative game logic: rule enforcement, Alpha-Beta AI, FEN validation |
+| **State Bridge** | Python / FastAPI | Central event hub; relays board state to the frontend, LED board, and coach via SSE |
+| **Go Coach** | Go / 9-agent LLM graph | Blunder detection, tactical analysis, puzzle generation, LLM coaching synthesis |
+| **React Client** | React / TypeScript | Game board UI, chat panel, voice control, and agent inspector |
+| **Kibo Avatar** | Three.js / GLTF | Animated 3D coach; reacts to game events; driven by animation command broadcasts |
+| **ChromaDB** | ChromaDB v2 / HTTP | Vector store hosting four Xiangqi knowledge collections |
+| **Embedding Service** | Python / sentence-transformers (`BAAI/bge-m3`) | Converts text queries to dense vectors for RAG retrieval |
+| **CV Pipeline** | Python / YOLO v8 + OpenCV | Detects piece positions from camera frames; exports board state as a FEN string |
+| **LED Board Driver** | Python / Adafruit NeoPixel | Translates SSE events from the bridge into NeoPixel color commands |
+
+---
+
+## Knowledge Base & ChromaDB Migration
+
+<p align="center">
+  <img src="img/schema_diagram.png" alt="RAG collection and retrieval flow">
+</p>
+
+The Go coaching pipeline retrieves Xiangqi knowledge from four ChromaDB vector collections: `openings`, `tactics`, `endgames`, and `beginner_principles`. These collections must be populated before the coaching service can return strategy explanations.
+
+### Collections
+
+| Collection | Content |
+|---|---|
+| `openings` | Opening theory, system names, opening principles |
+| `tactics` | Tactical patterns: clearance, fork, pin, dislodge, discovered check |
+| `endgames` | Endgame patterns, checkmate constructions, practical motifs |
+| `beginner_principles` | General principles, proverbs, piece values, phase advice |
+
+### Prerequisites
+
+- Python 3.10+ with `pip`
+- ChromaDB and embedding service running (included in `docker compose up`)
+
+### Step 1 — Create the virtual environment
+
+```bash
+cd server/web_scraper/knowledge
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Step 2 — Acquire raw HTML sources
+
+`acquire.py` fetches all source URLs defined in `sources.yaml` and writes raw HTML to `raw/`.
+
+```bash
+# Fetch Wave 1 sources (main knowledge corpus)
+python acquire.py --wave 1
+
+# Re-fetch sources whose URLs were corrected (safe to run again)
+python acquire.py --wave 1 --force
+```
+
+### Step 3 — Run the full pipeline
+
+`run_pipeline.sh` chains all four stages: acquire → normalize → chunk → ingest.
+
+```bash
+# Full pipeline with defaults (Wave 1, ChromaDB at localhost:8000)
+./run_pipeline.sh
+
+# Custom ChromaDB or embedding URL
+CHROMADB_URL=http://localhost:8000 EMBEDDING_URL=http://localhost:8100 ./run_pipeline.sh
+
+# Force re-run all stages even if outputs already exist
+./run_pipeline.sh --force
+
+# Dry run — acquire + normalize + chunk only, skip ChromaDB write
+./run_pipeline.sh --dry-run
+```
+
+Or run the stages individually:
+
+```bash
+# 1. Normalize raw HTML → cleaned text
+python normalize.py
+
+# 2. Chunk cleaned text into overlapping passages
+python chunk.py
+
+# 3. Export chunks to JSON (builds json/knowledge_base.json)
+python export_json.py
+
+# 4. Embed and upsert into ChromaDB
+python populate_chromadb.py
+
+# Force-repopulate (clears existing data and re-ingests)
+python populate_chromadb.py --force
+```
+
+### Step 4 — Validate the migration
+
+```bash
+python validate_chromadb_collections.py \
+  --chromadb-url http://localhost:8000 \
+  --embedding-url http://localhost:8100 \
+  --output-prefix chromadb_validation_latest
+```
+
+Reports are written to `manifests/chromadb_validation_latest.json` and `manifests/chromadb_validation_latest.md`. Expected collection sizes after a full Wave 1 ingest: `openings`≈111, `tactics`≈31, `endgames`≈80, `beginner_principles`≈199.
 
 ---
 
@@ -114,6 +214,8 @@ cd Capstone_Guided_Chinese_Chess
 cp .env.example .env
 docker compose up --build
 ```
+
+> **First-time setup:** After `docker compose up --build` completes, populate the coaching knowledge base by following the [Knowledge Base & ChromaDB Migration](#knowledge-base--chromadb-migration) guide. The game runs without it, but coaching explanations will be unavailable until the collections are loaded.
 
 ### Access the Ecosystem
 
