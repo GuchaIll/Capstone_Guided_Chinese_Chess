@@ -35,3 +35,6 @@ Engine/logs/*.txt
 
 # Docker
 docker-compose.override.yml
+
+recovered~
+recovered_*/
