@@ -113,6 +113,9 @@ The coaching pipeline runs automatically on every End Turn. It has three output 
 | Yellow / Pink | Win celebration animation |
 
 ### Kibo — 3D Coach Avatar
+Kibo is a digital avatar that transforms chess gameplay into a personalized, interactive experience and reflects on your progress over time, surfacing insights about your growth as a player
+Makes every game feel like a coaching session
+
 - Three.js GLTF character with full animation state machine
 - States: Idle · Walking · Running · Sitting · Standing · Dance
 - Emotes: Wave · Jump · Yes · No · Punch · ThumbsUp
