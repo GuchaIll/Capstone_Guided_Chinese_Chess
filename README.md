@@ -5,6 +5,10 @@ Kibo is an intelligent, multi-agent Xiangqi (Chinese Chess) ecosystem designed t
 **The Team:** Charlie Ai · Claire Lee · Yoyo Zhong
 
 <p align="center">
+  <video src="https://github.com/user-attachments/assets/ab392570-151c-4b86-b4c5-8f7fe031bdb8" controls width="80%"></video>
+</p>
+
+<p align="center">
   <a href="https://drive.google.com/file/d/1cGfy4v5rDAi409OZ9evruLFTVsEpsxWs/view?usp=sharing">
     <img src="img/Board.png" alt="▶ Watch board demo video" width="50%">
   </a>
@@ -26,9 +30,7 @@ Most Xiangqi learners struggle with a "feedback gap" — they know they lost, bu
 - **LED Guidance:** A NeoPixel-embedded board mirrors the AI's thoughts. It highlights legal moves, engine suggestions (Green), and AI threats (Blue/Purple).
 - **Validation:** The Rust engine cross-references the physical state with game rules, preventing illegal moves before they happen.
 
-<p align="center">
-  <video src="https://github.com/user-attachments/assets/ab392570-151c-4b86-b4c5-8f7fe031bdb8" controls width="80%"></video>
-</p>
+
 
 <p align="center">
   <img src="img/cv.jpg" alt="Computer vision detecting Xiangqi pieces on the physical board">
