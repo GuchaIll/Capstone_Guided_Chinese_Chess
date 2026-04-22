@@ -19,9 +19,9 @@ type WSClient struct {
 	mu   sync.Mutex
 
 	// reconnect settings
-	maxRetries   int
-	baseDelay    time.Duration
-	connected    bool
+	maxRetries int
+	baseDelay  time.Duration
+	connected  bool
 }
 
 // NewWSClient creates a new WebSocket engine client.
@@ -404,7 +404,7 @@ func (c *WSClient) DetectPuzzle(ctx context.Context, fen string, depth int) (*Pu
 
 	// Envelope: {"type":"puzzle_detection","detection":{...}}
 	var envelope struct {
-		Type      string               `json:"type"`
+		Type      string                 `json:"type"`
 		Detection *PuzzleDetectionResult `json:"detection"`
 	}
 	if err := json.Unmarshal(raw, &envelope); err != nil {

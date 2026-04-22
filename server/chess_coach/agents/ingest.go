@@ -21,8 +21,10 @@ var movePattern = regexp.MustCompile(`\b([a-h][1-8][a-h][1-8][qrbn]?|[KQRBN][a-h
 // (a chat message from which FEN and move are extracted).
 type IngestAgent struct{}
 
-func (a *IngestAgent) Name() string        { return "ingest" }
-func (a *IngestAgent) Description() string { return "Reads FEN, move, and question from input and sets routing flags." }
+func (a *IngestAgent) Name() string { return "ingest" }
+func (a *IngestAgent) Description() string {
+	return "Reads FEN, move, and question from input and sets routing flags."
+}
 func (a *IngestAgent) Capabilities() core.AgentCapabilities { return core.AgentCapabilities{} }
 
 func (a *IngestAgent) Run(ctx *core.Context) error {

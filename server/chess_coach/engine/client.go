@@ -95,9 +95,9 @@ func (m *MockEngine) BatchAnalyze(_ context.Context, entries []BatchEntry) ([]Mo
 				IsGoodMove: true,
 				Category:   "good",
 			},
-			Alternatives:       []AlternativeMove{},
-			PostMoveFEN:        e.FEN,
-			PostMoveResult:     "in_progress",
+			Alternatives:   []AlternativeMove{},
+			PostMoveFEN:    e.FEN,
+			PostMoveResult: "in_progress",
 		}
 	}
 	return results, nil

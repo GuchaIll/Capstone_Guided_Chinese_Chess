@@ -30,6 +30,45 @@ bus = EventBus()
 relay = EngineRelay(state, bus)
 
 
+def _looks_like_xiangqi_fen(fen: str) -> bool:
+    """Best-effort FEN format validation before delegating to the engine.
+
+    The recovered engine loader is permissive and silently accepts malformed
+    input by producing an empty/default board. The bridge should reject clearly
+    invalid payloads up front so downstream services get a reliable contract.
+    """
+    parts = fen.split()
+    if len(parts) < 2:
+        return False
+
+    ranks = parts[0].split("/")
+    if len(ranks) != 10:
+        return False
+
+    allowed_pieces = set("rnbakcpRNBAKCPehEH")
+    for rank in ranks:
+        width = 0
+        for ch in rank:
+            if ch.isdigit():
+                width += int(ch)
+            elif ch in allowed_pieces:
+                width += 1
+            else:
+                return False
+        if width != 9:
+            return False
+
+    if parts[1].lower() not in {"w", "b"}:
+        return False
+
+    if len(parts) >= 5 and not parts[4].isdigit():
+        return False
+    if len(parts) >= 6 and not parts[5].isdigit():
+        return False
+
+    return True
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Start the engine relay on startup; cancel on shutdown."""
@@ -96,6 +135,45 @@ class EngineMovePayload(BaseModel):
 
 class AiMovePayload(BaseModel):
     difficulty: int | None = None
+
+
+class AnalyzePayload(BaseModel):
+    fen: str
+    depth: int = 5
+
+
+class BatchAnalyzePayload(BaseModel):
+    moves: list[dict]  # each: {"fen": "...", "move_str": "..."}
+
+
+class SuggestPayload(BaseModel):
+    fen: str
+    depth: int = 5
+
+
+class ValidateFenPayload(BaseModel):
+    fen: str
+
+
+class LegalMovesPayload(BaseModel):
+    fen: str
+    square: str = ""  # if empty, return all legal moves
+
+
+class MakeMovePayload(BaseModel):
+    fen: str
+    move: str  # e.g. "e3e4"
+
+
+class IsMoveLegalPayload(BaseModel):
+    fen: str
+    move: str  # e.g. "e3e4"
+
+
+class DetectPuzzlePayload(BaseModel):
+    fen: str
+    depth: int = 5
+    best_move: str | None = None
 
 
 # =====================================================================
@@ -225,6 +303,139 @@ async def engine_set_position(body: FenPayload):
     return {"status": "Position forwarded to engine"}
 
 
+# ── Request-response engine endpoints (Go coaching uses these) ──────
+
+@app.post("/engine/analyze")
+async def engine_analyze(body: AnalyzePayload):
+    """Analyze a position — returns the full engine analysis response.
+
+    The Rust engine returns {"type":"analysis","features":{...}}.
+    Go coaching (BridgeClient/AnalysisResponse) expects the fields from
+    `features` at the top level.  We unwrap the envelope here.
+    """
+    try:
+        result = await relay.send_analyze(body.fen, body.depth)
+        # Unwrap envelope: return the features object directly so Go can
+        # decode top-level fields (search_score, phase_name, material, …).
+        if isinstance(result, dict) and "features" in result:
+            return JSONResponse(result["features"])
+        return JSONResponse(result)
+    except asyncio.TimeoutError:
+        return JSONResponse({"error": "Engine timeout"}, status_code=504)
+
+
+@app.post("/engine/batch-analyze")
+async def engine_batch_analyze(body: BatchAnalyzePayload):
+    """Batch analyze multiple moves.
+
+    The Rust engine returns {"type":"batch_analysis","results":[{"features":{...},...}]}.
+    Go coaching expects []MoveFeatureVector — a plain JSON array of feature objects.
+    We unwrap the envelope here so the shapes match.
+    """
+    try:
+        result = await relay.send_batch_analyze(body.moves)
+        # Unwrap envelope: extract features from each BatchResult
+        raw_results = result.get("results", [])
+        features = [r.get("features", r) for r in raw_results]
+        return JSONResponse(features)
+    except asyncio.TimeoutError:
+        return JSONResponse({"error": "Engine timeout"}, status_code=504)
+
+
+@app.post("/engine/suggest")
+async def engine_suggest(body: SuggestPayload):
+    """Get best move suggestion for a position."""
+    try:
+        result = await relay.send_suggest(body.fen, body.depth)
+        return JSONResponse(result)
+    except asyncio.TimeoutError:
+        return JSONResponse({"error": "Engine timeout"}, status_code=504)
+
+
+@app.post("/engine/validate-fen")
+async def engine_validate_fen(body: ValidateFenPayload):
+    """Validate a FEN string via the engine."""
+    if not _looks_like_xiangqi_fen(body.fen):
+        return {
+            "valid": False,
+            "detail": {"type": "error", "message": "Invalid Xiangqi FEN format"},
+        }
+    try:
+        result = await relay.send_validate_fen(body.fen)
+        valid = result.get("type") != "error"
+        return {"valid": valid, "detail": result}
+    except asyncio.TimeoutError:
+        return JSONResponse({"error": "Engine timeout"}, status_code=504)
+
+
+@app.post("/engine/legal-moves")
+async def engine_legal_moves(body: LegalMovesPayload):
+    """Get legal moves for a square (or all squares) at a given FEN."""
+    try:
+        if body.square:
+            result = await relay.send_legal_moves_for_square(body.fen, body.square)
+            return JSONResponse(result)
+        else:
+            # All legal moves: iterate a-i × 0-9
+            all_moves: list[str] = []
+            for col_ch in "abcdefghi":
+                for row in range(10):
+                    sq = f"{col_ch}{row}"
+                    try:
+                        result = await relay.send_legal_moves_for_square(body.fen, sq)
+                        targets = result.get("targets", [])
+                        for t in targets:
+                            all_moves.append(f"{sq}{t}")
+                    except asyncio.TimeoutError:
+                        continue
+            return {"type": "all_legal_moves", "moves": all_moves}
+    except asyncio.TimeoutError:
+        return JSONResponse({"error": "Engine timeout"}, status_code=504)
+
+
+@app.post("/engine/make-move")
+async def engine_make_move(body: MakeMovePayload):
+    """Set position then apply a move — returns move_result."""
+    try:
+        result = await relay.send_make_move(body.fen, body.move)
+        return JSONResponse(result)
+    except asyncio.TimeoutError:
+        return JSONResponse({"error": "Engine timeout"}, status_code=504)
+
+
+@app.post("/engine/is-move-legal")
+async def engine_is_move_legal(body: IsMoveLegalPayload):
+    """Check if a move is legal at a given FEN."""
+    if len(body.move) < 4:
+        return {"legal": False, "error": "Invalid move format"}
+    from_sq = body.move[:2]
+    to_sq = body.move[2:]
+    try:
+        result = await relay.send_legal_moves_for_square(body.fen, from_sq)
+        targets = result.get("targets", [])
+        return {"legal": to_sq in targets, "targets": targets}
+    except asyncio.TimeoutError:
+        return JSONResponse({"error": "Engine timeout"}, status_code=504)
+
+
+@app.post("/engine/puzzle-detect")
+async def engine_puzzle_detect(body: DetectPuzzlePayload):
+    """Analyse a position for tactical puzzle characteristics.
+
+    Returns the ``PuzzleDetection`` payload produced by the Rust engine's
+    ``puzzle_detector`` module, unwrapped from its WebSocket envelope so that
+    the Go coaching service can decode it directly.
+    """
+    try:
+        result = await relay.send_detect_puzzle(body.fen, body.depth)
+        # Unwrap envelope: {"type":"puzzle_detection","detection":{...}} → detection
+        if isinstance(result, dict) and "detection" in result:
+            return JSONResponse(result["detection"])
+        return JSONResponse(result)
+    except asyncio.TimeoutError:
+        return JSONResponse({"error": "Engine timeout"}, status_code=504)
+
+
 # =====================================================================
 # SSE — real-time event stream
 # =====================================================================
@@ -234,6 +445,7 @@ async def sse_events(request: Request):
     """Server-Sent Events stream.  Subscribers receive every bridge event."""
 
     async def generate():
+        yield Event(type=EventType.STATE_SYNC, data=state.to_dict()).to_sse()
         async for event in bus.stream():
             if await request.is_disconnected():
                 break

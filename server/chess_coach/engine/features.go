@@ -92,10 +92,10 @@ type PawnChain struct {
 }
 
 type CrossRiverPiece struct {
-	PieceType     string `json:"piece_type"`
-	Side          string `json:"side"`
-	Square        string `json:"square"`
-	DepthIntoEnemy int   `json:"depth_into_enemy"`
+	PieceType      string `json:"piece_type"`
+	Side           string `json:"side"`
+	Square         string `json:"square"`
+	DepthIntoEnemy int    `json:"depth_into_enemy"`
 }
 
 type ForkInfo struct {
@@ -115,32 +115,32 @@ type PinInfo struct {
 
 // PositionAnalysis is the full positional snapshot produced by the engine's position_analyzer.
 type PositionAnalysis struct {
-	FEN              string          `json:"fen"`
-	SideToMove       string          `json:"side_to_move"`
-	PhaseValue       float64         `json:"phase_value"`
-	PhaseName        string          `json:"phase_name"`
-	MoveNumber       int             `json:"move_number"`
-	HalfmoveClock    int             `json:"halfmove_clock"`
-	Material         MaterialInfo    `json:"material"`
-	Mobility         MobilityInfo    `json:"mobility"`
-	RedKingSafety    KingSafety      `json:"red_king_safety"`
-	BlackKingSafety  KingSafety      `json:"black_king_safety"`
-	RedPSTScore      int             `json:"red_pst_score"`
-	BlackPSTScore    int             `json:"black_pst_score"`
-	PieceLocations   []PieceLocation `json:"piece_locations"`
-	HangingPieces    []HangingPiece  `json:"hanging_pieces"`
-	PieceRelations   []PieceRelation `json:"piece_relations"`
-	CannonScreens    []CannonScreen  `json:"cannon_screens"`
-	RookFiles        []RookFileInfo  `json:"rook_files"`
-	PawnChains       []PawnChain     `json:"pawn_chains"`
+	FEN              string            `json:"fen"`
+	SideToMove       string            `json:"side_to_move"`
+	PhaseValue       float64           `json:"phase_value"`
+	PhaseName        string            `json:"phase_name"`
+	MoveNumber       int               `json:"move_number"`
+	HalfmoveClock    int               `json:"halfmove_clock"`
+	Material         MaterialInfo      `json:"material"`
+	Mobility         MobilityInfo      `json:"mobility"`
+	RedKingSafety    KingSafety        `json:"red_king_safety"`
+	BlackKingSafety  KingSafety        `json:"black_king_safety"`
+	RedPSTScore      int               `json:"red_pst_score"`
+	BlackPSTScore    int               `json:"black_pst_score"`
+	PieceLocations   []PieceLocation   `json:"piece_locations"`
+	HangingPieces    []HangingPiece    `json:"hanging_pieces"`
+	PieceRelations   []PieceRelation   `json:"piece_relations"`
+	CannonScreens    []CannonScreen    `json:"cannon_screens"`
+	RookFiles        []RookFileInfo    `json:"rook_files"`
+	PawnChains       []PawnChain       `json:"pawn_chains"`
 	CrossRiverPieces []CrossRiverPiece `json:"cross_river_pieces"`
-	Forks            []ForkInfo      `json:"forks"`
-	Pins             []PinInfo       `json:"pins"`
-	RedInCheck       bool            `json:"red_in_check"`
-	BlackInCheck     bool            `json:"black_in_check"`
-	IsCheckmate      bool            `json:"is_checkmate"`
-	IsStalemate      bool            `json:"is_stalemate"`
-	RepetitionCount  int             `json:"repetition_count"`
+	Forks            []ForkInfo        `json:"forks"`
+	Pins             []PinInfo         `json:"pins"`
+	RedInCheck       bool              `json:"red_in_check"`
+	BlackInCheck     bool              `json:"black_in_check"`
+	IsCheckmate      bool              `json:"is_checkmate"`
+	IsStalemate      bool              `json:"is_stalemate"`
+	RepetitionCount  int               `json:"repetition_count"`
 }
 
 // ── Move Feature Vector sub-structs ──

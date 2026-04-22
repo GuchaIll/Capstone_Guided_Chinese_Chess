@@ -16,8 +16,8 @@ import (
 	"fmt"
 	"strings"
 
-	"go_agent_framework/core"
 	"chess_coach/engine"
+	"go_agent_framework/core"
 )
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -78,11 +78,11 @@ func (t *PDFindTacticalMotifTool) Execute(ctx context.Context, args json.RawMess
 	}
 
 	out, _ := json.Marshal(map[string]interface{}{
-		"fen":             p.FEN,
-		"motifs":          motifs,
-		"motif_score":     det.MotifScore,
+		"fen":              p.FEN,
+		"motifs":           motifs,
+		"motif_score":      det.MotifScore,
 		"is_puzzle_worthy": det.IsPuzzleWorthy,
-		"phase":           det.Phase,
+		"phase":            det.Phase,
 	})
 	return string(out), nil
 }
@@ -256,9 +256,9 @@ func (t *PDValidatePuzzleSolutionTool) Execute(ctx context.Context, args json.Ra
 		"move_details":  moveResults,
 	}
 	if detErr == nil {
-		resp["difficulty_elo"]   = det.DifficultyElo
+		resp["difficulty_elo"] = det.DifficultyElo
 		resp["difficulty_label"] = det.DifficultyLabel
-		resp["themes"]           = det.Themes
+		resp["themes"] = det.Themes
 	}
 
 	out, _ := json.Marshal(resp)
