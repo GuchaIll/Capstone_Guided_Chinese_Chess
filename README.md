@@ -1,18 +1,49 @@
-# Kibo - Guided Chinese Chess Learning
+# Kibo: Guided Chinese Chess Learning
 
-An intelligent, interactive Xiangqi (Chinese Chess) agent that combines a high-performance game engine, a multi-agentic AI coaching system, physical LED board guidance, computer-vision move detection, and a voice-controlled React interface that teaches you chinese chess fundamentals.
+Kibo is an intelligent, multi-agent Xiangqi (Chinese Chess) ecosystem designed to bridge the gap between novice play and master-level strategy. By combining a physical LED-guided board, computer vision, and a 9-agent LLM coaching pipeline, Kibo provides the real-time, personalized mentorship usually reserved for professional studios.
 
-**Team:** Charlie Ai · Claire Lee · Yoyo Zhong
-
----
-
-## Vision
-
-Most Xiangqi learners have no access to real-time, personalized coaching. This project bridges that gap by pairing every game with an AI coach that detects blunders, explains tactical patterns, generates training puzzles, and delivers guidance through a physical LED board and LLM orchestrate speech guidance. Pressing **End Turn** on the physical board triggers the full pipeline automatically.
+**The Team:** Charlie Ai · Claire Lee · Yoyo Zhong
 
 ---
 
-## System Architecture
+## 🌟 Vision
+
+Most Xiangqi learners struggle with a "feedback gap" — they know they lost, but they don't know *why*. Kibo closes this gap by transforming every move into a learning opportunity. Through a physical-to-digital loop, Kibo detects blunders in real-time, explains complex tactical patterns through voice and 3D avatars, and generates custom puzzles based on your actual mistakes.
+
+---
+
+## 🚀 Core Features
+
+### 🛠️ The Physical-Digital Loop
+- **Computer Vision (CV):** Powered by YOLO v8, Kibo identifies piece positions via camera. No manual entry required — just press "End Turn."
+- **LED Guidance:** A NeoPixel-embedded board mirrors the AI's thoughts. It highlights legal moves, engine suggestions (Green), and AI threats (Blue/Purple).
+- **Validation:** The Rust engine cross-references the physical state with game rules, preventing illegal moves before they happen.
+
+### 🧠 9-Agent Coaching Intelligence
+Kibo doesn't just play against you; it *teaches* you. Our Go-based pipeline processes every move through three distinct paths:
+- **The Blunder Guard:** Immediately halts play if you make a high-loss move (>150cp), forcing a "teachable moment."
+- **The Fast Path:** Provides instant engine evaluations for standard moves.
+- **The Master Path:** Triggered by tactical swings or complex patterns, an LLM-led "Coach" synthesizes a strategic explanation, verified by a "Guard" agent for accuracy.
+
+### 🎙️ Immersive Interface
+- **3D Coach Avatar:** A Three.js animated character (Kibo) who reacts to your play — dancing for wins and providing visual cues for advice.
+- **Voice Control:** Fully browser-native STT/TTS. Talk to Kibo to move pieces or ask for advice.
+- **Plug-and-Play AI:** Ships with a "Mock Mode" for offline play, but supports OpenRouter, OpenAI, and Anthropic for high-level coaching.
+
+---
+
+## 🏗️ System Architecture
+
+```mermaid
+graph TD
+    A[Physical Board] -->|Press End Turn| B(CV Pipeline: YOLO v8)
+    B -->|FEN State| C{State Bridge}
+    C -->|Validate| D[Rust Engine]
+    C -->|Analyze| E[Go Coach Pipeline]
+    E -->|Advice/Puzzles| F[React Frontend]
+    D -->|LED Commands| A
+    F -->|Voice/Animations| G[Kibo 3D Avatar]
+```
 
 ```
 Physical Board (Raspberry Pi)
@@ -41,20 +72,54 @@ Physical Board (Raspberry Pi)
   └──────────────┘                              └─────────────────┘
 ```
 
-### Services at a Glance
+### Technical Stack
 
-| Service | Port | Technology | Role |
-|---|---|---|---|
-| **Rust Engine** | 8080 | Rust / Warp | Game rules, move validation, Alpha-Beta AI, WebSocket server |
-| **State Bridge** | 5003 | Python / FastAPI | Central event hub — relays moves, CV FENs, LED commands, SSE broadcast |
-| **Go Coach** | 5002 | Go / Agent Framework | 9-agent LLM coaching pipeline |
-| **Python Coach** | 5001 | Python / FastAPI | LLM orchestration, session memory, TTS integration |
-| **ChromaDB** | 8000 | ChromaDB | Vector store for opening, tactic, and endgame knowledge |
-| **Embedding** | 8100 | Sentence Transformers | Text → vector for RAG queries |
-| **Client** | 3000 / 80 | React + Nginx | Board UI, chat panel, voice control |
-| **Kibo** | 3001 | Three.js + Nginx | 3D animated coach avatar |
-| **LED Server** | 5000 (Pi) | Python / Flask | NeoPixel LED strip driver |
-| **Bridge Subscriber** | — (Pi) | Python | SSE → LED translation layer |
+| Component | Technology | Responsibility |
+|---|---|---|
+| **Game Engine** | Rust / Warp | High-performance rules & Alpha-Beta AI |
+| **Coach Pipeline** | Go / LLM Agents | 9-agent reasoning & tactical analysis |
+| **State Bridge** | Python / FastAPI | Central event hub & SSE broadcaster |
+| **Intelligence** | ChromaDB / RAG | Tactical knowledge & opening database |
+| **Interface** | React / Three.js | 3D avatar, voice UI, and game dashboard |
+| **Hardware** | Raspberry Pi / CV | LED control & YOLO v8 piece detection |
+
+---
+
+## 🎮 Quick Start
+
+### Prerequisites
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) v24+
+- (Optional) OpenRouter or OpenAI API Key for advanced coaching
+
+### Launch (Mock Mode)
+Run the entire system locally without an API key:
+
+```bash
+git clone <repo-url>
+cd Capstone_Guided_Chinese_Chess
+cp .env.example .env
+docker compose up --build
+```
+
+### Access the Ecosystem
+
+| URL | What you get |
+|---|---|
+| http://localhost:3000 | Main Game UI |
+| http://localhost:3001 | 3D Avatar View |
+| http://localhost:5002/dashboard/ | Intelligence Dashboard |
+
+---
+
+## 📖 Deep Dive: The Turn Lifecycle
+
+When a player moves a physical piece and hits **End Turn**:
+
+1. **Vision:** YOLO v8 captures the board, generating a FEN string.
+2. **Verification:** The Rust Engine ensures the move is legal. If not, LEDs flash red and the UI blocks the turn.
+3. **Analysis:** The Go Coach checks for a blunder. If detected, it skips deep analysis and immediately generates a "Fix this move" puzzle.
+4. **Synthesis:** If the move is tactical, the Position Analyst identifies patterns (pins, forks). The Coach Agent drafts an explanation, and the Guard Agent verifies that no illegal moves were suggested.
+5. **Feedback:** Kibo (the avatar) emotes, the voice synthesizes the advice, and the physical board lights up the recommended "Best Move."
 
 ---
 
@@ -113,8 +178,7 @@ The coaching pipeline runs automatically on every End Turn. It has three output 
 | Yellow / Pink | Win celebration animation |
 
 ### Kibo — 3D Coach Avatar
-Kibo is a digital avatar that transforms chess gameplay into a personalized, interactive experience and reflects on your progress over time, surfacing insights about your growth as a player
-Makes every game feel like a coaching session
+Kibo is a digital avatar that transforms chess gameplay into a personalized, interactive experience and reflects on your progress over time, surfacing insights about your growth as a player — making every game feel like a coaching session.
 
 - Three.js GLTF character with full animation state machine
 - States: Idle · Walking · Running · Sitting · Standing · Dance
@@ -419,3 +483,11 @@ Player moves piece → presses End Turn
 - Grafana dashboard for LLM latency, token usage, and blunder rates
 - Mobile-responsive board layout for iPhone / iPad play
 - Game replay and annotated PGN export
+
+---
+
+## 🛠️ Future Roadmap
+
+- **Personalization:** Cross-session player profiles to track "Tactical Blindspots."
+- **Hardware:** Pressure-sensitive board for 0-latency piece detection.
+- **Knowledge:** Fine-tuning a Llama-3 model specifically on historical Xiangqi manuals.
