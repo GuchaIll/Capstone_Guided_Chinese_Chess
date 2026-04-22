@@ -46,7 +46,7 @@ Kibo doesn't just play against you; it *teaches* you. Our Go-based pipeline proc
 - 
 <p align="center">
   <a href="https://drive.google.com/file/d/1cGfy4v5rDAi409OZ9evruLFTVsEpsxWs/view?usp=sharing">
-    <img src="img/agents.png" alt="▶ Watch board demo video" width="50%">
+    <img src="img/agents.png" alt="▶ Watch board demo video" >
   </a>
 </p>
 ### Immersive Interface
@@ -55,7 +55,7 @@ Kibo doesn't just play against you; it *teaches* you. Our Go-based pipeline proc
 - **Plug-and-Play AI:** Ships with a "Mock Mode" for offline play, but supports OpenRouter, OpenAI, and Anthropic for high-level coaching.
 
 <p align="center">
-  <img src="img/kibo.jpg" alt="Kibo 3D coaching avatar">
+  <img src="img/kibo.jpg" alt="Kibo 3D coaching avatar" height = "50%">
 </p>
 
 ---
@@ -89,7 +89,7 @@ graph TD
 ## Hardware & Software Overview
 
 <p align="center">
-  <img src="img/block_diagram.png" alt="High-level system architecture block diagram">
+  <img src="img/block_diagram.png" alt="High-level system architecture block diagram" height = "80%">
 </p>
 
 Kibo is a physical-digital system. The hardware layer is a Raspberry Pi running on the same network as the main machine; the software layer runs entirely in Docker on any laptop or desktop.
