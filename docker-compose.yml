@@ -78,7 +78,7 @@ services:
     depends_on:
       engine:
         condition: service_healthy
-      coaching:
+      go-coaching:
         condition: service_healthy
     restart: unless-stopped
 
@@ -106,12 +106,17 @@ services:
     ports:
       - "5002:8080"
     environment:
-      - ENGINE_WS_URL=ws://engine:8080/ws
+      - BRIDGE_URL=http://state-bridge:5003
       - CHROMADB_URL=http://chromadb:8000
+      - EMBEDDING_URL=http://embedding:8100
       - LLM_PROVIDER=${LLM_PROVIDER:-openrouter}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
     depends_on:
-      engine:
+      state-bridge:
+        condition: service_healthy
+      chromadb:
+        condition: service_healthy
+      embedding:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
@@ -121,8 +126,73 @@ services:
       retries: 3
       start_period: 10s
 
+  # ---- ChromaDB Vector Store ----
+  # Persistent vector database for RAG retrieval (used by go-coaching)
+  chromadb:
+    image: chromadb/chroma:0.6.3
+    container_name: chromadb
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+    environment:
+      - ANONYMIZED_TELEMETRY=FALSE
+      - ALLOW_RESET=TRUE
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/api/v1/heartbeat || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ---- Embedding Service ----
+  # Sentence-transformer embedding API for Go coaching RAG queries
+  embedding:
+    build:
+      context: ./server/embedding_service
+      dockerfile: Dockerfile
+    container_name: embedding-service
+    ports:
+      - "8100:8100"
+    environment:
+      - EMBEDDING_PORT=8100
+    restart: unless-stopped
+    volumes:
+      - embedding-model-cache:/root/.cache
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8100/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  # ---- State Bridge ----
+  # Event bus between engine, CV, LED, coaching, and client
+  state-bridge:
+    build:
+      context: ./server/state_bridge
+      dockerfile: Dockerfile
+    container_name: state-bridge
+    ports:
+      - "5003:5003"
+    environment:
+      - ENGINE_WS_URL=ws://engine:8080/ws
+      - BRIDGE_PORT=5003
+    depends_on:
+      engine:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5003/health')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
 volumes:
   engine-logs:
   coaching-logs:
   coaching-profiles:
   chroma-data:
+  embedding-model-cache:
