@@ -4,6 +4,8 @@ Kibo is an intelligent, multi-agent Xiangqi (Chinese Chess) ecosystem designed t
 
 **The Team:** Charlie Ai · Claire Lee · Yoyo Zhong
 
+![Kibo guided analysis board interface](img/Board.png)
+
 ---
 
 ## Vision
@@ -19,6 +21,10 @@ Most Xiangqi learners struggle with a "feedback gap" — they know they lost, bu
 - **LED Guidance:** A NeoPixel-embedded board mirrors the AI's thoughts. It highlights legal moves, engine suggestions (Green), and AI threats (Blue/Purple).
 - **Validation:** The Rust engine cross-references the physical state with game rules, preventing illegal moves before they happen.
 
+![Computer vision detecting Xiangqi pieces on the physical board](img/cv.jpg)
+
+See the physical board in action: [Board demo video](https://drive.google.com/file/d/1cGfy4v5rDAi409OZ9evruLFTVsEpsxWs/view?usp=sharing).
+
 ### 9-Agent Coaching Intelligence
 Kibo doesn't just play against you; it *teaches* you. Our Go-based pipeline processes every move through three distinct paths:
 - **The Blunder Guard:** Immediately halts play if you make a high-loss move (>150cp), forcing a "teachable moment."
@@ -30,9 +36,13 @@ Kibo doesn't just play against you; it *teaches* you. Our Go-based pipeline proc
 - **Voice Control:** Fully browser-native STT/TTS. Talk to Kibo to move pieces or ask for advice.
 - **Plug-and-Play AI:** Ships with a "Mock Mode" for offline play, but supports OpenRouter, OpenAI, and Anthropic for high-level coaching.
 
+![Kibo 3D coaching avatar](img/kibo.jpg)
+
 ---
 
 ## System Architecture
+
+![High-level system architecture](img/block_diagram.png)
 
 ```mermaid
 graph TD
@@ -44,6 +54,10 @@ graph TD
     D -->|LED Commands| A
     F -->|Voice/Animations| G[Kibo 3D Avatar]
 ```
+
+The retrieval pipeline that powers coaching explanations and contextual guidance is shown below.
+
+![RAG collection and retrieval flow](img/schema_diagram.png)
 
 ```
 Physical Board (Raspberry Pi)
@@ -108,6 +122,8 @@ docker compose up --build
 | http://localhost:3000 | Main Game UI |
 | http://localhost:3001 | 3D Avatar View |
 | http://localhost:5002/dashboard/ | Intelligence Dashboard |
+
+If you want a quick product walkthrough before running the full stack, watch the [board working demo](https://drive.google.com/file/d/1cGfy4v5rDAi409OZ9evruLFTVsEpsxWs/view?usp=sharing).
 
 ---
 
