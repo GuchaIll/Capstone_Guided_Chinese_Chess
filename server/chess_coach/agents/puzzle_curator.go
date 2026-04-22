@@ -27,6 +27,10 @@ func (a *PuzzleCuratorAgent) Capabilities() core.AgentCapabilities {
 }
 
 func (a *PuzzleCuratorAgent) Run(ctx *core.Context) error {
+	if abort, _ := ctx.State["blunder_abort"].(bool); abort {
+		observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID, "Blunder abort active, skipping puzzle curator.")
+		return nil
+	}
 	if skip, _ := ctx.State["route_puzzle"].(bool); !skip {
 		observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID, "Puzzle generation not requested, skipping.")
 		return nil

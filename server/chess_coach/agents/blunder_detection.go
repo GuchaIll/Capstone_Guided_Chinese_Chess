@@ -72,16 +72,19 @@ func (a *BlunderDetectionAgent) Run(ctx *core.Context) error {
 
 	ctx.State["blunder_analysis"] = blunderData
 
-	// If blunders were found, flag for puzzle generation.
 	if blunders, ok := blunderData["blunders"].([]interface{}); ok && len(blunders) > 0 {
-		ctx.State["route_puzzle"] = true
+		// Abort all downstream agents — feedback will emit the blunder summary only.
+		ctx.State["blunder_abort"] = true
 		ctx.State["blunder_positions"] = blunders
+		// Queue puzzle for the next turn (not this one, since we are aborting).
+		ctx.State["route_puzzle"] = true
 		observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID,
-			fmt.Sprintf("Found %d blunder(s), flagging for puzzle generation.", len(blunders)))
+			fmt.Sprintf("Found %d blunder(s) — aborting downstream agents, queuing puzzle for next turn.", len(blunders)))
 	} else {
-		observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID, "No blunders detected.")
+		ctx.State["blunder_abort"] = false
+		observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID, "No blunders detected, continuing pipeline.")
 	}
 
-	ctx.Logger.Info("blunder_detection complete", "blunders", blunderData["blunders"])
+	ctx.Logger.Info("blunder_detection complete", "blunder_abort", ctx.State["blunder_abort"])
 	return nil
 }

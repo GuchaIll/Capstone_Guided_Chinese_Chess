@@ -60,15 +60,18 @@ func (a *IngestAgent) Run(ctx *core.Context) error {
 		ctx.State["question"] = question
 	}
 
-	if fen == "" {
-		return fmt.Errorf("ingest: fen is required")
+	// If no FEN was found anywhere, treat this as a question-only message.
+	questionOnly := fen == ""
+	if questionOnly && question == "" {
+		return fmt.Errorf("ingest: both fen and question are empty")
 	}
 
+	ctx.State["question_only"] = questionOnly
 	ctx.State["is_question"] = question != ""
 	ctx.State["has_move"] = move != ""
 
-	observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID, fmt.Sprintf("Input parsed: FEN=%q, move=%q, is_question=%v", fen, move, question != ""))
-	ctx.Logger.Info("ingest complete", "fen", fen, "move", move, "has_move", move != "", "is_question", question != "")
+	observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID, fmt.Sprintf("Input parsed: FEN=%q, move=%q, is_question=%v, question_only=%v", fen, move, question != "", questionOnly))
+	ctx.Logger.Info("ingest complete", "fen", fen, "move", move, "has_move", move != "", "is_question", question != "", "question_only", questionOnly)
 	return nil
 }
 

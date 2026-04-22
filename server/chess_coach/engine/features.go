@@ -230,3 +230,35 @@ type AnalysisResponse struct {
 	SearchNodes  uint64             `json:"search_nodes"`
 	SearchDepth  int                `json:"search_depth"`
 }
+
+// ── Puzzle Detection structs (mirrors puzzle_detector.rs output) ──
+
+// TacticalMotif represents a single detected tactical pattern in a position.
+type TacticalMotif struct {
+	MotifType   string   `json:"motif_type"`
+	Description string   `json:"description"`
+	Weight      uint32   `json:"weight"`
+	Squares     []string `json:"squares"`
+}
+
+// PuzzleHint is a hint at a given specificity level (1=vague, 2=moderate, 3=specific).
+type PuzzleHint struct {
+	Level uint8  `json:"level"`
+	Text  string `json:"text"`
+}
+
+// PuzzleDetectionResult is the full puzzle analysis result from the Rust engine's
+// puzzle_detector module, returned by /engine/puzzle-detect via the state bridge.
+type PuzzleDetectionResult struct {
+	FEN             string          `json:"fen"`
+	IsPuzzleWorthy  bool            `json:"is_puzzle_worthy"`
+	MotifScore      uint32          `json:"motif_score"`
+	Motifs          []TacticalMotif `json:"motifs"`
+	Themes          []string        `json:"themes"`
+	DifficultyElo   uint32          `json:"difficulty_elo"`
+	DifficultyLabel string          `json:"difficulty_label"`
+	Hints           []PuzzleHint    `json:"hints"`
+	BestMove        *string         `json:"best_move"`
+	Phase           string          `json:"phase"`
+	PieceCount      uint32          `json:"piece_count"`
+}

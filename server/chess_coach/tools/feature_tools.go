@@ -26,7 +26,7 @@ func (t *GetPositionFeaturesTool) Parameters() []core.ToolParameter {
 	return []core.ToolParameter{
 		{Name: "fen", Type: "string", Description: "FEN position string", Required: true},
 		{Name: "features", Type: "string", Description: "Comma-separated feature sections: material,mobility,king_safety,hanging_pieces,forks,pins,cannon_screens,rook_files,pawn_chains,cross_river_pieces,piece_locations", Required: true},
-		{Name: "depth", Type: "number", Description: "Search depth (default 15)", Required: false},
+		{Name: "depth", Type: "number", Description: "Search depth (default 5)", Required: false},
 	}
 }
 
@@ -40,7 +40,7 @@ func (t *GetPositionFeaturesTool) Execute(ctx context.Context, args json.RawMess
 		return "", fmt.Errorf("get_position_features: %w", err)
 	}
 	if p.Depth <= 0 {
-		p.Depth = 15
+		p.Depth = 5
 	}
 
 	resp, err := t.Engine.AnalyzePositionFull(ctx, p.FEN, p.Depth)
@@ -76,7 +76,7 @@ func (t *ClassifyMoveTool) Parameters() []core.ToolParameter {
 	return []core.ToolParameter{
 		{Name: "fen", Type: "string", Description: "FEN position before the move", Required: true},
 		{Name: "move", Type: "string", Description: "Move in UCI notation (e.g. h2e2)", Required: true},
-		{Name: "depth", Type: "number", Description: "Search depth (default 15)", Required: false},
+		{Name: "depth", Type: "number", Description: "Search depth (default 5)", Required: false},
 	}
 }
 
@@ -90,7 +90,7 @@ func (t *ClassifyMoveTool) Execute(ctx context.Context, args json.RawMessage) (s
 		return "", fmt.Errorf("classify_move: %w", err)
 	}
 	if p.Depth <= 0 {
-		p.Depth = 15
+		p.Depth = 5
 	}
 
 	// Use batch_analyze with a single entry to get the full feature vector for this move.

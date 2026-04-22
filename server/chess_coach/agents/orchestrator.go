@@ -24,54 +24,46 @@ func (a *OrchestratorAgent) Capabilities() core.AgentCapabilities {
 	return core.AgentCapabilities{
 		Tools:  []string{"get_position_features", "suggest_best_move"},
 		Model:  string(llm.RoleOrchestration),
-		Agents: []string{"position_analyst", "blunder_detection", "puzzle_curator", "coach", "visualization"},
+		Agents: []string{"blunder_detection", "position_analyst", "puzzle_curator", "coach", "guard"},
 	}
 }
 
 func (a *OrchestratorAgent) Run(ctx *core.Context) error {
-	observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID, "Classifying user intent to determine analysis path.")
+	observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID, "Classifying user intent and evaluating coach trigger conditions.")
 
 	fen, _ := ctx.State["fen"].(string)
 	question, _ := ctx.State["question"].(string)
 	hasMove, _ := ctx.State["has_move"].(bool)
 	moves, _ := ctx.State["moves"].(string)
+	questionOnly, _ := ctx.State["question_only"].(bool)
 
-	// Determine routing flags based on input features.
+	// Routing flags.
+	ctx.State["route_blunder_detection"] = !questionOnly && (hasMove || moves != "")
+	ctx.State["route_position_analysis"] = !questionOnly && fen != ""
 
-	// Default: always run position analysis.
-	ctx.State["route_position_analysis"] = true
-
-	// Blunder detection: triggered when a move sequence is provided.
-	ctx.State["route_blunder_detection"] = hasMove || moves != ""
-
-	// Puzzle generation: triggered when blunders are found (set later by BlunderDetectionAgent)
-	// or when the user explicitly asks for a puzzle.
 	wantsPuzzle := containsAny(question, "puzzle", "practice", "exercise", "train", "drill")
 	ctx.State["route_puzzle"] = wantsPuzzle
 
-	// Coaching: always provide coaching output.
-	ctx.State["route_coaching"] = true
-
-	// Visualization: include board rendering.
-	ctx.State["route_visualization"] = fen != ""
+	// Evaluate coach trigger — Coach runs only when one of these conditions is met.
+	// Condition 3 (tactical_pattern) is evaluated later by PositionAnalystAgent.
+	coachTrigger := evalCoachTrigger(ctx.State)
+	ctx.State["coach_trigger"] = coachTrigger
 
 	observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID,
-		fmt.Sprintf("Routing: position=%v blunder=%v puzzle=%v coaching=%v viz=%v",
+		fmt.Sprintf("Routing: position=%v blunder=%v puzzle=%v coach_trigger=%v",
 			ctx.State["route_position_analysis"],
 			ctx.State["route_blunder_detection"],
 			ctx.State["route_puzzle"],
-			ctx.State["route_coaching"],
-			ctx.State["route_visualization"],
+			coachTrigger,
 		))
 
-	// If LLM is available, refine intent classification.
+	// Optional LLM intent classification.
 	if a.LLM != nil {
 		prompt := fmt.Sprintf(
 			"Classify this chess coaching request. Position (FEN): %s\nUser message: %s\nMove provided: %v\n\n"+
 				"Respond with one primary intent: ANALYZE, BLUNDER_CHECK, PUZZLE, EXPLAIN, GENERAL_ADVICE",
 			fen, question, hasMove,
 		)
-
 		intent, err := a.LLM.Generate(ctx.ToContext(), prompt)
 		if err == nil {
 			ctx.State["classified_intent"] = intent
@@ -81,9 +73,10 @@ func (a *OrchestratorAgent) Run(ctx *core.Context) error {
 	}
 
 	ctx.Logger.Info("orchestrator complete",
-		"route_position_analysis", ctx.State["route_position_analysis"],
 		"route_blunder_detection", ctx.State["route_blunder_detection"],
+		"route_position_analysis", ctx.State["route_position_analysis"],
 		"route_puzzle", ctx.State["route_puzzle"],
+		"coach_trigger", coachTrigger,
 	)
 	return nil
 }
@@ -122,4 +115,24 @@ func indexString(s, sub string) int {
 		}
 	}
 	return -1
+}
+
+// evalCoachTrigger checks the two pre-analysis trigger conditions.
+// Condition 3 (tactical_pattern) is evaluated later by PositionAnalystAgent.
+func evalCoachTrigger(state map[string]interface{}) string {
+	if movesSince, _ := state["moves_since_last_coach"].(int); movesSince >= 3 {
+		return "move_count"
+	}
+	prevScore, hasPrev := state["prev_score"].(int)
+	currScore, hasCurr := state["current_score"].(int)
+	if hasPrev && hasCurr {
+		delta := currScore - prevScore
+		if delta < 0 {
+			delta = -delta
+		}
+		if delta >= 200 {
+			return "material_shift"
+		}
+	}
+	return "none"
 }

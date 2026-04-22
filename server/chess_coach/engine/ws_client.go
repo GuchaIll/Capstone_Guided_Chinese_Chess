@@ -389,3 +389,32 @@ func (c *WSClient) Suggest(ctx context.Context, fen string, depth int) (string, 
 	}
 	return resp.Move, resp.Score, nil
 }
+
+// DetectPuzzle sends a detect_puzzle message directly to the engine WebSocket
+// and returns the structured puzzle detection result.
+func (c *WSClient) DetectPuzzle(ctx context.Context, fen string, depth int) (*PuzzleDetectionResult, error) {
+	raw, err := c.sendAndReceive(map[string]interface{}{
+		"type":  "detect_puzzle",
+		"fen":   fen,
+		"depth": depth,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("ws_client: detect_puzzle: %w", err)
+	}
+
+	// Envelope: {"type":"puzzle_detection","detection":{...}}
+	var envelope struct {
+		Type      string               `json:"type"`
+		Detection *PuzzleDetectionResult `json:"detection"`
+	}
+	if err := json.Unmarshal(raw, &envelope); err != nil {
+		return nil, fmt.Errorf("ws_client: parse puzzle_detection: %w", err)
+	}
+	if envelope.Type == "error" {
+		return nil, fmt.Errorf("engine error on detect_puzzle")
+	}
+	if envelope.Detection == nil {
+		return nil, fmt.Errorf("ws_client: puzzle_detection: missing detection field")
+	}
+	return envelope.Detection, nil
+}

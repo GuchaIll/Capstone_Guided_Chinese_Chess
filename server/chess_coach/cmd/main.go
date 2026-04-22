@@ -9,13 +9,13 @@ import (
 	"os"
 	"time"
 
+	chess "chess_coach"
+	"chess_coach/engine"
+	chesstools "chess_coach/tools"
 	"go_agent_framework/contrib/envutil"
 	"go_agent_framework/contrib/llm"
 	"go_agent_framework/contrib/skills"
 	"go_agent_framework/core"
-	chess "chess_coach"
-	"chess_coach/engine"
-	chesstools "chess_coach/tools"
 	"go_agent_framework/observability"
 )
 
@@ -23,25 +23,11 @@ func main() {
 	envutil.Load(".env")
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
-	eng := &engine.MockEngine{}
+	eng := buildEngineClient(logger)
 	models := buildModels(logger)
 
-	// Set up tool registry with chess engine tools.
 	toolReg := core.NewToolRegistry()
-	if err := chesstools.RegisterChessTools(toolReg, eng); err != nil {
-		log.Fatalf("register chess tools: %v", err)
-	}
-	if err := chesstools.RegisterPuzzleTools(toolReg, eng); err != nil {
-		log.Fatalf("register puzzle tools: %v", err)
-	}
-	if err := chesstools.RegisterVisualizationTools(toolReg); err != nil {
-		log.Fatalf("register visualization tools: %v", err)
-	}
-	if err := chesstools.RegisterPGNTools(toolReg); err != nil {
-		log.Fatalf("register pgn tools: %v", err)
-	}
-	// RAG tools are registered when retrievers are available.
-	// TODO: Initialize ChromaDB retrievers and call chesstools.RegisterRAGTools(toolReg, retrievers)
+	registerTools(toolReg, eng, logger)
 	logger.Info("chess tools registered", "tools", toolReg.List())
 
 	// Set up skill registry and load coaching skills.
@@ -109,11 +95,58 @@ func buildModels(logger *slog.Logger) llm.Models {
 	return llm.Models{Analysis: mock, Orchestration: mock}
 }
 
+func buildEngineClient(logger *slog.Logger) engine.EngineClient {
+	if bridgeURL := os.Getenv("BRIDGE_URL"); bridgeURL != "" {
+		logger.Info("using BridgeClient (state bridge)", "url", bridgeURL)
+		return engine.NewBridgeClient(bridgeURL)
+	}
+	if wsURL := os.Getenv("ENGINE_WS_URL"); wsURL != "" {
+		ws := engine.NewWSClient(wsURL)
+		if err := ws.Connect(); err != nil {
+			logger.Warn("WSClient connect failed, falling back to MockEngine", "err", err)
+			return &engine.MockEngine{}
+		}
+		logger.Info("using WSClient (direct engine WS)", "url", wsURL)
+		return ws
+	}
+	logger.Info("no BRIDGE_URL or ENGINE_WS_URL set, using MockEngine")
+	return &engine.MockEngine{}
+}
+
+func registerTools(toolReg *core.ToolRegistry, eng engine.EngineClient, logger *slog.Logger) {
+	if err := chesstools.RegisterChessTools(toolReg, eng); err != nil {
+		log.Fatalf("register chess tools: %v", err)
+	}
+	if err := chesstools.RegisterPuzzleDetectorTools(toolReg, eng); err != nil {
+		log.Fatalf("register puzzle tools: %v", err)
+	}
+	if err := chesstools.RegisterPGNTools(toolReg); err != nil {
+		log.Fatalf("register pgn tools: %v", err)
+	}
+	chromaURL := os.Getenv("CHROMADB_URL")
+	if chromaURL == "" {
+		logger.Info("CHROMADB_URL not set, RAG tools disabled")
+		return
+	}
+	embeddingURL := os.Getenv("EMBEDDING_URL")
+	if embeddingURL == "" {
+		embeddingURL = "http://embedding:8100"
+	}
+	retrievers := chesstools.NewChromaDBRetrievers(chromaURL, embeddingURL)
+	if err := chesstools.RegisterRAGTools(toolReg, retrievers); err != nil {
+		logger.Warn("could not register RAG tools", "err", err)
+	} else {
+		logger.Info("RAG tools registered", "chromadb", chromaURL, "embedding", embeddingURL)
+	}
+}
+
 func makeChatHandler(graph *core.Graph, store core.StateStore) observability.ChatHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var body struct {
 			Message   string `json:"message"`
 			SessionID string `json:"session_id,omitempty"`
+			FEN       string `json:"fen,omitempty"`
+			Move      string `json:"move,omitempty"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			http.Error(w, "invalid JSON", http.StatusBadRequest)
@@ -137,9 +170,10 @@ func makeChatHandler(graph *core.Graph, store core.StateStore) observability.Cha
 
 		// Map chat message to chess_coach expected input.
 		// IngestAgent will extract FEN, move, and question from the raw message.
-		session.State["fen"] = body.Message
+		session.State["raw_input"] = body.Message
+		session.State["fen"] = body.FEN
 		session.State["question"] = body.Message
-		session.State["move"] = ""
+		session.State["move"] = body.Move
 
 		ctx := &core.Context{
 			SessionID:  sessionID,
@@ -194,8 +228,7 @@ func makeAnalyzeHandler(graph *core.Graph, store core.StateStore) http.HandlerFu
 		session.State["route_position_analysis"] = true
 		session.State["route_blunder_detection"] = false
 		session.State["route_puzzle"] = false
-		session.State["route_coaching"] = true
-		session.State["route_visualization"] = true
+		session.State["coach_trigger"] = "explicit"
 
 		ctx := &core.Context{
 			SessionID:  sessionID,
@@ -245,8 +278,7 @@ func makeBlunderHandler(graph *core.Graph, store core.StateStore) http.HandlerFu
 		session.State["route_position_analysis"] = true
 		session.State["route_blunder_detection"] = true
 		session.State["route_puzzle"] = false
-		session.State["route_coaching"] = true
-		session.State["route_visualization"] = true
+		session.State["coach_trigger"] = "explicit"
 
 		ctx := &core.Context{
 			SessionID:  sessionID,
@@ -291,8 +323,7 @@ func makePuzzleHandler(graph *core.Graph, store core.StateStore) http.HandlerFun
 		session.State["route_position_analysis"] = true
 		session.State["route_blunder_detection"] = false
 		session.State["route_puzzle"] = true
-		session.State["route_coaching"] = true
-		session.State["route_visualization"] = true
+		session.State["coach_trigger"] = "explicit"
 
 		ctx := &core.Context{
 			SessionID:  sessionID,

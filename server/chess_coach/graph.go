@@ -9,10 +9,10 @@ import (
 // BuildGraph wires the chess-coach pipeline:
 //
 //	serial(ingest) -> serial(inspection) -> serial(orchestrator)
-//	  -> parallel(position_analyst, blunder_detection)
-//	  -> serial(puzzle_curator) [conditional via route flag]
-//	  -> serial(coach)
-//	  -> serial(visualization)
+//	  -> serial(blunder_detection)          [sets blunder_abort=true to short-circuit]
+//	  -> parallel(position_analyst, puzzle_curator)
+//	  -> serial(coach)                      [slow path: only when coach_trigger is set]
+//	  -> serial(guard)                      [scores coach advice; approves or rejects]
 //	  -> serial(feedback)
 func BuildGraph(tools *core.ToolRegistry, skills *core.SkillRegistry, models llm.Models) *core.Graph {
 	return core.NewGraph("chess_coach").
@@ -22,16 +22,15 @@ func BuildGraph(tools *core.ToolRegistry, skills *core.SkillRegistry, models llm
 			LLM:   models.For(llm.RoleOrchestration),
 			Tools: tools,
 		}).
+		AddSerial(&agents.BlunderDetectionAgent{Tools: tools}).
 		AddParallel(
-			&agents.PositionAnalystAgent{Tools: tools, Skills: skills, Depth: 20},
-			&agents.BlunderDetectionAgent{Tools: tools},
-			&agents.GuardAgent{Tools: tools},
+			&agents.PositionAnalystAgent{Tools: tools, Skills: skills, Depth: 5},
+			&agents.PuzzleCuratorAgent{Tools: tools, Skills: skills},
 		).
-		AddSerial(&agents.PuzzleCuratorAgent{Tools: tools, Skills: skills}).
 		AddSerial(&agents.CoachAgent{
 			LLM:    models.For(llm.RoleAnalysis),
 			Skills: skills,
 		}).
-		AddSerial(&agents.VisualizationAgent{Tools: tools}).
+		AddSerial(&agents.GuardAgent{Tools: tools}).
 		AddSerial(&agents.FeedbackAgent{})
 }

@@ -15,6 +15,7 @@ type EngineClient interface {
 	AnalyzePositionFull(ctx context.Context, fen string, depth int) (*AnalysisResponse, error)
 	BatchAnalyze(ctx context.Context, entries []BatchEntry) ([]MoveFeatureVector, error)
 	Suggest(ctx context.Context, fen string, depth int) (string, int, error)
+	DetectPuzzle(ctx context.Context, fen string, depth int) (*PuzzleDetectionResult, error)
 }
 
 // MockEngine implements EngineClient with canned responses for local dev.
@@ -105,6 +106,27 @@ func (m *MockEngine) BatchAnalyze(_ context.Context, entries []BatchEntry) ([]Mo
 // Suggest returns a mock best-move suggestion.
 func (m *MockEngine) Suggest(_ context.Context, _ string, _ int) (string, int, error) {
 	return "h2e2", 50, nil
+}
+
+// DetectPuzzle returns a mock PuzzleDetectionResult.
+func (m *MockEngine) DetectPuzzle(_ context.Context, fen string, _ int) (*PuzzleDetectionResult, error) {
+	return &PuzzleDetectionResult{
+		FEN:             fen,
+		IsPuzzleWorthy:  false,
+		MotifScore:      0,
+		Motifs:          []TacticalMotif{},
+		Themes:          []string{"tactical"},
+		DifficultyElo:   1200,
+		DifficultyLabel: "intermediate",
+		Hints: []PuzzleHint{
+			{Level: 1, Text: "Look for the best move."},
+			{Level: 2, Text: "Consider your most active piece."},
+			{Level: 3, Text: "Move the piece on e2."},
+		},
+		BestMove:   nil,
+		Phase:      "opening",
+		PieceCount: 30,
+	}, nil
 }
 
 // mockPositionAnalysis returns a canned PositionAnalysis for testing.

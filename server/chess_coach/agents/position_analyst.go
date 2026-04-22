@@ -29,6 +29,10 @@ func (a *PositionAnalystAgent) Capabilities() core.AgentCapabilities {
 }
 
 func (a *PositionAnalystAgent) Run(ctx *core.Context) error {
+	if abort, _ := ctx.State["blunder_abort"].(bool); abort {
+		observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID, "Blunder abort active, skipping position analysis.")
+		return nil
+	}
 	if skip, _ := ctx.State["route_position_analysis"].(bool); !skip {
 		observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID, "Position analysis not requested, skipping.")
 		return nil
@@ -113,8 +117,30 @@ func (a *PositionAnalystAgent) Run(ctx *core.Context) error {
 		phaseDisplay = p
 	}
 
+	// Detect tactical patterns and optionally upgrade the coach trigger.
+	tacticalFound := hasPatterns(ctx.State)
+	ctx.State["tactical_pattern_detected"] = tacticalFound
+	if tacticalFound {
+		if trigger, _ := ctx.State["coach_trigger"].(string); trigger == "none" {
+			ctx.State["coach_trigger"] = "tactical_pattern"
+		}
+	}
+
 	observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID,
-		fmt.Sprintf("Engine eval: %v, best move: %v, phase: %s", evalDisplay, bestMoveDisplay, phaseDisplay))
-	ctx.Logger.Info("position_analyst complete", "eval", evalDisplay, "best_move", bestMoveDisplay, "phase", phaseDisplay)
+		fmt.Sprintf("Engine eval: %v, best move: %v, phase: %s, tactical: %v", evalDisplay, bestMoveDisplay, phaseDisplay, tacticalFound))
+	ctx.Logger.Info("position_analyst complete", "eval", evalDisplay, "best_move", bestMoveDisplay, "phase", phaseDisplay, "tactical_pattern", tacticalFound)
 	return nil
+}
+
+func hasPatterns(state map[string]interface{}) bool {
+	if hp, ok := state["hanging_pieces"].([]interface{}); ok && len(hp) > 0 {
+		return true
+	}
+	if f, ok := state["forks"].([]interface{}); ok && len(f) > 0 {
+		return true
+	}
+	if p, ok := state["pins"].([]interface{}); ok && len(p) > 0 {
+		return true
+	}
+	return false
 }

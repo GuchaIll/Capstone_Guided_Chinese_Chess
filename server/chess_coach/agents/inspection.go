@@ -21,6 +21,13 @@ func (a *InspectionAgent) Capabilities() core.AgentCapabilities {
 func (a *InspectionAgent) Run(ctx *core.Context) error {
 	fen, _ := ctx.State["fen"].(string)
 
+	// Skip validation for question-only requests (no FEN provided).
+	if questionOnly, _ := ctx.State["question_only"].(bool); questionOnly || fen == "" {
+		observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID, "No FEN provided (question-only mode), skipping validation.")
+		ctx.Logger.Info("inspection skipped: question-only mode")
+		return nil
+	}
+
 	observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID, "Validating FEN string with chess engine.")
 
 	args, _ := json.Marshal(map[string]string{"fen": fen})
