@@ -96,6 +96,7 @@ pub struct HistoryEntry {
 // ========================
 
 /// Complete game state with all required fields
+#[derive(Clone)]
 pub struct GameState {
     board: Board,
     stage: GameStage,

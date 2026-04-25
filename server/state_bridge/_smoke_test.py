@@ -22,41 +22,36 @@ def check(label, code, body, expect_code=200):
         print(f"         body: {body}")
     return status == "PASS"
 
-# ── 1. Engine ────────────────────────────────────────────────────────
-print("\n=== 1. Engine (port 8080) ===")
-code, body = http("GET", "http://localhost:8080/health")
-check("1.1 Health", code, body)
-
-# ── 2. State Bridge ──────────────────────────────────────────────────
-print("\n=== 2. State Bridge (port 5003) ===")
+# ── 1. State Bridge ──────────────────────────────────────────────────
+print("\n=== 1. State Bridge (port 5003) ===")
 code, body = http("GET", "http://localhost:5003/health")
-check("2.1.1 Health", code, body)
+check("1.1.1 Health", code, body)
 
 code, body = http("GET", "http://localhost:5003/state")
-ok = check("2.1.2 State snapshot", code, body)
+ok = check("1.1.2 State snapshot", code, body)
 if ok:
     stm = body.get("side_to_move", "?")
-    check(f"2.6.1 side_to_move is 'red' (got '{stm}')", 200 if stm == "red" else 0, body)
+    check(f"1.6.1 side_to_move is 'red' (got '{stm}')", 200 if stm == "red" else 0, body)
 
 code, body = http("POST", "http://localhost:5003/state/fen",
                    {"fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"})
-check("2.2.1 Engine FEN update", code, body)
+check("1.2.1 Engine FEN update", code, body)
 
 code, body = http("POST", "http://localhost:5003/state/fen",
                    {"fen": "test_cv_fen", "source": "cv"})
-check("2.2.2 CV FEN update", code, body)
+check("1.2.2 CV FEN update", code, body)
 
 code, body = http("GET", "http://localhost:5003/state")
 cv_fen = body.get("cv_fen", "?") if isinstance(body, dict) else "?"
-check(f"2.2.3 CV FEN stored (got '{cv_fen}')", 200 if cv_fen == "test_cv_fen" else 0, body)
+check(f"1.2.3 CV FEN stored (got '{cv_fen}')", 200 if cv_fen == "test_cv_fen" else 0, body)
 
 code, body = http("POST", "http://localhost:5003/state/best-move",
                    {"from_sq": "e3", "to_sq": "e4"})
-check("2.3 Best-move", code, body)
+check("1.3 Best-move", code, body)
 
 code, body = http("POST", "http://localhost:5003/state/led-command",
                    {"command": "off"})
-check("2.4 LED command", code, body)
+check("1.4 LED command", code, body)
 
 code, body = http("POST", "http://localhost:5003/state/led-command",
                    {"command": "on"})
@@ -139,8 +134,8 @@ try:
 except Exception as e:
     check("6.1 HTML serves", 0, str(e))
 
-# ── Engine WS tests ──────────────────────────────────────────────────
-print("\n=== 7. Engine WS Protocol ===")
+# ── Bridge WS tests ──────────────────────────────────────────────────
+print("\n=== 7. Bridge WS Protocol ===")
 import websockets
 
 async def ws_recv_type(ws, expected_type, timeout=10):
@@ -159,7 +154,7 @@ async def ws_recv_type(ws, expected_type, timeout=10):
             return None
 
 async def ws_tests():
-    async with websockets.connect("ws://localhost:8080/ws") as ws:
+    async with websockets.connect("ws://localhost:5003/ws") as ws:
         # reset first to get a clean state
         await ws.send(json.dumps({"type": "reset"}))
         r = await ws_recv_type(ws, "state")

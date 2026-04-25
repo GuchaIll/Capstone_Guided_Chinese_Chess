@@ -30,8 +30,8 @@ The app will be available at `http://localhost:3000`
 
 ## Use iPhone (Client) with Laptop Backend
 
-### 1) Start the engine and coaching server on the laptop
-- Rust engine should be reachable on `http://<laptop-ip>:8080` (WebSocket at `ws://<laptop-ip>:8080/ws`)
+### 1) Start the bridge and coaching server on the laptop
+- State bridge should be reachable on `http://<laptop-ip>:5003` (gameplay WebSocket at `ws://<laptop-ip>:5003/ws`)
 - Coaching server should be reachable on `http://<laptop-ip>:5000`
 
 ### 2) Run the React dev server on all interfaces
@@ -46,10 +46,10 @@ npm run dev -- --host 0.0.0.0 --port 3000
 3. In Safari on the iPhone, open: `http://<laptop-ip>:3000`
 
 ### 4) (Optional) Override backend URLs
-By default the client uses the current page hostname and ports `8080` (engine) and `5000` (coach).
+By default the client uses the current page hostname and the co-located `/bridge` proxy for gameplay plus port `5000` for coaching.
 You can override via Vite env vars:
 ```bash
-VITE_ENGINE_WS_URL=ws://<laptop-ip>:8080/ws
+VITE_STATE_BRIDGE_BASE=http://<laptop-ip>:5003
 VITE_COACH_URL=http://<laptop-ip>:5000
 ```
 
@@ -80,9 +80,9 @@ src/
 └── index.css             # Global styles
 ```
 
-## WebSocket Protocol
+## Gameplay Bridge Protocol
 
-The frontend expects a WebSocket server at `ws://localhost:8080/ws` with the following message format:
+The frontend expects the state bridge WebSocket at `ws://localhost:5003/ws` with the following message format:
 
 ### Client → Server
 ```json

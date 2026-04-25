@@ -123,6 +123,10 @@ impl AIBuilder {
     pub fn config(self) -> SearchConfig {
         self.config
     }
+
+    pub fn build(self) -> SearchConfig {
+        self.config
+    }
 }
 
 // ========================

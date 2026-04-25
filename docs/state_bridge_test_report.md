@@ -28,7 +28,7 @@ Command:
 
 Result:
 
-- `37 passed in 0.41s`
+- `39 passed in 0.36s`
 
 Covered subsystems:
 
@@ -49,13 +49,7 @@ Command:
 
 Result on a Docker-enabled local run:
 
-- `10 passed, 1 xfailed`
-
-The one expected failure is:
-
-- `test_bridge_observes_direct_engine_move_via_sse`
-  - reason: the Rust engine WebSocket currently replies per-client and does
-    not broadcast direct move events to the bridge relay connection
+- `11 passed`
 
 In restricted environments where Docker or loopback access is blocked, the
 integration fixture converts those permission failures into a clean
@@ -98,15 +92,11 @@ session-level skip instead of a hard error.
 
 ### Rust Engine
 
-- Status: partially passing, one documented xfail
+- Status: passed for the covered integration scenarios
 - Covered scenarios:
   - direct WebSocket move/reset/get_state path
   - bridge observation of engine-originated moves
   - bridge passthrough endpoints
-
-Known gap:
-
-- direct client WS moves are not broadcast to the bridge relay socket
 
 ### Go Coaching
 
@@ -164,6 +154,11 @@ Failure invariants:
   - ambiguous diff rejection
   - own-piece capture rejection
   - side-mismatch rejection
+- Implemented and verified engine WebSocket fan-out for authoritative gameplay
+  events so bridge observers now receive direct client move/reset/AI updates.
+- Implemented snapshot-based helper endpoints in the engine so
+  `validate_fen`, `legal_moves_for_fen`, `make_move_for_fen`, and
+  `suggest_for_fen` no longer depend on mutating the live session.
 - Updated bridge-local SSE capture to ignore the initial `state_sync` event by default so mutation tests assert the intended emitted event.
 - Realigned LED subscriber tests to the recovered HTTP LED server adapter instead of the older direct NeoPixel helpers.
 
@@ -180,9 +175,13 @@ Failure invariants:
 
 ## Recommended Follow-up
 
-- Implement WebSocket broadcast or bridge-side synchronization for direct
-  client WS moves if bridge observation of external engine moves is required by
-  the final production flow.
-- Run the compose-backed suite on a machine or CI runner with Docker daemon access and loopback networking enabled.
+- Start Phase 2 of the architectural revision: split the bridge relay into
+  dedicated observer and command channels so helper traffic is isolated even
+  before the browser cutover.
+- Add an engine-level regression test for helper endpoints staying side-effect
+  free across `analyze_position`, `batch_analyze`, and `detect_puzzle`, not
+  just `make_move_for_fen` and `legal_moves_for_fen`.
+- Run the compose-backed suite on CI with Docker daemon access and loopback
+  networking enabled so the live cross-service checks become a required gate.
 - If the documented bridge flow continues to evolve, keep the physical-board success and failure event timelines in sync with [docs/bridge_server_flow.md](/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/docs/bridge_server_flow.md).
 - Consider adding one dedicated integration assertion for a Go coaching request that consumes a bridge-originated `best_move` event after a successful CV turn.

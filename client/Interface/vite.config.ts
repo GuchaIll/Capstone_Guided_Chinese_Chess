@@ -7,13 +7,17 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
+      '/bridge': {
+        target: 'http://localhost:5003',
+        ws: true,
+      },
       // /ws/chat MUST come before /ws so vite matches the more-specific path first
       '/ws/chat': {
         target: 'ws://localhost:5001',
         ws: true,
       },
-      '/ws': {
-        target: 'ws://localhost:8080',
+      '/bridge/ws': {
+        target: 'ws://localhost:5003',
         ws: true,
       },
       '/api': {

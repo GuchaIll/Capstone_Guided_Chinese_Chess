@@ -1,0 +1,50 @@
+==========================================
+  Xiangqi RAG Pipeline — Wed Apr 22 10:21:55 EDT 2026
+  wave=1  dry_run=false  force=false
+  stage=normalize
+  chromadb=http://localhost:8000
+  embedding=http://localhost:8100
+==========================================
+
+── Stage 2: Normalize ────────────────────────────
+2026-04-22 10:21:56,595 [INFO] normalize: [NORMALIZE] xqinenglish_opening_basics_05
+2026-04-22 10:21:56,605 [INFO] normalize: [OK] xqinenglish/opening/xqinenglish_opening_basics_05 — 1976 chars
+2026-04-22 10:21:56,605 [INFO] normalize: [NORMALIZE] xqinenglish_choosing_opening
+2026-04-22 10:21:56,616 [WARNING] normalize: [SKIP] Extracted text too short for xqinenglish_choosing_opening (0 chars)
+2026-04-22 10:21:56,616 [WARNING] normalize: [FAILED] xqinenglish_choosing_opening
+2026-04-22 10:21:56,616 [INFO] normalize: [NORMALIZE] xqinenglish_intro_opening
+2026-04-22 10:21:56,623 [WARNING] normalize: [SKIP] Extracted text too short for xqinenglish_intro_opening (0 chars)
+2026-04-22 10:21:56,623 [WARNING] normalize: [FAILED] xqinenglish_intro_opening
+2026-04-22 10:21:56,623 [INFO] normalize: [NORMALIZE] xqinenglish_strategical_advice_middle_game
+2026-04-22 10:21:56,635 [WARNING] normalize: [SKIP] Extracted text too short for xqinenglish_strategical_advice_middle_game (0 chars)
+2026-04-22 10:21:56,635 [WARNING] normalize: [FAILED] xqinenglish_strategical_advice_middle_game
+2026-04-22 10:21:56,635 [INFO] normalize: [NORMALIZE] xqinenglish_intro_midgame
+2026-04-22 10:21:56,643 [WARNING] normalize: [SKIP] Extracted text too short for xqinenglish_intro_midgame (0 chars)
+2026-04-22 10:21:56,644 [WARNING] normalize: [FAILED] xqinenglish_intro_midgame
+2026-04-22 10:21:56,644 [INFO] normalize: [NORMALIZE] xqinenglish_tactics_01c_clearance
+2026-04-22 10:21:56,654 [WARNING] normalize: [SKIP] Extracted text too short for xqinenglish_tactics_01c_clearance (0 chars)
+2026-04-22 10:21:56,654 [WARNING] normalize: [FAILED] xqinenglish_tactics_01c_clearance
+2026-04-22 10:21:56,654 [INFO] normalize: [NORMALIZE] xqinenglish_tactics_07c_dislodge
+2026-04-22 10:21:56,662 [WARNING] normalize: [SKIP] Extracted text too short for xqinenglish_tactics_07c_dislodge (0 chars)
+2026-04-22 10:21:56,662 [WARNING] normalize: [FAILED] xqinenglish_tactics_07c_dislodge
+2026-04-22 10:21:56,662 [INFO] normalize: [NORMALIZE] xqinenglish_endgame_basics_08
+2026-04-22 10:21:56,669 [INFO] normalize: [OK] xqinenglish/endgame/xqinenglish_endgame_basics_08 — 1976 chars
+2026-04-22 10:21:56,669 [INFO] normalize: [SKIP unresolved] xqinenglish_tjm_practical_endgames
+2026-04-22 10:21:56,670 [INFO] normalize: [NORMALIZE] xqinenglish_proverbs_84_play
+2026-04-22 10:21:56,684 [WARNING] normalize: [SKIP] Extracted text too short for xqinenglish_proverbs_84_play (0 chars)
+2026-04-22 10:21:56,684 [WARNING] normalize: [FAILED] xqinenglish_proverbs_84_play
+2026-04-22 10:21:56,684 [INFO] normalize: [NORMALIZE] xqinenglish_basic_checkmate_methods
+2026-04-22 10:21:56,691 [INFO] normalize: [OK] xqinenglish/general/xqinenglish_basic_checkmate_methods — 1976 chars
+2026-04-22 10:21:56,692 [INFO] normalize: [NORMALIZE] xqinenglish_basics_of_play
+2026-04-22 10:21:56,704 [WARNING] normalize: [SKIP] Extracted text too short for xqinenglish_basics_of_play (0 chars)
+2026-04-22 10:21:56,704 [WARNING] normalize: [FAILED] xqinenglish_basics_of_play
+2026-04-22 10:21:56,704 [INFO] normalize: [NORMALIZE] xqinenglish_how_to_play_basics_02
+2026-04-22 10:21:56,714 [WARNING] normalize: [SKIP] Extracted text too short for xqinenglish_how_to_play_basics_02 (0 chars)
+2026-04-22 10:21:56,714 [WARNING] normalize: [FAILED] xqinenglish_how_to_play_basics_02
+2026-04-22 10:21:56,715 [INFO] normalize: Wrote 3 documents → /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/normalized/documents.jsonl
+normalize: OK
+
+==========================================
+  Pipeline complete — Wed Apr 22 10:21:56 EDT 2026
+  Log: logs/pipeline_20260422T102155.log
+==========================================

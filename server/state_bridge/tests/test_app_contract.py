@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 
 from state import STARTING_FEN
 
@@ -15,7 +16,12 @@ ILLEGAL_CV_FEN = "4k4/9/9/9/9/9/9/9/9/4KR3 b - - 0 2"
 def test_health_and_initial_state(client):
     health = client.get("/health")
     assert health.status_code == 200
-    assert health.json() == {"status": "ok"}
+    health_body = health.json()
+    assert health_body["status"] == "ok"
+    assert "authoritative_bundle_healthy" in health_body
+    assert "relay" in health_body
+    assert health_body["snapshot"]["fen"] == STARTING_FEN
+    assert health_body["snapshot"]["event_seq"] == 0
 
     state = client.get("/state")
     assert state.status_code == 200
@@ -24,6 +30,7 @@ def test_health_and_initial_state(client):
         "side_to_move": "red",
         "game_result": "in_progress",
         "is_check": False,
+        "event_seq": 0,
         "last_move": None,
         "move_count": 0,
         "selected_square": None,
@@ -94,6 +101,20 @@ async def test_post_cv_fen_accepts_valid_move_and_emits_led_resume_then_fen_upda
         ("suggest", CV_SUCCESS_FEN, 5),
         ("ai_move", 4),
     ]
+
+
+def test_post_cv_fen_ignores_duplicate_capture_within_short_window(client):
+    first = client.post("/state/fen", json={"fen": "not a fen", "source": "cv"})
+    second = client.post("/state/fen", json={"fen": "not a fen", "source": "cv"})
+
+    assert first.status_code == 400
+    assert second.status_code == 200
+    assert second.json() == {
+        "accepted": True,
+        "duplicate": True,
+        "source": "cv",
+        "status": "Duplicate CV capture ignored",
+    }
 
 
 async def test_post_cv_fen_rejects_malformed_fen_and_emits_validation_error_and_led_restore(
@@ -258,14 +279,103 @@ def test_engine_passthrough_endpoints_forward_to_relay(client, bridge_testbed):
     ai_move = client.post("/engine/ai-move", json={"difficulty": 4})
     set_position = client.post("/engine/set-position", json={"fen": ALT_FEN, "source": "engine"})
 
-    assert move.json() == {"status": "Move forwarded to engine"}
+    move_body = move.json()
+    assert move_body["status"] == "Move forwarded to engine"
+    assert isinstance(move_body["command_id"], str)
     assert ai_move.json() == {"status": "AI move requested"}
     assert set_position.json() == {"status": "Position forwarded to engine"}
     assert relay.calls == [
-        ("move", "a0a1"),
+        ("move", "a0a1", move_body["command_id"]),
         ("ai_move", 4),
-        ("set_position", ALT_FEN),
+        ("set_position", ALT_FEN, None),
     ]
+
+
+def test_engine_move_rejects_duplicate_command_id(client, bridge_testbed):
+    _, _, _, relay = bridge_testbed
+
+    first = client.post("/engine/move", json={"move": "a0a1", "command_id": "dup-1"})
+    second = client.post("/engine/move", json={"move": "a0a1", "command_id": "dup-1"})
+
+    assert first.status_code == 200
+    assert first.json()["command_id"] == "dup-1"
+    assert second.status_code == 409
+    assert second.json() == {"error": "Duplicate command_id", "command_id": "dup-1"}
+    assert relay.calls == [("move", "a0a1", "dup-1")]
+
+
+def test_bridge_websocket_supports_state_and_helper_commands(client, bridge_testbed):
+    _, _, _, relay = bridge_testbed
+    relay.legal_moves_by_square["e3"] = ["e4", "e5"]
+
+    with client.websocket_connect("/ws") as ws:
+        ws.send_json({"type": "get_state"})
+        state_message = ws.receive_json()
+        assert state_message["type"] == "state"
+        assert state_message["fen"] == STARTING_FEN
+
+        ws.send_json({"type": "legal_moves", "square": "e3"})
+        legal_moves = ws.receive_json()
+        assert legal_moves == {
+            "type": "legal_moves",
+            "square": "e3",
+            "targets": ["e4", "e5"],
+        }
+
+        ws.send_json({"type": "suggest", "difficulty": 4})
+        suggestion = ws.receive_json()
+        assert suggestion == {
+            "type": "suggestion",
+            "move": "b0c2",
+            "score": 120,
+        }
+
+    assert relay.calls == [
+        ("legal_moves_for_square", STARTING_FEN, "e3"),
+        ("suggest", STARTING_FEN, 4),
+    ]
+
+
+def test_bridge_websocket_forwards_gameplay_and_rejects_duplicate_command_id(client, bridge_testbed):
+    _, state, _, relay = bridge_testbed
+
+    with client.websocket_connect("/ws") as ws:
+        ws.send_json({"type": "move", "move": "a0a1", "command_id": "ws-dup"})
+        move_result = ws.receive_json()
+        assert move_result == {
+            "type": "move_result",
+            "valid": True,
+            "move": "a0a1",
+            "fen": "fen-after-move",
+            "result": "in_progress",
+            "is_check": False,
+            "command_id": "ws-dup",
+        }
+
+        ws.send_json({"type": "move", "move": "a0a1", "command_id": "ws-dup"})
+        duplicate = ws.receive_json()
+        assert duplicate == {
+            "type": "error",
+            "message": "Duplicate command_id",
+            "command_id": "ws-dup",
+        }
+
+        ws.send_json({"type": "reset", "command_id": "ws-reset"})
+        reset_result = ws.receive_json()
+        assert reset_result == {
+            "type": "state",
+            "fen": STARTING_FEN,
+            "side_to_move": "red",
+            "result": "in_progress",
+            "is_check": False,
+            "seq": 0,
+        }
+
+    assert relay.calls == [
+        ("move_and_wait", "a0a1", "ws-dup", 15.0),
+        ("reset_and_wait", "ws-reset", 15.0),
+    ]
+    assert state.fen == STARTING_FEN
 
 
 async def test_engine_reset_restores_starting_state_and_emits_game_reset(client, bridge_testbed, capture_sse_events):
@@ -280,10 +390,12 @@ async def test_engine_reset_restores_starting_state_and_emits_game_reset(client,
     response = client.post("/engine/reset")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "Game reset"}
+    response_body = response.json()
+    assert response_body["status"] == "Game reset"
+    assert isinstance(response_body["command_id"], str)
     events = await asyncio.wait_for(task, 2.0)
 
-    assert relay.calls == [("reset",)]
+    assert relay.calls == [("reset", response_body["command_id"])]
     assert events[0]["type"] == "game_reset"
     assert state.fen == STARTING_FEN
     assert state.last_move is None
@@ -368,3 +480,40 @@ async def test_sse_event_payloads_include_json_shape(client, capture_sse_events)
     assert payload["type"] == "best_move"
     assert payload["data"] == {"from": "d4", "to": "d5"}
     assert isinstance(payload["ts"], float)
+    assert isinstance(payload["seq"], int)
+
+
+async def test_sse_stream_supports_event_type_filtering(client, bridge_testbed):
+    app_module, _, _, _ = bridge_testbed
+
+    class _FilteredRequest:
+        query_params = {"types": "move_made"}
+
+        async def is_disconnected(self) -> bool:
+            return False
+
+    response = await app_module.sse_events(_FilteredRequest())
+
+    async def _reader():
+        events = []
+        try:
+            async for chunk in response.body_iterator:
+                text = chunk.decode() if isinstance(chunk, bytes) else chunk
+                for line in text.splitlines():
+                    if line.startswith("data: "):
+                        payload = json.loads(line[6:])
+                        events.append(payload)
+                        if len(events) >= 1:
+                            return events
+            return events
+        finally:
+            await response.body_iterator.aclose()
+
+    task = asyncio.create_task(_reader())
+    await asyncio.sleep(0)
+
+    client.post("/state/best-move", json={"from_sq": "a0", "to_sq": "a1"})
+    client.post("/state/move", json={"from_sq": "a0", "to_sq": "a1", "piece": "R"})
+
+    events = await asyncio.wait_for(task, 2.0)
+    assert [event["type"] for event in events] == ["move_made"]

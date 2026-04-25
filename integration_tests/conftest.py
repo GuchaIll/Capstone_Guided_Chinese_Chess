@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -24,7 +25,6 @@ CORE_SERVICES = [
 STARTING_FEN = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"
 BLACK_TO_MOVE_FEN = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR b - - 0 2"
 SERVICE_HEALTHCHECKS = {
-    "engine": "http://127.0.0.1:8080/health",
     "state_bridge": "http://127.0.0.1:5003/health",
     "chromadb": "http://127.0.0.1:8000/api/v1/heartbeat",
     "embedding": "http://127.0.0.1:8100/health",
@@ -146,6 +146,41 @@ def read_sse_events(
         if len(events) != count:
             raise AssertionError(f"Expected {count} SSE events, received {len(events)}")
     return events
+
+
+def read_sse_events_for_duration(url: str, duration: float) -> list[dict[str, Any]]:
+    """Read SSE events for a fixed `duration` seconds and return all that arrived."""
+    collected: list[dict[str, Any]] = []
+    stop = threading.Event()
+
+    def _reader() -> None:
+        req = urllib.request.Request(url, headers={"Accept": "text/event-stream"})
+        data_lines: list[str] = []
+        try:
+            with urllib.request.urlopen(req, timeout=duration + 2.0) as resp:
+                deadline = time.time() + duration
+                while not stop.is_set() and time.time() < deadline:
+                    try:
+                        raw = resp.readline()
+                    except Exception:
+                        break
+                    if not raw:
+                        continue
+                    text = raw.decode("utf-8").strip()
+                    if not text:
+                        if data_lines:
+                            collected.append(json.loads("\n".join(data_lines)))
+                            data_lines.clear()
+                    elif text.startswith("data: "):
+                        data_lines.append(text[6:])
+        except Exception:
+            pass
+
+    t = threading.Thread(target=_reader, daemon=True)
+    t.start()
+    t.join(timeout=duration + 3.0)
+    stop.set()
+    return collected
 
 
 @pytest.fixture(scope="session")

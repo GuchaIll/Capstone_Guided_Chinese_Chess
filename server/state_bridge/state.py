@@ -30,6 +30,7 @@ class GameStateBridge:
     side_to_move: str = "red"
     game_result: str = "in_progress"
     is_check: bool = False
+    event_seq: int = 0
 
     # Last move applied by the engine
     last_move: MoveRecord | None = None
@@ -85,6 +86,7 @@ class GameStateBridge:
         self.side_to_move = "red"
         self.game_result = "in_progress"
         self.is_check = False
+        self.event_seq = 0
         self.last_move = None
         self.move_history.clear()
         self.selected_square = None
@@ -100,6 +102,7 @@ class GameStateBridge:
             "side_to_move": self.side_to_move,
             "game_result": self.game_result,
             "is_check": self.is_check,
+            "event_seq": self.event_seq,
             "last_move": _move_dict(self.last_move),
             "move_count": len(self.move_history),
             "selected_square": self.selected_square,

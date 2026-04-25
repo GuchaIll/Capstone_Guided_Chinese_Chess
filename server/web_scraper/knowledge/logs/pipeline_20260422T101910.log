@@ -1,0 +1,62 @@
+==========================================
+  Xiangqi RAG Pipeline — Wed Apr 22 10:19:10 EDT 2026
+  wave=1  dry_run=false  force=false
+  chromadb=http://localhost:8000
+  embedding=http://localhost:8100
+==========================================
+
+── Stage 1: Acquire ──────────────────────────────
+2026-04-22 10:19:11,238 [INFO] acquire: Skipping unresolved source: xqinenglish_tjm_practical_endgames
+2026-04-22 10:19:11,238 [INFO] acquire: Sources to acquire: 12
+2026-04-22 10:19:11,238 [INFO] acquire: [FETCH] xqinenglish_opening_basics_05  https://www.xqinenglish.com/index.php?option=com_content&view=article&id=108:basics-of-xiangqi-05-the-opening-phase&catid=110&Itemid=504&lang=en
+2026-04-22 10:19:13,060 [WARNING] acquire: [HTTP 404] xqinenglish_opening_basics_05 — https://www.xqinenglish.com/index.php?option=com_content&view=article&id=108:basics-of-xiangqi-05-the-opening-phase&catid=110&Itemid=504&lang=en
+2026-04-22 10:19:13,061 [INFO] acquire: [SAVED] /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_opening_basics_05.html (52900 bytes)
+2026-04-22 10:19:15,066 [INFO] acquire: [FETCH] xqinenglish_choosing_opening  https://www.xqinenglish.com/index.php?option=com_content&view=article&id=107:choosing-your-xiangqi-opening&catid=110&Itemid=504&lang=en
+2026-04-22 10:19:16,130 [INFO] acquire: [SAVED] /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_choosing_opening.html (119330 bytes)
+2026-04-22 10:19:18,135 [INFO] acquire: [FETCH] xqinenglish_intro_opening  https://www.xqinenglish.com/index.php?option=com_content&view=article&id=106:introduction-to-the-xiangqi-opening&catid=110&Itemid=504&lang=en
+2026-04-22 10:19:19,278 [INFO] acquire: [SAVED] /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_intro_opening.html (103318 bytes)
+2026-04-22 10:19:21,280 [INFO] acquire: [FETCH] xqinenglish_strategical_advice_middle_game  https://www.xqinenglish.com/index.php?option=com_content&view=article&id=152:strategical-advice-in-the-xiangqi-middle-game&catid=111&Itemid=510&lang=en
+2026-04-22 10:19:22,231 [INFO] acquire: [SAVED] /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_strategical_advice_middle_game.html (109599 bytes)
+2026-04-22 10:19:24,237 [INFO] acquire: [FETCH] xqinenglish_intro_midgame  https://www.xqinenglish.com/index.php?option=com_content&view=article&id=104:introduction-to-the-midgame&catid=225&Itemid=510&lang=en
+2026-04-22 10:19:25,215 [INFO] acquire: [SAVED] /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_intro_midgame.html (102874 bytes)
+2026-04-22 10:19:27,222 [INFO] acquire: [FETCH] xqinenglish_tactics_01c_clearance  https://www.xqinenglish.com/index.php?option=com_content&view=article&id=166:basic-midgame-tactics-01c-clearance&catid=111&Itemid=510&lang=en
+2026-04-22 10:19:28,207 [INFO] acquire: [SAVED] /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_tactics_01c_clearance.html (110973 bytes)
+2026-04-22 10:19:30,208 [INFO] acquire: [FETCH] xqinenglish_tactics_07c_dislodge  https://www.xqinenglish.com/index.php?option=com_content&view=article&id=179:basic-midgame-tactics-07c-dislodge&catid=111&Itemid=510&lang=en
+2026-04-22 10:19:31,164 [INFO] acquire: [SAVED] /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_tactics_07c_dislodge.html (101586 bytes)
+2026-04-22 10:19:33,165 [INFO] acquire: [FETCH] xqinenglish_endgame_basics_08  https://www.xqinenglish.com/index.php?option=com_content&view=article&id=109:basics-of-xiangqi-08-the-endgame&catid=110&Itemid=504&lang=en
+2026-04-22 10:19:34,115 [WARNING] acquire: [HTTP 404] xqinenglish_endgame_basics_08 — https://www.xqinenglish.com/index.php?option=com_content&view=article&id=109:basics-of-xiangqi-08-the-endgame&catid=110&Itemid=504&lang=en
+2026-04-22 10:19:34,115 [INFO] acquire: [SAVED] /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_endgame_basics_08.html (53945 bytes)
+2026-04-22 10:19:36,119 [INFO] acquire: [FETCH] xqinenglish_proverbs_84_play  https://www.xqinenglish.com/index.php?option=com_content&view=article&id=924:xiangqi-chinese-chess-proverbs-84-gems-of-wisdom-for-play&catid=277&Itemid=583&lang=en
+2026-04-22 10:19:37,087 [INFO] acquire: [SAVED] /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_proverbs_84_play.html (137098 bytes)
+2026-04-22 10:19:39,091 [INFO] acquire: [FETCH] xqinenglish_basic_checkmate_methods  https://www.xqinenglish.com/index.php?option=com_content&view=article&id=446:basic-xiangqi-checkmate-methods&catid=273&Itemid=572&lang=en
+2026-04-22 10:19:39,968 [WARNING] acquire: [HTTP 404] xqinenglish_basic_checkmate_methods — https://www.xqinenglish.com/index.php?option=com_content&view=article&id=446:basic-xiangqi-checkmate-methods&catid=273&Itemid=572&lang=en
+2026-04-22 10:19:39,969 [INFO] acquire: [SAVED] /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_basic_checkmate_methods.html (53928 bytes)
+2026-04-22 10:19:41,973 [INFO] acquire: [FETCH] xqinenglish_basics_of_play  https://www.xqinenglish.com/index.php?option=com_content&view=article&id=107:basics-of-xiangqi-play&catid=110&Itemid=504&lang=en
+2026-04-22 10:19:42,930 [INFO] acquire: [SAVED] /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_basics_of_play.html (119291 bytes)
+2026-04-22 10:19:44,931 [INFO] acquire: [FETCH] xqinenglish_how_to_play_basics_02  https://www.xqinenglish.com/index.php?option=com_content&view=article&id=105:how-to-play-xiangqi-basics-02&catid=110&Itemid=504&lang=en
+2026-04-22 10:19:45,962 [INFO] acquire: [SAVED] /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_how_to_play_basics_02.html (126997 bytes)
+2026-04-22 10:19:45,968 [INFO] acquire: Manifest updated: /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/manifests/acquisition_runs.jsonl (12 entries)
+2026-04-22 10:19:45,968 [INFO] acquire: Done. ok=9  skipped=0  errors=3
+acquire: OK
+
+── Stage 2: Normalize ────────────────────────────
+2026-04-22 10:19:46,961 [INFO] normalize: [NORMALIZE] xqinenglish_opening_basics_05
+Traceback (most recent call last):
+  File "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/normalize.py", line 336, in <module>
+    main()
+    ~~~~^^
+  File "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/normalize.py", line 318, in main
+    doc = normalize_html_source(source, html_bytes)
+  File "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/normalize.py", line 204, in normalize_html_source
+    remove_boilerplate(soup)
+    ~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/normalize.py", line 116, in remove_boilerplate
+    if _is_boilerplate_tag(tag):
+       ~~~~~~~~~~~~~~~~~~~^^^^^
+  File "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/normalize.py", line 108, in _is_boilerplate_tag
+    classes = " ".join(tag.get("class", []))
+                       ~~~~~~~^^^^^^^^^^^^^
+  File "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/.venv/lib/python3.14/site-packages/bs4/element.py", line 2366, in get
+    return self.attrs.get(key, default)
+           ^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'get'

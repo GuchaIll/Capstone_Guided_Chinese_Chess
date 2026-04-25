@@ -197,6 +197,7 @@ fn get_zone(square: usize, side: u8) -> u8 {
     }
 }
 
+#[derive(Clone)]
 pub struct Board {
     pub board: [u8; 154],              // Mailbox 11x14 board representation
     pub side: u8,                       // Side to move (RED or BLACK)
@@ -1112,4 +1113,3 @@ mod tests {
         }
     }
 }
-

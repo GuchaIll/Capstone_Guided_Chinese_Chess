@@ -1,5 +1,6 @@
 use std::io::Write;
 use std::time::Instant;
+use std::collections::{HashSet, VecDeque};
 
 use crate::GameState::GameState as ChessGameState;
 use crate::GameState::GameResult;
@@ -176,6 +177,9 @@ pub struct GameSession {
     state: ChessGameState,
     ai: AlphaBetaMinMax,
     logger: GameLogger,
+    last_event_seq: u64,
+    processed_command_ids: HashSet<String>,
+    processed_command_order: VecDeque<String>,
 }
 
 impl GameSession {
@@ -184,6 +188,9 @@ impl GameSession {
             state: ChessGameState::new(),
             ai: AlphaBetaMinMax::new(),
             logger: GameLogger::new(),
+            last_event_seq: 0,
+            processed_command_ids: HashSet::new(),
+            processed_command_order: VecDeque::new(),
         }
     }
 
@@ -193,7 +200,46 @@ impl GameSession {
             side_to_move: if self.state.side_to_move() == RED { "red".to_string() } else { "black".to_string() },
             result: self.result_to_string(),
             is_check: self.state.current_side_in_check(),
+            seq: self.last_event_seq,
         }
+    }
+
+    fn next_event_seq(&mut self) -> u64 {
+        self.last_event_seq += 1;
+        self.last_event_seq
+    }
+
+    fn remember_command_id(&mut self, command_id: &str) {
+        const MAX_TRACKED_COMMAND_IDS: usize = 4096;
+
+        if self.processed_command_ids.insert(command_id.to_string()) {
+            self.processed_command_order.push_back(command_id.to_string());
+        }
+
+        while self.processed_command_order.len() > MAX_TRACKED_COMMAND_IDS {
+            if let Some(expired) = self.processed_command_order.pop_front() {
+                self.processed_command_ids.remove(&expired);
+            }
+        }
+    }
+
+    fn claim_command_id(&mut self, command_id: Option<&str>) -> Result<Option<String>, ServerMessage> {
+        let normalized = command_id
+            .map(str::trim)
+            .filter(|id| !id.is_empty())
+            .map(str::to_string);
+
+        if let Some(id) = normalized.as_ref() {
+            if self.processed_command_ids.contains(id) {
+                return Err(ServerMessage::Error {
+                    message: format!("Duplicate command_id '{}'", id),
+                    command_id: Some(id.clone()),
+                });
+            }
+            self.remember_command_id(id);
+        }
+
+        Ok(normalized)
     }
 
     fn result_to_string(&self) -> String {
@@ -205,12 +251,26 @@ impl GameSession {
         }
     }
 
-    pub fn apply_move(&mut self, move_str: &str) -> ServerMessage {
+    fn helper_ai(&self, difficulty: Option<u8>) -> AlphaBetaMinMax {
+        let mut ai = AlphaBetaMinMax::with_config(self.ai.config().clone());
+        if let Some(level) = difficulty {
+            ai.set_difficulty(level);
+        }
+        ai
+    }
+
+    pub fn apply_move(&mut self, move_str: &str, command_id: Option<&str>) -> ServerMessage {
+        let command_id = match self.claim_command_id(command_id) {
+            Ok(id) => id,
+            Err(message) => return message,
+        };
+
         if self.state.is_game_over() {
             return ServerMessage::MoveResult {
                 valid: false, fen: self.state.to_fen(),
                 reason: Some("Game is already over".to_string()),
                 move_str: None, is_check: false, result: self.result_to_string(),
+                seq: None, command_id,
             };
         }
         let side = self.state.side_to_move();
@@ -223,12 +283,14 @@ impl GameSession {
             let fen = self.state.to_fen();
             let is_check = self.state.current_side_in_check();
             let result_str = self.result_to_string();
+            let seq = self.next_event_seq();
             self.logger.log_player_move(side, move_str, piece,
                 if captured_piece != 0 { Some(captured_piece) } else { None }, &fen, is_check);
             if self.state.is_game_over() { self.logger.log_game_over(&result_str, &fen); }
             ServerMessage::MoveResult {
                 valid: true, fen, reason: None,
                 move_str: Some(move_str.to_string()), is_check, result: result_str,
+                seq: Some(seq), command_id,
             }
         } else {
             self.logger.log_invalid_move(side, move_str, "Invalid move");
@@ -236,13 +298,14 @@ impl GameSession {
                 valid: false, fen: self.state.to_fen(),
                 reason: Some("Invalid move".to_string()), move_str: None,
                 is_check: self.state.current_side_in_check(), result: self.result_to_string(),
+                seq: None, command_id,
             }
         }
     }
 
     pub fn generate_ai_move(&mut self, difficulty: Option<u8>) -> ServerMessage {
         if self.state.is_game_over() {
-            return ServerMessage::Error { message: "Game is already over".to_string() };
+            return ServerMessage::Error { message: "Game is already over".to_string(), command_id: None };
         }
         if let Some(level) = difficulty { self.ai.set_difficulty(level); }
 
@@ -268,26 +331,61 @@ impl GameSession {
                 let fen_after = self.state.to_fen();
                 let is_check = self.state.current_side_in_check();
                 let result_str = self.result_to_string();
+                let seq = self.next_event_seq();
                 self.logger.log_ai_move(side, &move_str, mv.piece, captured,
                     &fen_after, is_check, &config, &result, elapsed_ms);
                 if self.state.is_game_over() { self.logger.log_game_over(&result_str, &fen_after); }
                 ServerMessage::AiMoveResult {
                     move_str, fen: fen_after, score: result.score,
                     nodes_searched: result.nodes_searched, is_check, result: result_str,
+                    seq,
                 }
             }
-            None => ServerMessage::Error { message: "AI could not find a valid move".to_string() },
+            None => ServerMessage::Error { message: "AI could not find a valid move".to_string(), command_id: None },
         }
     }
 
-    pub fn reset(&mut self) {
+    pub fn reset(&mut self, command_id: Option<&str>) -> ServerMessage {
+        if let Err(message) = self.claim_command_id(command_id) {
+            return message;
+        }
         self.state.reset();
         self.logger.log_new_game();
+        let seq = self.next_event_seq();
+        ServerMessage::State {
+            fen: self.state.to_fen(),
+            side_to_move: "red".to_string(),
+            result: self.result_to_string(),
+            is_check: self.state.current_side_in_check(),
+            seq,
+        }
     }
 
-    pub fn set_position(&mut self, fen: &str) -> ServerMessage {
+    pub fn set_position(&mut self, fen: &str, resume_seq: Option<u64>) -> ServerMessage {
         self.state = ChessGameState::from_fen(fen);
-        self.get_state_message()
+        let seq = match resume_seq {
+            Some(seq) => {
+                self.last_event_seq = seq;
+                seq
+            }
+            None => self.next_event_seq(),
+        };
+        ServerMessage::State {
+            fen: self.state.to_fen(),
+            side_to_move: if self.state.side_to_move() == RED { "red".to_string() } else { "black".to_string() },
+            result: self.result_to_string(),
+            is_check: self.state.current_side_in_check(),
+            seq,
+        }
+    }
+
+    pub fn validate_fen_preview(&self, fen: &str) -> ServerMessage {
+        let state = ChessGameState::from_fen(fen);
+        ServerMessage::Validation {
+            valid: true,
+            normalized_fen: Some(state.to_fen()),
+            reason: None,
+        }
     }
 
     pub fn get_legal_moves_for_piece(&mut self, square_str: &str) -> ServerMessage {
@@ -303,9 +401,23 @@ impl GameSession {
         ServerMessage::LegalMovesResult { square: square_str.to_string(), targets }
     }
 
+    pub fn get_legal_moves_for_piece_at_fen(&self, fen: &str, square_str: &str) -> ServerMessage {
+        let mut state = ChessGameState::from_fen(fen);
+        let from_sq = match state.board().square(square_str) {
+            Some(sq) => sq,
+            None => return ServerMessage::LegalMovesResult { square: square_str.to_string(), targets: vec![] },
+        };
+        let legal_moves = state.legal_moves();
+        let targets: Vec<String> = legal_moves.iter()
+            .filter(|mv| mv.from as usize == from_sq)
+            .filter_map(|mv| BOARD_ENCODING.get(mv.to as usize).map(|s| s.to_string()))
+            .collect();
+        ServerMessage::LegalMovesResult { square: square_str.to_string(), targets }
+    }
+
     pub fn get_suggestion(&mut self, difficulty: Option<u8>) -> ServerMessage {
         if self.state.is_game_over() {
-            return ServerMessage::Error { message: "Game is already over".to_string() };
+            return ServerMessage::Error { message: "Game is already over".to_string(), command_id: None };
         }
         if let Some(level) = difficulty { self.ai.set_difficulty(level); }
 
@@ -330,22 +442,98 @@ impl GameSession {
                     score: result.score, nodes_searched: result.nodes_searched,
                 }
             }
-            None => ServerMessage::Error { message: "No suggestion available".to_string() },
+            None => ServerMessage::Error { message: "No suggestion available".to_string(), command_id: None },
+        }
+    }
+
+    pub fn get_suggestion_for_fen(&self, fen: &str, difficulty: Option<u8>) -> ServerMessage {
+        let mut state = ChessGameState::from_fen(fen);
+        if state.is_game_over() {
+            return ServerMessage::Error { message: "Game is already over".to_string(), command_id: None };
+        }
+
+        let mut ai = self.helper_ai(difficulty);
+        let result = ai.generate_move(&mut state);
+
+        match result.best_move {
+            Some(mv) => {
+                let from_coord = BOARD_ENCODING[mv.from as usize].to_string();
+                let to_coord = BOARD_ENCODING[mv.to as usize].to_string();
+                let move_str = format!("{}{}", from_coord, to_coord);
+                ServerMessage::Suggestion {
+                    move_str, from: from_coord, to: to_coord,
+                    score: result.score, nodes_searched: result.nodes_searched,
+                }
+            }
+            None => ServerMessage::Error { message: "No suggestion available".to_string(), command_id: None },
+        }
+    }
+
+    pub fn preview_move_at_fen(&self, fen: &str, move_str: &str) -> ServerMessage {
+        let mut state = ChessGameState::from_fen(fen);
+        if state.is_game_over() {
+            return ServerMessage::MoveResult {
+                valid: false,
+                fen: state.to_fen(),
+                reason: Some("Game is already over".to_string()),
+                move_str: None,
+                is_check: false,
+                result: match state.result() {
+                    GameResult::InProgress => "in_progress".to_string(),
+                    GameResult::RedWins => "red_wins".to_string(),
+                    GameResult::BlackWins => "black_wins".to_string(),
+                    GameResult::Draw => "draw".to_string(),
+                },
+                seq: None,
+                command_id: None,
+            };
+        }
+
+        if state.apply_move_str(move_str) {
+            let fen_after = state.to_fen();
+            let is_check = state.current_side_in_check();
+            let result = match state.result() {
+                GameResult::InProgress => "in_progress".to_string(),
+                GameResult::RedWins => "red_wins".to_string(),
+                GameResult::BlackWins => "black_wins".to_string(),
+                GameResult::Draw => "draw".to_string(),
+            };
+            ServerMessage::MoveResult {
+                valid: true,
+                fen: fen_after,
+                reason: None,
+                move_str: Some(move_str.to_string()),
+                is_check,
+                result,
+                seq: None,
+                command_id: None,
+            }
+        } else {
+            ServerMessage::MoveResult {
+                valid: false,
+                fen: state.to_fen(),
+                reason: Some("Invalid move".to_string()),
+                move_str: None,
+                is_check: state.current_side_in_check(),
+                result: match state.result() {
+                    GameResult::InProgress => "in_progress".to_string(),
+                    GameResult::RedWins => "red_wins".to_string(),
+                    GameResult::BlackWins => "black_wins".to_string(),
+                    GameResult::Draw => "draw".to_string(),
+                },
+                seq: None,
+                command_id: None,
+            }
         }
     }
 
     /// Deep position analysis with full feature extraction
     pub fn analyze_position(&mut self, fen: Option<&str>, difficulty: Option<u8>) -> ServerMessage {
-        // Set position if FEN provided
-        if let Some(fen_str) = fen {
-            self.state = ChessGameState::from_fen(fen_str);
-        }
-
-        if let Some(level) = difficulty {
-            self.ai.set_difficulty(level);
-        }
-
-        let (result, analysis, features) = self.ai.analyze_position(&mut self.state, None);
+        let mut state = fen
+            .map(ChessGameState::from_fen)
+            .unwrap_or_else(|| self.state.clone());
+        let mut ai = self.helper_ai(difficulty);
+        let (result, analysis, features) = ai.analyze_position(&mut state, None);
 
         // Combine analysis + features into a JSON value
         let mut output = serde_json::to_value(&analysis).unwrap_or(serde_json::json!({}));
@@ -378,16 +566,14 @@ impl GameSession {
             println!("[BATCH] Processing move {}/{}: {} on {}",
                 idx + 1, moves.len(), entry.move_str, entry.fen);
 
-            // Set position
-            self.state = ChessGameState::from_fen(&entry.fen);
-
-            // Run analysis
+            let mut state = ChessGameState::from_fen(&entry.fen);
+            let mut ai = self.helper_ai(difficulty);
             let search_start = std::time::Instant::now();
-            let search_result = self.ai.generate_move(&mut self.state);
+            let search_result = ai.generate_move(&mut state);
             let elapsed_ms = search_start.elapsed().as_secs_f64() * 1000.0;
 
             // Find the played move in legal moves
-            let legal_moves = self.state.legal_moves();
+            let legal_moves = state.legal_moves();
             let played_mv = legal_moves.iter().find(|mv| {
                 let from_str = BOARD_ENCODING[mv.from as usize];
                 let to_str = BOARD_ENCODING[mv.to as usize];
@@ -396,9 +582,9 @@ impl GameSession {
             });
 
             if let Some(mv) = played_mv {
-                let alternatives = self.ai.get_top_moves(&mut self.state, 5);
+                let alternatives = ai.get_top_moves(&mut state, 5);
                 let features = crate::AI::feature_extractor::extract_features(
-                    &mut self.state,
+                    &mut state,
                     mv,
                     &search_result,
                     prev_score,
@@ -442,16 +628,15 @@ impl GameSession {
         use crate::AI::position_analyzer;
         use crate::AI::puzzle_detector;
 
-        // Load the FEN into the state.
-        self.state = ChessGameState::from_fen(fen);
+        let mut state = ChessGameState::from_fen(fen);
 
         // Run analysis to build PositionAnalysis.
-        let analysis = position_analyzer::analyze(&mut self.state);
+        let analysis = position_analyzer::analyze(&mut state);
 
         // Run a shallow search to get the best move suggestion.
         // `set_difficulty` maps directly to search depth (1-10).
-        self.ai.set_difficulty(depth.clamp(1, 10));
-        let search = self.ai.generate_move(&mut self.state);
+        let mut ai = self.helper_ai(Some(depth.clamp(1, 10)));
+        let search = ai.generate_move(&mut state);
         let best_move = search.best_move.map(|mv| {
             let from = BOARD_ENCODING[mv.from as usize];
             let to   = BOARD_ENCODING[mv.to as usize];
@@ -464,7 +649,117 @@ impl GameSession {
             Ok(val) => ServerMessage::PuzzleDetection { detection: val },
             Err(e)  => ServerMessage::Error {
                 message: format!("puzzle_detection: serialization error: {}", e),
+                command_id: None,
             },
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const START_FEN: &str = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
+
+    #[test]
+    fn preview_move_does_not_mutate_live_session() {
+        let session = GameSession::new();
+        let before = session.get_state_message();
+
+        let preview = session.preview_move_at_fen(START_FEN, "b0c2");
+
+        match preview {
+            ServerMessage::MoveResult { valid, move_str, .. } => {
+                assert!(valid);
+                assert_eq!(move_str.as_deref(), Some("b0c2"));
+            }
+            other => panic!("unexpected preview response: {:?}", std::mem::discriminant(&other)),
+        }
+
+        let after = session.get_state_message();
+        match (before, after) {
+            (
+                ServerMessage::State { fen: before_fen, .. },
+                ServerMessage::State { fen: after_fen, .. },
+            ) => assert_eq!(before_fen, after_fen),
+            _ => panic!("expected state messages"),
+        }
+    }
+
+    #[test]
+    fn legal_moves_preview_does_not_mutate_live_session() {
+        let session = GameSession::new();
+        let before = session.get_state_message();
+
+        let preview = session.get_legal_moves_for_piece_at_fen(START_FEN, "b0");
+        match preview {
+            ServerMessage::LegalMovesResult { square, targets } => {
+                assert_eq!(square, "b0");
+                assert!(targets.contains(&"c2".to_string()));
+            }
+            other => panic!("unexpected legal preview response: {:?}", std::mem::discriminant(&other)),
+        }
+
+        let after = session.get_state_message();
+        match (before, after) {
+            (
+                ServerMessage::State { fen: before_fen, .. },
+                ServerMessage::State { fen: after_fen, .. },
+            ) => assert_eq!(before_fen, after_fen),
+            _ => panic!("expected state messages"),
+        }
+    }
+
+    #[test]
+    fn authoritative_events_receive_strictly_increasing_seq() {
+        let mut session = GameSession::new();
+
+        let first = session.apply_move("b0c2", Some("cmd-1"));
+        let second = session.generate_ai_move(Some(1));
+        let third = session.reset(Some("cmd-2"));
+
+        let first_seq = match first {
+            ServerMessage::MoveResult { seq, .. } => seq.expect("move seq"),
+            other => panic!("unexpected first response: {:?}", std::mem::discriminant(&other)),
+        };
+        let second_seq = match second {
+            ServerMessage::AiMoveResult { seq, .. } => seq,
+            other => panic!("unexpected second response: {:?}", std::mem::discriminant(&other)),
+        };
+        let third_seq = match third {
+            ServerMessage::State { seq, .. } => seq,
+            other => panic!("unexpected third response: {:?}", std::mem::discriminant(&other)),
+        };
+
+        assert!(first_seq < second_seq);
+        assert!(second_seq < third_seq);
+    }
+
+    #[test]
+    fn duplicate_command_id_is_rejected_without_advancing_state() {
+        let mut session = GameSession::new();
+
+        let first = session.apply_move("b0c2", Some("dup-1"));
+        let first_seq = match first {
+            ServerMessage::MoveResult { valid, seq, .. } => {
+                assert!(valid);
+                seq.expect("seq for valid move")
+            }
+            other => panic!("unexpected first response: {:?}", std::mem::discriminant(&other)),
+        };
+
+        let duplicate = session.apply_move("h0g2", Some("dup-1"));
+        match duplicate {
+            ServerMessage::Error { message, command_id } => {
+                assert!(message.contains("Duplicate command_id"));
+                assert_eq!(command_id.as_deref(), Some("dup-1"));
+            }
+            other => panic!("unexpected duplicate response: {:?}", std::mem::discriminant(&other)),
+        }
+
+        match session.get_state_message() {
+            ServerMessage::State { seq, .. } => assert_eq!(seq, first_seq),
+            other => panic!("unexpected state response: {:?}", std::mem::discriminant(&other)),
         }
     }
 }

@@ -11,16 +11,16 @@
 |---|---|
 | Docker Desktop running | `docker info` succeeds |
 | All services up | `docker compose ps` — all 7 "healthy" or "running" |
-| No port conflicts | `lsof -i :3000,5001,5002,5003,8080` shows only expected processes |
+| No port conflicts | `lsof -i :3000,5001,5002,5003` shows only expected processes |
 
 ---
 
-## 1. Engine (Rust — port 8080)
+## 1. Authoritative Gameplay Surface (via State Bridge)
 
 | # | Test | Command / Steps | Expected |
 |---|---|---|---|
-| 1.1 | Health check | `curl http://localhost:8080/health` | `200 OK` |
-| 1.2 | WS connection | Open `ws://localhost:8080/ws` in a WebSocket client (e.g. websocat, Postman) | Connection accepted |
+| 1.1 | Health check | `curl http://localhost:5003/health` | `200 OK` |
+| 1.2 | WS connection | Open `ws://localhost:5003/ws` in a WebSocket client (e.g. websocat, Postman) | Connection accepted |
 | 1.3 | Get initial state | Send `{"type":"get_state"}` | `{"type":"state","fen":"rnbakabnr/...","side_to_move":"red","result":"in_progress","is_check":false}` |
 | 1.4 | Legal move | Send `{"type":"move","move":"b0c2"}` (knight) | `{"type":"move_result","valid":true,...}` |
 | 1.5 | Illegal move | Send `{"type":"move","move":"a0a5"}` (rook blocked by pawn) | `{"type":"move_result","valid":false,...}` |

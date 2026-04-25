@@ -16,11 +16,12 @@ pub mod api;
 pub mod session;
 
 use std::sync::Arc;
+use std::{env, net::IpAddr};
 use tokio::sync::Mutex;
 use warp::Filter;
 
 use crate::session::GameSession;
-use crate::api::handle_websocket;
+use crate::api::{handle_websocket, ClientRegistry};
 
 // ========================
 //     MAIN
@@ -30,15 +31,26 @@ use crate::api::handle_websocket;
 async fn main() {
     println!("Chinese Chess Engine Server starting...");
 
+    let bind_host = env::var("ENGINE_BIND_HOST")
+        .ok()
+        .and_then(|value| value.parse::<IpAddr>().ok())
+        .unwrap_or_else(|| "127.0.0.1".parse().expect("valid default bind host"));
+    let bind_port = env::var("ENGINE_PORT")
+        .ok()
+        .and_then(|value| value.parse::<u16>().ok())
+        .unwrap_or(8080);
+
     // Create shared game session
     let session = Arc::new(Mutex::new(GameSession::new()));
+    let clients: ClientRegistry = Arc::new(Mutex::new(std::collections::HashMap::new()));
 
     // WebSocket route: ws://localhost:8080/ws
     let ws_route = warp::path("ws")
         .and(warp::ws())
         .and(warp::any().map(move || session.clone()))
-        .map(|ws: warp::ws::Ws, session: Arc<Mutex<GameSession>>| {
-            ws.on_upgrade(move |socket| handle_websocket(socket, session))
+        .and(warp::any().map(move || clients.clone()))
+        .map(|ws: warp::ws::Ws, session: Arc<Mutex<GameSession>>, clients: ClientRegistry| {
+            ws.on_upgrade(move |socket| handle_websocket(socket, session, clients))
         });
 
     // CORS configuration
@@ -53,9 +65,9 @@ async fn main() {
 
     let routes = ws_route.or(health).with(cors);
 
-    println!("Server running at http://localhost:8080");
-    println!("WebSocket endpoint: ws://localhost:8080/ws");
-    println!("Health check: http://localhost:8080/health");
+    println!("Server running at http://{}:{}", bind_host, bind_port);
+    println!("WebSocket endpoint: ws://{}:{}/ws", bind_host, bind_port);
+    println!("Health check: http://{}:{}/health", bind_host, bind_port);
 
-    warp::serve(routes).run(([0, 0, 0, 0], 8080)).await;
+    warp::serve(routes).run((bind_host, bind_port)).await;
 }

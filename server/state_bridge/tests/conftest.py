@@ -20,7 +20,7 @@ for path in (str(STATE_BRIDGE_ROOT), str(LED_ROOT), str(REPO_ROOT)):
 
 
 from events import EventBus  # noqa: E402
-from state import GameStateBridge  # noqa: E402
+from state import GameStateBridge, STARTING_FEN  # noqa: E402
 import app as bridge_app  # noqa: E402
 
 
@@ -29,6 +29,7 @@ class FakeRelay:
         self.calls: list[tuple[Any, ...]] = []
         self.run_calls = 0
         self._stop = False
+        self.connected = True
         self.legal_moves_by_square: dict[str, list[str]] = {
             "b0": ["a2", "c2"],
             "e3": ["e4", "e5"],
@@ -51,8 +52,26 @@ class FakeRelay:
     async def send_get_state(self) -> None:
         self.calls.append(("get_state",))
 
-    async def send_move(self, move_str: str) -> None:
-        self.calls.append(("move", move_str))
+    async def send_move(self, move_str: str, *, command_id: str | None = None) -> None:
+        self.calls.append(("move", move_str, command_id))
+
+    async def send_move_and_wait(
+        self,
+        move_str: str,
+        *,
+        command_id: str | None = None,
+        timeout: float = 15.0,
+    ) -> dict[str, Any]:
+        self.calls.append(("move_and_wait", move_str, command_id, timeout))
+        return {
+            "type": "move_result",
+            "valid": True,
+            "move": move_str,
+            "fen": "fen-after-move",
+            "result": "in_progress",
+            "is_check": False,
+            "command_id": command_id,
+        }
 
     async def send_legal_moves(self, square: str) -> None:
         self.calls.append(("legal_moves", square))
@@ -68,15 +87,60 @@ class FakeRelay:
     async def send_ai_move(self, difficulty: int | None = None) -> None:
         self.calls.append(("ai_move", difficulty))
 
-    async def send_set_position(self, fen: str) -> None:
-        self.calls.append(("set_position", fen))
+    async def send_ai_move_and_wait(
+        self,
+        difficulty: int | None = None,
+        *,
+        timeout: float = 60.0,
+    ) -> dict[str, Any]:
+        self.calls.append(("ai_move_and_wait", difficulty, timeout))
+        return {
+            "type": "ai_move",
+            "move": "b0c2",
+            "fen": "fen-after-ai",
+            "score": 50,
+            "result": "in_progress",
+            "is_check": False,
+        }
 
-    async def send_reset(self) -> None:
-        self.calls.append(("reset",))
+    async def send_set_position(self, fen: str, *, resume_seq: int | None = None) -> None:
+        self.calls.append(("set_position", fen, resume_seq))
+
+    async def send_reset(self, *, command_id: str | None = None) -> None:
+        self.calls.append(("reset", command_id))
+
+    async def send_reset_and_wait(
+        self,
+        *,
+        command_id: str | None = None,
+        timeout: float = 15.0,
+    ) -> dict[str, Any]:
+        self.calls.append(("reset_and_wait", command_id, timeout))
+        return {
+            "type": "state",
+            "fen": STARTING_FEN,
+            "side_to_move": "red",
+            "result": "in_progress",
+            "is_check": False,
+            "seq": 0,
+        }
 
     async def send_suggest(self, fen: str, depth: int) -> dict[str, Any]:
         self.calls.append(("suggest", fen, depth))
         return dict(self.suggestion_response)
+
+    def status(self) -> dict[str, Any]:
+        return {
+            "connected": self.connected,
+            "last_connected_at": None,
+            "last_disconnected_at": None,
+            "last_message_at": None,
+            "last_authoritative_sync_at": None,
+            "last_engine_seq": 0,
+            "pending_requests": 0,
+            "queued_messages": 0,
+            "last_error": None,
+        }
 
 
 @pytest.fixture
@@ -88,6 +152,9 @@ def bridge_testbed(monkeypatch):
     monkeypatch.setattr(bridge_app, "state", state)
     monkeypatch.setattr(bridge_app, "bus", bus)
     monkeypatch.setattr(bridge_app, "relay", relay)
+    bridge_app._seen_command_ids.clear()
+    bridge_app._seen_command_order.clear()
+    bridge_app._recent_cv_fens.clear()
 
     yield bridge_app, state, bus, relay
 
@@ -103,6 +170,8 @@ def client(bridge_testbed):
 
 
 class _ConnectedRequest:
+    query_params: dict[str, str] = {}
+
     async def is_disconnected(self) -> bool:
         return False
 
@@ -120,17 +189,20 @@ def capture_sse_events(bridge_testbed):
 
         async def _reader() -> list[dict[str, Any]]:
             events: list[dict[str, Any]] = []
-            async for chunk in response.body_iterator:
-                text = chunk.decode() if isinstance(chunk, bytes) else chunk
-                for line in text.splitlines():
-                    if line.startswith("data: "):
-                        payload = json.loads(line[6:])
-                        if not include_state_sync and payload.get("type") == "state_sync":
-                            continue
-                        events.append(payload)
-                        if len(events) >= expected:
-                            return events
-            return events
+            try:
+                async for chunk in response.body_iterator:
+                    text = chunk.decode() if isinstance(chunk, bytes) else chunk
+                    for line in text.splitlines():
+                        if line.startswith("data: "):
+                            payload = json.loads(line[6:])
+                            if not include_state_sync and payload.get("type") == "state_sync":
+                                continue
+                            events.append(payload)
+                            if len(events) >= expected:
+                                return events
+                return events
+            finally:
+                await response.body_iterator.aclose()
 
         task = asyncio.create_task(_reader())
         await asyncio.sleep(0)

@@ -392,8 +392,8 @@ Capstone_Guided_Chinese_Chess/
 
 | Service | Host Port | Container Port | Protocol |
 |---|---|---|---|
-| **chess-engine** | 8080 | 8080 | HTTP + WebSocket |
-| **state-bridge** | 5003 | 5003 | HTTP (REST + SSE) |
+| **chess-engine** | — (internal only) | 8080 | HTTP + WebSocket |
+| **state-bridge** | 5003 | 5003 | HTTP + WebSocket (REST + SSE + WS) |
 | **go-coaching** | 5002 | 8080 | HTTP |
 | **chess-coaching** | 5001 | 5000 | HTTP |
 | **chromadb** | 8000 | 8000 | HTTP |
@@ -409,7 +409,7 @@ Capstone_Guided_Chinese_Chess/
 | `http://localhost:3000` | Main game interface |
 | `http://localhost:3000/agents` | Agent pipeline inspector |
 | `http://localhost:3001` | Kibo 3D avatar |
-| `ws://localhost:8080/ws` | Rust engine WebSocket |
+| `ws://localhost:5003/ws` | State bridge gameplay WebSocket |
 | `http://localhost:5003/state/events` | State bridge SSE stream |
 | `http://localhost:5003/health` | State bridge health |
 | `http://localhost:5002/dashboard/` | Go Coach live agent graph UI |
@@ -523,7 +523,7 @@ Once running, **End Turn** on the frontend triggers CV capture, engine validatio
 ```bash
 cd Engine
 cargo run --release
-# http://localhost:8080
+# binds to 127.0.0.1:8080 by default for bridge-only access
 ```
 
 ### State Bridge
@@ -533,11 +533,18 @@ pip install -r requirements.txt
 ENGINE_WS_URL=ws://localhost:8080/ws uvicorn app:app --port 5003 --reload
 ```
 
+Use the bridge as the public gameplay endpoint:
+
+```text
+ws://localhost:5003/ws
+http://localhost:5003/state/events
+```
+
 ### Go Coaching Service
 ```bash
 cd server/chess_coach
 BRIDGE_URL=http://localhost:5003 go run ./cmd/main.go
-# http://localhost:8080 (coach) — use a different port locally if engine is on 8080
+# http://localhost:5002
 ```
 
 ### Python Coaching Server

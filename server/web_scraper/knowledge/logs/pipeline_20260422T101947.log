@@ -1,0 +1,46 @@
+==========================================
+  Xiangqi RAG Pipeline — Wed Apr 22 10:19:47 EDT 2026
+  wave=1  dry_run=true  force=false
+  chromadb=http://localhost:8000
+  embedding=http://localhost:8100
+==========================================
+
+── Stage 1: Acquire ──────────────────────────────
+2026-04-22 10:19:47,233 [INFO] acquire: Skipping unresolved source: xqinenglish_tjm_practical_endgames
+2026-04-22 10:19:47,233 [INFO] acquire: Sources to acquire: 12
+2026-04-22 10:19:47,233 [INFO] acquire: [SKIP] Already acquired: xqinenglish_opening_basics_05 → /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_opening_basics_05.html
+2026-04-22 10:19:49,238 [INFO] acquire: [SKIP] Already acquired: xqinenglish_choosing_opening → /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_choosing_opening.html
+2026-04-22 10:19:51,239 [INFO] acquire: [SKIP] Already acquired: xqinenglish_intro_opening → /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_intro_opening.html
+2026-04-22 10:19:53,241 [INFO] acquire: [SKIP] Already acquired: xqinenglish_strategical_advice_middle_game → /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_strategical_advice_middle_game.html
+2026-04-22 10:19:55,246 [INFO] acquire: [SKIP] Already acquired: xqinenglish_intro_midgame → /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_intro_midgame.html
+2026-04-22 10:19:57,247 [INFO] acquire: [SKIP] Already acquired: xqinenglish_tactics_01c_clearance → /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_tactics_01c_clearance.html
+2026-04-22 10:19:59,251 [INFO] acquire: [SKIP] Already acquired: xqinenglish_tactics_07c_dislodge → /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_tactics_07c_dislodge.html
+2026-04-22 10:20:01,255 [INFO] acquire: [SKIP] Already acquired: xqinenglish_endgame_basics_08 → /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_endgame_basics_08.html
+2026-04-22 10:20:03,258 [INFO] acquire: [SKIP] Already acquired: xqinenglish_proverbs_84_play → /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_proverbs_84_play.html
+2026-04-22 10:20:05,260 [INFO] acquire: [SKIP] Already acquired: xqinenglish_basic_checkmate_methods → /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_basic_checkmate_methods.html
+2026-04-22 10:20:07,261 [INFO] acquire: [SKIP] Already acquired: xqinenglish_basics_of_play → /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_basics_of_play.html
+2026-04-22 10:20:09,266 [INFO] acquire: [SKIP] Already acquired: xqinenglish_how_to_play_basics_02 → /Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/raw/xqinenglish/xqinenglish_how_to_play_basics_02.html
+2026-04-22 10:20:09,266 [INFO] acquire: Done. ok=0  skipped=12  errors=0
+acquire: OK
+
+── Stage 2: Normalize ────────────────────────────
+2026-04-22 10:20:09,525 [INFO] normalize: [NORMALIZE] xqinenglish_opening_basics_05
+Traceback (most recent call last):
+  File "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/normalize.py", line 336, in <module>
+    main()
+    ~~~~^^
+  File "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/normalize.py", line 318, in main
+    doc = normalize_html_source(source, html_bytes)
+  File "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/normalize.py", line 204, in normalize_html_source
+    remove_boilerplate(soup)
+    ~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/normalize.py", line 116, in remove_boilerplate
+    if _is_boilerplate_tag(tag):
+       ~~~~~~~~~~~~~~~~~~~^^^^^
+  File "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/normalize.py", line 108, in _is_boilerplate_tag
+    classes = " ".join(tag.get("class", []))
+                       ~~~~~~~^^^^^^^^^^^^^
+  File "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/.venv/lib/python3.14/site-packages/bs4/element.py", line 2366, in get
+    return self.attrs.get(key, default)
+           ^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'get'

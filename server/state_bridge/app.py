@@ -7,11 +7,15 @@ Evolved to FastAPI with SSE streaming and engine WebSocket relay.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
+import time
+import uuid
+from collections import deque
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
@@ -31,6 +35,11 @@ bus = EventBus()
 relay = EngineRelay(state, bus)
 DEFAULT_SUGGEST_DEPTH = 5
 DEFAULT_AI_DIFFICULTY = 4
+MAX_TRACKED_COMMAND_IDS = 4096
+CV_DEDUP_WINDOW_SECONDS = 0.5
+_seen_command_ids: set[str] = set()
+_seen_command_order: deque[str] = deque()
+_recent_cv_fens: dict[str, float] = {}
 
 
 def _looks_like_xiangqi_fen(fen: str) -> bool:
@@ -134,10 +143,15 @@ class LedCommandPayload(BaseModel):
 class EngineMovePayload(BaseModel):
     """Tell the engine to apply a move in algebraic notation."""
     move: str              # e.g. "e3e4"
+    command_id: str | None = None
 
 
 class AiMovePayload(BaseModel):
     difficulty: int | None = None
+
+
+class ResetPayload(BaseModel):
+    command_id: str | None = None
 
 
 class AnalyzePayload(BaseModel):
@@ -179,6 +193,17 @@ class DetectPuzzlePayload(BaseModel):
     best_move: str | None = None
 
 
+def _bridge_state_message() -> dict[str, object]:
+    return {
+        "type": "state",
+        "fen": state.fen,
+        "side_to_move": state.side_to_move,
+        "result": state.game_result,
+        "is_check": state.is_check,
+        "seq": state.event_seq,
+    }
+
+
 # =====================================================================
 # GET — state snapshot
 # =====================================================================
@@ -190,7 +215,46 @@ async def get_state():
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    authoritative_bundle_healthy = relay.connected
+    return {
+        "status": "ok",
+        "authoritative_bundle_healthy": authoritative_bundle_healthy,
+        "relay": relay.status(),
+        "snapshot": {
+            "fen": state.fen,
+            "side_to_move": state.side_to_move,
+            "move_count": len(state.move_history),
+            "event_seq": state.event_seq,
+        },
+    }
+
+
+def _claim_command_id(command_id: str | None) -> tuple[str, bool]:
+    normalized = (command_id or "").strip() or uuid.uuid4().hex
+    if normalized in _seen_command_ids:
+        return normalized, False
+
+    _seen_command_ids.add(normalized)
+    _seen_command_order.append(normalized)
+    while len(_seen_command_order) > MAX_TRACKED_COMMAND_IDS:
+        expired = _seen_command_order.popleft()
+        _seen_command_ids.discard(expired)
+    return normalized, True
+
+
+def _is_duplicate_cv_capture(fen: str) -> bool:
+    now = time.monotonic()
+    expired = [
+        cached_fen
+        for cached_fen, seen_at in _recent_cv_fens.items()
+        if now - seen_at > CV_DEDUP_WINDOW_SECONDS
+    ]
+    for cached_fen in expired:
+        _recent_cv_fens.pop(cached_fen, None)
+
+    previous = _recent_cv_fens.get(fen)
+    _recent_cv_fens[fen] = now
+    return previous is not None and now - previous <= CV_DEDUP_WINDOW_SECONDS
 
 
 async def _publish_led_command(command: str) -> None:
@@ -242,6 +306,16 @@ async def _publish_best_move_from_suggestion(fen: str) -> None:
     ))
 
 
+def _engine_bundle_unavailable_response() -> JSONResponse:
+    return JSONResponse(
+        {
+            "error": "Engine session bundle unavailable",
+            "relay": relay.status(),
+        },
+        status_code=503,
+    )
+
+
 # =====================================================================
 # POST — state mutations (each publishes an event)
 # =====================================================================
@@ -249,7 +323,16 @@ async def _publish_best_move_from_suggestion(fen: str) -> None:
 @app.post("/state/fen")
 async def post_fen(body: FenPayload):
     if body.source == "cv":
+        if not relay.connected:
+            return _engine_bundle_unavailable_response()
         state.apply_fen(body.fen, source="cv")
+        if _is_duplicate_cv_capture(body.fen):
+            return {
+                "accepted": True,
+                "duplicate": True,
+                "source": body.source,
+                "status": "Duplicate CV capture ignored",
+            }
         if not _looks_like_xiangqi_fen(body.fen):
             return await _publish_cv_validation_error(
                 body.fen,
@@ -331,6 +414,8 @@ async def post_move(body: MovePayload):
 
 @app.post("/state/select")
 async def post_select(body: SelectPayload):
+    if not relay.connected:
+        return _engine_bundle_unavailable_response()
     try:
         result = await relay.send_legal_moves_for_square(state.fen, body.square)
     except asyncio.TimeoutError:
@@ -392,26 +477,52 @@ async def compat_opponent(body: OpponentMovePayload):
 @app.post("/engine/move")
 async def engine_move(body: EngineMovePayload):
     """Forward a move to the Rust engine via the relay."""
-    await relay.send_move(body.move)
-    return {"status": "Move forwarded to engine"}
+    if not relay.connected:
+        return _engine_bundle_unavailable_response()
+    command_id, accepted = _claim_command_id(body.command_id)
+    if not accepted:
+        return JSONResponse(
+            {
+                "error": "Duplicate command_id",
+                "command_id": command_id,
+            },
+            status_code=409,
+        )
+    await relay.send_move(body.move, command_id=command_id)
+    return {"status": "Move forwarded to engine", "command_id": command_id}
 
 
 @app.post("/engine/ai-move")
 async def engine_ai_move(body: AiMovePayload):
+    if not relay.connected:
+        return _engine_bundle_unavailable_response()
     await relay.send_ai_move(body.difficulty)
     return {"status": "AI move requested"}
 
 
 @app.post("/engine/reset")
-async def engine_reset():
-    await relay.send_reset()
+async def engine_reset(body: ResetPayload | None = None):
+    if not relay.connected:
+        return _engine_bundle_unavailable_response()
+    command_id, accepted = _claim_command_id(body.command_id if body else None)
+    if not accepted:
+        return JSONResponse(
+            {
+                "error": "Duplicate command_id",
+                "command_id": command_id,
+            },
+            status_code=409,
+        )
+    await relay.send_reset(command_id=command_id)
     state.reset()
     await bus.publish(Event(type=EventType.GAME_RESET, data={}))
-    return {"status": "Game reset"}
+    return {"status": "Game reset", "command_id": command_id}
 
 
 @app.post("/engine/set-position")
 async def engine_set_position(body: FenPayload):
+    if not relay.connected:
+        return _engine_bundle_unavailable_response()
     await relay.send_set_position(body.fen)
     return {"status": "Position forwarded to engine"}
 
@@ -426,6 +537,8 @@ async def engine_analyze(body: AnalyzePayload):
     Go coaching (BridgeClient/AnalysisResponse) expects the fields from
     `features` at the top level.  We unwrap the envelope here.
     """
+    if not relay.connected:
+        return _engine_bundle_unavailable_response()
     try:
         result = await relay.send_analyze(body.fen, body.depth)
         # Unwrap envelope: return the features object directly so Go can
@@ -445,6 +558,8 @@ async def engine_batch_analyze(body: BatchAnalyzePayload):
     Go coaching expects []MoveFeatureVector — a plain JSON array of feature objects.
     We unwrap the envelope here so the shapes match.
     """
+    if not relay.connected:
+        return _engine_bundle_unavailable_response()
     try:
         result = await relay.send_batch_analyze(body.moves)
         # Unwrap envelope: extract features from each BatchResult
@@ -458,6 +573,8 @@ async def engine_batch_analyze(body: BatchAnalyzePayload):
 @app.post("/engine/suggest")
 async def engine_suggest(body: SuggestPayload):
     """Get best move suggestion for a position."""
+    if not relay.connected:
+        return _engine_bundle_unavailable_response()
     try:
         result = await relay.send_suggest(body.fen, body.depth)
         return JSONResponse(result)
@@ -473,9 +590,11 @@ async def engine_validate_fen(body: ValidateFenPayload):
             "valid": False,
             "detail": {"type": "error", "message": "Invalid Xiangqi FEN format"},
         }
+    if not relay.connected:
+        return _engine_bundle_unavailable_response()
     try:
         result = await relay.send_validate_fen(body.fen)
-        valid = result.get("type") != "error"
+        valid = result.get("valid", False)
         return {"valid": valid, "detail": result}
     except asyncio.TimeoutError:
         return JSONResponse({"error": "Engine timeout"}, status_code=504)
@@ -516,6 +635,8 @@ def _moving_side_squares(fen: str) -> list[str]:
 @app.post("/engine/legal-moves")
 async def engine_legal_moves(body: LegalMovesPayload):
     """Get legal moves for a square (or all squares) at a given FEN."""
+    if not relay.connected:
+        return _engine_bundle_unavailable_response()
     try:
         if body.square:
             result = await relay.send_legal_moves_for_square(body.fen, body.square)
@@ -539,6 +660,8 @@ async def engine_legal_moves(body: LegalMovesPayload):
 @app.post("/engine/make-move")
 async def engine_make_move(body: MakeMovePayload):
     """Set position then apply a move — returns move_result."""
+    if not relay.connected:
+        return _engine_bundle_unavailable_response()
     try:
         result = await relay.send_make_move(body.fen, body.move)
         return JSONResponse(result)
@@ -551,6 +674,8 @@ async def engine_is_move_legal(body: IsMoveLegalPayload):
     """Check if a move is legal at a given FEN."""
     if len(body.move) < 4:
         return {"legal": False, "error": "Invalid move format"}
+    if not relay.connected:
+        return _engine_bundle_unavailable_response()
     from_sq = body.move[:2]
     to_sq = body.move[2:]
     try:
@@ -569,6 +694,8 @@ async def engine_puzzle_detect(body: DetectPuzzlePayload):
     ``puzzle_detector`` module, unwrapped from its WebSocket envelope so that
     the Go coaching service can decode it directly.
     """
+    if not relay.connected:
+        return _engine_bundle_unavailable_response()
     try:
         result = await relay.send_detect_puzzle(body.fen, body.depth)
         # Unwrap envelope: {"type":"puzzle_detection","detection":{...}} → detection
@@ -586,10 +713,27 @@ async def engine_puzzle_detect(body: DetectPuzzlePayload):
 @app.get("/state/events")
 async def sse_events(request: Request):
     """Server-Sent Events stream.  Subscribers receive every bridge event."""
+    raw_types = request.query_params.get("types", "").strip()
+    filter_types: set[EventType] | None = None
+    if raw_types:
+        filter_types = set()
+        for item in raw_types.split(","):
+            name = item.strip()
+            if not name:
+                continue
+            try:
+                filter_types.add(EventType(name))
+            except ValueError:
+                continue
 
     async def generate():
-        yield Event(type=EventType.STATE_SYNC, data=state.to_dict()).to_sse()
-        async for event in bus.stream():
+        if filter_types is None or EventType.STATE_SYNC in filter_types:
+            yield Event(
+                type=EventType.STATE_SYNC,
+                data=state.to_dict(),
+                sequence=bus.last_sequence,
+            ).to_sse()
+        async for event in bus.stream(filter_types):
             if await request.is_disconnected():
                 break
             yield event.to_sse()
@@ -603,6 +747,89 @@ async def sse_events(request: Request):
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@app.websocket("/ws")
+async def bridge_ws(websocket: WebSocket):
+    await websocket.accept()
+    await websocket.send_json(_bridge_state_message())
+
+    try:
+        while True:
+            raw = await websocket.receive_text()
+            try:
+                message = json.loads(raw)
+            except json.JSONDecodeError:
+                await websocket.send_json({"type": "error", "message": "Invalid JSON payload"})
+                continue
+
+            msg_type = message.get("type")
+
+            try:
+                if msg_type == "get_state":
+                    await websocket.send_json(_bridge_state_message())
+                    continue
+
+                if not relay.connected:
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": "Engine session bundle unavailable",
+                        "relay": relay.status(),
+                    })
+                    continue
+
+                if msg_type == "legal_moves":
+                    square = str(message.get("square", ""))
+                    await websocket.send_json(
+                        await relay.send_legal_moves_for_square(state.fen, square)
+                    )
+                elif msg_type == "suggest":
+                    difficulty = message.get("difficulty", DEFAULT_AI_DIFFICULTY)
+                    await websocket.send_json(
+                        await relay.send_suggest(state.fen, int(difficulty))
+                    )
+                elif msg_type == "move":
+                    move = str(message.get("move", ""))
+                    command_id, accepted = _claim_command_id(message.get("command_id"))
+                    if not accepted:
+                        await websocket.send_json({
+                            "type": "error",
+                            "message": "Duplicate command_id",
+                            "command_id": command_id,
+                        })
+                        continue
+                    await websocket.send_json(
+                        await relay.send_move_and_wait(move, command_id=command_id)
+                    )
+                elif msg_type == "reset":
+                    command_id, accepted = _claim_command_id(message.get("command_id"))
+                    if not accepted:
+                        await websocket.send_json({
+                            "type": "error",
+                            "message": "Duplicate command_id",
+                            "command_id": command_id,
+                        })
+                        continue
+                    response = await relay.send_reset_and_wait(command_id=command_id)
+                    state.reset()
+                    await bus.publish(Event(type=EventType.GAME_RESET, data={}))
+                    await websocket.send_json(response)
+                elif msg_type == "ai_move":
+                    difficulty = message.get("difficulty")
+                    await websocket.send_json(
+                        await relay.send_ai_move_and_wait(
+                            int(difficulty) if difficulty is not None else None
+                        )
+                    )
+                else:
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": f"Unsupported bridge command: {msg_type}",
+                    })
+            except asyncio.TimeoutError:
+                await websocket.send_json({"type": "error", "message": "Engine timeout"})
+    except WebSocketDisconnect:
+        return
 
 
 # =====================================================================

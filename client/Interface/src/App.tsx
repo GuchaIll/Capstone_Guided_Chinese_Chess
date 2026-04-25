@@ -12,6 +12,7 @@ import { useWebSocket } from './hooks/useWebSocket';
 import { useChessVoiceCommands } from './hooks/useChessVoiceCommands';
 import { SpeechService } from './services/speech/SpeechService';
 import { SuggestedMove, RED, BLACK } from './types';
+import type { GameResult } from './types';
 import type { Position, Side } from './types';
 import type { AgentGraphState } from './types/agentState';
 import type { TurnPhase } from './types/turnPhase';
@@ -21,10 +22,23 @@ import './App.css';
 const sideToString = (s: Side): 'red' | 'black' => (s === RED ? 'red' : 'black');
 const otherSide = (s: Side): Side => (s === RED ? BLACK : RED);
 const stateBridgeBase = import.meta.env.VITE_STATE_BRIDGE_BASE || `${window.location.origin}/bridge`;
+const useBridgeCommands = (import.meta.env.VITE_USE_BRIDGE_COMMANDS ?? 'true') !== 'false';
+const stateBridgeWs = stateBridgeBase.replace(/^http/, 'ws');
 
 interface BridgeStateSnapshot {
   fen: string;
   cv_fen: string | null;
+  side_to_move?: 'red' | 'black';
+  game_result?: string;
+  is_check?: boolean;
+  event_seq?: number;
+}
+
+interface BridgeBusEvent {
+  type: string;
+  data: Record<string, unknown>;
+  ts: number;
+  seq: number | null;
 }
 
 function App() {
@@ -91,7 +105,7 @@ function App() {
     }, 500);
   }, []);
 
-  const handleMessage = useCallback((message: string) => {
+  const handleEngineMessage = useCallback((message: string) => {
     try {
       const data = JSON.parse(message);
       console.log('[App] Received:', data.type, data);
@@ -219,17 +233,216 @@ function App() {
     }
   }, [setGameStateFromFen, pushMoveRecord, triggerAiTurn, setResult]);
 
+  const handleBridgeCommandMessage = useCallback((message: string) => {
+    try {
+      const data = JSON.parse(message);
+      console.log('[App] Bridge command response:', data.type, data);
+
+      if (data.type === 'state') {
+        endTurnInFlightRef.current = false;
+        setGameStateFromFen(data.fen);
+        setTurnActionPending(false);
+        if (data.result && data.result !== 'in_progress') {
+          setResult(data.result);
+        }
+      } else if (data.type === 'legal_moves') {
+        setTurnNotice(null);
+        setLegalTargets(data.targets || []);
+      } else if (data.type === 'suggestion') {
+        setSuggestedMove({
+          from: data.from,
+          to: data.to,
+          score: data.score,
+        });
+      } else if (data.type === 'move_result') {
+        if (!data.valid) {
+          endTurnInFlightRef.current = false;
+          setPendingMove(null);
+          setTurnPhase('player_idle');
+          setTurnNotice(data.reason || 'Move was rejected by the engine.');
+          setTurnActionPending(false);
+        }
+      } else if (data.type === 'error') {
+        console.error('[App] Bridge command error:', data.message);
+        endTurnInFlightRef.current = false;
+        if (aiTurnTimeoutRef.current !== null) {
+          clearTimeout(aiTurnTimeoutRef.current);
+          aiTurnTimeoutRef.current = null;
+        }
+        aiThinkingRef.current = false;
+        setAiThinking(false);
+        setTurnNotice(data.message || 'Bridge error.');
+        setTurnActionPending(false);
+      }
+    } catch {
+      console.log('[App] Received non-JSON bridge message:', message);
+    }
+  }, [setGameStateFromFen, setResult]);
+
+  const handleBridgeEvent = useCallback((event: BridgeBusEvent) => {
+    const data = event.data ?? {};
+    console.log('[App] Bridge event:', event.type, event);
+
+    if (event.type === 'state_sync' || event.type === 'fen_update') {
+      const fen = typeof data.fen === 'string' ? data.fen : null;
+      if (!fen) return;
+      endTurnInFlightRef.current = false;
+      setGameStateFromFen(fen);
+      setTurnActionPending(false);
+      setOpponentMove(null);
+
+      const result = typeof data.result === 'string'
+        ? data.result
+        : typeof data.game_result === 'string'
+          ? data.game_result
+          : 'in_progress';
+      if (result !== 'in_progress') {
+        setResult(result as GameResult);
+      }
+
+      const sideToken = fen.split(' ')[1]?.toLowerCase() || 'w';
+      const sideOnMove: Side = sideToken === 'b' ? BLACK : RED;
+      if (
+        isConnectedRef.current &&
+        sideOnMove !== playerSideRef.current &&
+        result === 'in_progress' &&
+        turnPhaseRef.current === 'player_idle' &&
+        !aiThinkingRef.current
+      ) {
+        triggerAiTurn();
+      }
+      return;
+    }
+
+    if (event.type === 'best_move') {
+      if (typeof data.from === 'string' && typeof data.to === 'string') {
+        setSuggestedMove({
+          from: data.from,
+          to: data.to,
+          score: 0,
+        });
+      }
+      return;
+    }
+
+    if (event.type === 'move_made') {
+      const fen = typeof data.fen === 'string' ? data.fen : '';
+      const moveFrom = typeof data.from === 'string' ? data.from : '';
+      const moveTo = typeof data.to === 'string' ? data.to : '';
+      const source = typeof data.source === 'string' ? data.source : '';
+      const result = typeof data.result === 'string' ? data.result : 'in_progress';
+      const isCheck = Boolean(data.is_check);
+      const score = typeof data.score === 'number' ? data.score : 0;
+
+      if (fen) {
+        setGameStateFromFen(fen);
+      }
+      if (moveFrom && moveTo) {
+        pushMoveRecord(moveFrom, moveTo);
+      }
+      endTurnInFlightRef.current = false;
+
+      if (source === 'player') {
+        setOpponentMove(null);
+        setPendingMove(null);
+        setTurnNotice(null);
+        setTurnActionPending(false);
+
+        chatPanelRef.current?.sendMoveEvent(
+          `${moveFrom}${moveTo}`,
+          fen,
+          sideToString(playerSideRef.current),
+          result,
+          isCheck,
+          score,
+        );
+
+        if (result !== 'in_progress') {
+          setResult(result as GameResult);
+        } else if (isConnectedRef.current) {
+          triggerAiTurn();
+        }
+        return;
+      }
+
+      if (source === 'ai' || source === 'opponent') {
+        if (moveFrom && moveTo) {
+          const fromPos = { file: moveFrom.charCodeAt(0) - 'a'.charCodeAt(0), rank: Number(moveFrom[1]) };
+          const toPos = { file: moveTo.charCodeAt(0) - 'a'.charCodeAt(0), rank: Number(moveTo[1]) };
+          if (Number.isInteger(fromPos.rank) && Number.isInteger(toPos.rank)) {
+            setOpponentMove({ from: fromPos, to: toPos });
+          }
+        }
+
+        aiThinkingRef.current = false;
+        setAiThinking(false);
+        setTurnNotice("Mirror the engine move on the physical board, then press End Engine's Turn.");
+        setTurnActionPending(false);
+        setTurnPhase('engine_done');
+
+        chatPanelRef.current?.sendMoveEvent(
+          `${moveFrom}${moveTo}`,
+          fen,
+          sideToString(otherSide(playerSideRef.current)),
+          result,
+          isCheck,
+          score,
+        );
+
+        if (result !== 'in_progress') {
+          setResult(result as GameResult);
+        }
+        return;
+      }
+    }
+
+    if (event.type === 'game_reset') {
+      resetGame();
+      setLegalTargets([]);
+      setSuggestedMove(null);
+      setOpponentMove(null);
+      setPendingMove(null);
+      setTurnPhase('player_idle');
+      setTurnNotice(null);
+      setTurnActionPending(false);
+      aiThinkingRef.current = false;
+      setAiThinking(false);
+      return;
+    }
+  }, [pushMoveRecord, resetGame, setGameStateFromFen, setResult, triggerAiTurn]);
+
   const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
   const defaultEngineWsUrl = `${wsProtocol}://${window.location.host}/ws`;
   const engineWsUrl = import.meta.env.VITE_ENGINE_WS_URL || defaultEngineWsUrl;
+  const bridgeWsUrl = `${stateBridgeWs}/ws`;
 
   const { sendMessage, isConnected } = useWebSocket({
-    url: engineWsUrl,
-    onMessage: handleMessage,
+    url: useBridgeCommands ? bridgeWsUrl : engineWsUrl,
+    onMessage: useBridgeCommands ? handleBridgeCommandMessage : handleEngineMessage,
   });
 
   isConnectedRef.current = isConnected;
   sendMessageRef.current = sendMessage;
+
+  useEffect(() => {
+    if (!useBridgeCommands) return;
+
+    const events = new EventSource(`${stateBridgeBase}/state/events`);
+    events.onmessage = (raw) => {
+      try {
+        handleBridgeEvent(JSON.parse(raw.data) as BridgeBusEvent);
+      } catch (error) {
+        console.warn('[App] Failed to parse bridge event:', error);
+      }
+    };
+    events.onerror = (error) => {
+      console.warn('[App] Bridge SSE error:', error);
+    };
+
+    return () => {
+      events.close();
+    };
+  }, [handleBridgeEvent]);
 
   // When a piece is selected, request legal moves and (once per turn) a suggestion.
   // Suppress during engine turn phases to avoid flooding WS.

@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en-gb" dir="ltr">
+<head>
+    <meta charset="utf-8">
+	<meta name="rights" content="This website and its content is copyright of xqinenglish.com 2011-2023. All rights reserved.">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="Welcome to www.xqinenglish.com, your ultimate resource for delving into the captivating world of Xiangqi, or Chinese Chess, without the language barrier. ">
+	<meta name="generator" content="Joomla! - Open Source Content Management">
+	<title>xqinenglish - Basic Xiangqi (Chinese Chess) Tactics 01c Clearance Tactic</title>
+	<link href="/media/system/images/joomla-favicon.svg" rel="icon" type="image/svg+xml">
+	<link href="/media/system/images/favicon.ico" rel="alternate icon" type="image/vnd.microsoft.icon">
+	<link href="/media/system/images/joomla-favicon-pinned.svg" rel="mask-icon" color="#000">
+	<link href="https://www.xqinenglish.com/index.php?option=com_finder&amp;view=search&amp;format=opensearch&amp;Itemid=435&amp;lang=en" rel="search" title="OpenSearch xqinenglish" type="application/opensearchdescription+xml">
+
+    <link href="/media/system/css/joomla-fontawesome.css?7c0a673bfa90cbabbcb9e35c23922040" rel="lazy-stylesheet" data-asset-name="fontawesome" /><noscript><link href="/media/system/css/joomla-fontawesome.css?7c0a673bfa90cbabbcb9e35c23922040" rel="stylesheet" /></noscript>
+	<link href="/media/templates/site/cassiopeia/css/global/colors_standard.css?7c0a673bfa90cbabbcb9e35c23922040" rel="stylesheet" data-asset-name="theme.colors_standard" />
+	<link href="/media/templates/site/cassiopeia/css/template.css?7c0a673bfa90cbabbcb9e35c23922040" rel="stylesheet" data-asset-name="template.cassiopeia.ltr" data-asset-dependencies="fontawesome" />
+	<link href="/media/vendor/awesomplete/css/awesomplete.css?1.1.5" rel="stylesheet" data-asset-name="awesomplete" />
+	<link href="/media/templates/site/cassiopeia/css/vendor/joomla-custom-elements/joomla-alert.css?0.2.0" rel="stylesheet" data-asset-name="webcomponent.joomla-alert" />
+	<link href="/media/plg_system_debug/css/debug.css?7c0a673bfa90cbabbcb9e35c23922040" rel="stylesheet" data-asset-name="plg.system.debug" data-asset-dependencies="fontawesome" />
+	<link href="/media/com_jce/site/css/content.min.css?badb4208be409b1335b815dde676300e" rel="stylesheet" />
+	<link href="/media/mod_social_slider/css/style.css?7c0a673bfa90cbabbcb9e35c23922040" rel="stylesheet" />
+	<style>:root {
+		--hue: 214;
+		--template-bg-light: #f0f4fb;
+		--template-text-dark: #495057;
+		--template-text-light: #ffffff;
+		--template-link-color: #2a69b8;
+		--template-special-color: #001B4C;
+		
+	}</style>
+	<style>.jj_sl_navigation li a {
+			background-color:#ed2f91;
+			text-align:right;
+			color:#faf5f5 !important;
+		}
+		.jj_sl_navigation .jj_sprite {
+			background-image: url(https://www.xqinenglish.com/media/mod_social_slider/icons/sprite-white.png);
+		}.jj_sl_navigation { top:3px;
+			}.jj_sl_navigation .jj_sl_custom1 a:hover{
+			background-color: #000000;
+		 }
+		 .jj_sl_navigation .jj_sl_custom2 a:hover{
+			background-color: #000000;
+		 }
+		 .jj_sl_navigation .jj_sl_custom3 a:hover{
+			background-color: #000000;
+		 }
+		 .jj_sl_navigation .jj_sl_custom4 a:hover{
+			background-color: #000000;
+		 }
+		 .jj_sl_navigation .jj_sl_custom5 a:hover{
+			background-color: #000000;
+		 }
+				.jj_sl_navigation .jj_sprite_custom.jj_custom1 {
+					background-image: url(https://www.xqinenglish.com/media/mod_social_slider/icons/icon.png);
+				}
+				.jj_sl_navigation .jj_sprite_custom.jj_custom2 {
+					background-image: url(https://www.xqinenglish.com/media/mod_social_slider/icons/icon.png);
+				}
+				.jj_sl_navigation .jj_sprite_custom.jj_custom3 {
+					background-image: url(https://www.xqinenglish.com/media/mod_social_slider/icons/icon.png);
+				}
+				.jj_sl_navigation .jj_sprite_custom.jj_custom4 {
+					background-image: url(https://www.xqinenglish.com/media/mod_social_slider/icons/icon.png);
+				}
+				.jj_sl_navigation .jj_sprite_custom.jj_custom5 {
+					background-image: url(https://www.xqinenglish.com/media/mod_social_slider/icons/icon.png);
+				}</style>
+
+    <script src="/media/vendor/jquery/js/jquery.js?3.6.0" data-asset-name="jquery"></script>
+	<script src="/media/mod_menu/js/menu-es5.js?7c0a673bfa90cbabbcb9e35c23922040" nomodule defer data-asset-name="mod_menu"></script>
+	<script type="application/json" class="joomla-script-options new">{
+    "joomla.jtext": {
+        "MOD_FINDER_SEARCH_VALUE": "Search &hellip;",
+        "JLIB_JS_AJAX_ERROR_OTHER": "An error has occurred while fetching the JSON data: HTTP %s status code.",
+        "JLIB_JS_AJAX_ERROR_PARSE": "A parse error has occurred while processing the following JSON data:<br><code style=\"color:inherit;white-space:pre-wrap;padding:0;margin:0;border:0;background:inherit;\">%s<\/code>",
+        "ERROR": "Error",
+        "MESSAGE": "Message",
+        "NOTICE": "Notice",
+        "WARNING": "Warning",
+        "JCLOSE": "Close",
+        "JOK": "OK",
+        "JOPEN": "Open"
+    },
+    "finder-search": {
+        "url": "\/index.php?option=com_finder&task=suggestions.suggest&format=json&tmpl=component&Itemid=435&lang=en"
+    },
+    "system.paths": {
+        "root": "",
+        "rootFull": "https:\/\/www.xqinenglish.com\/",
+        "base": "",
+        "baseFull": "https:\/\/www.xqinenglish.com\/"
+    },
+    "csrf.token": "b0805e3a59e87b0d23d1bbc5a8b73b55"
+}</script>
+	<script src="/media/system/js/core.js?3b2c7481f479d57ca6a59403341a2e378a288779" data-asset-name="core"></script>
+	<script src="/media/templates/site/cassiopeia/js/template.js?7c0a673bfa90cbabbcb9e35c23922040" defer data-asset-name="template.cassiopeia" data-asset-dependencies="core"></script>
+	<script src="/media/com_finder/js/finder-es5.js?14e4c7fdce4ca11c6d12b74bad128529a294b183" nomodule defer data-asset-name="com_finder.finder.es5" data-asset-dependencies="core"></script>
+	<script src="/media/system/js/messages-es5.js?42aff9798f66753bdb448b926baf2140f17f2c07" nomodule defer data-asset-name="messages-legacy" data-asset-dependencies="core"></script>
+	<script src="/media/vendor/awesomplete/js/awesomplete.js?1.1.5" defer data-asset-name="awesomplete"></script>
+	<script src="/media/com_finder/js/finder.js?c8b55661ed62db937b8d6856090adf9258c4a0fc" type="module" data-asset-name="com_finder.finder" data-asset-dependencies="com_finder.finder.es5"></script>
+	<script src="/media/system/js/messages.js?7425e8d1cb9e4f061d5e30271d6d99b085344117" type="module" data-asset-name="messages" data-asset-dependencies="messages-legacy"></script>
+	<script src="/media/plg_system_debug/js/debug.js?7c0a673bfa90cbabbcb9e35c23922040" defer data-asset-name="plg.system.debug" data-asset-dependencies="jquery"></script>
+	<script type="application/ld+json">{"@context":"https:\/\/schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"item":{"@id":"https:\/\/www.xqinenglish.com\/index.php?option=com_content&amp;view=article&amp;id=96&amp;Itemid=435&amp;lang=en","name":"Home"}},{"@type":"ListItem","position":2,"item":{"@id":"https:\/\/www.xqinenglish.com\/index.php?option=com_content&amp;view=categories&amp;id=113&amp;Itemid=510&amp;lang=en","name":"Midgame"}},{"@type":"ListItem","position":3,"item":{"@id":"https:\/\/www.xqinenglish.com\/index.php?option=com_content&amp;view=category&amp;id=223&amp;Itemid=510&amp;lang=en","name":"Basic Midgame Tactics 象棋战术初步 李海鸣 林秦"}},{"@type":"ListItem","position":4,"item":{"name":"Basic Xiangqi (Chinese Chess) Tactics 01c Clearance Tactic"}}]}</script>
+
+</head>
+
+<body class="site com_content wrapper-static view-article no-layout no-task itemid-510 has-sidebar-left has-sidebar-right">
+    <header class="header container-header full-width">
+
+        
+        
+                    <div class="grid-child">
+                <div class="navbar-brand">
+                    <a class="brand-logo" href="/">
+                        <img loading="eager" decoding="async" src="https://www.xqinenglish.com/images/headers/banner03chris.jpg" alt="xqinenglish" width="1000" height="196">                    </a>
+                                    </div>
+            </div>
+        
+            </header>
+
+    <div class="site-grid">
+        
+        
+                <div class="grid-child container-top-b">
+            <div class="top-b card ">
+        <div class="card-body">
+                <nav class="mod-breadcrumbs__wrapper" aria-label="Breadcrumbs">
+    <ol class="mod-breadcrumbs breadcrumb px-3 py-2">
+                    <li class="mod-breadcrumbs__here float-start">
+                You are here: &#160;
+            </li>
+        
+        <li class="mod-breadcrumbs__item breadcrumb-item"><a href="/index.php?option=com_content&amp;view=article&amp;id=96&amp;Itemid=435&amp;lang=en" class="pathway"><span>Home</span></a></li><li class="mod-breadcrumbs__item breadcrumb-item"><a href="/index.php?option=com_content&amp;view=categories&amp;id=113&amp;Itemid=510&amp;lang=en" class="pathway"><span>Midgame</span></a></li><li class="mod-breadcrumbs__item breadcrumb-item"><a href="/index.php?option=com_content&amp;view=category&amp;id=223&amp;Itemid=510&amp;lang=en" class="pathway"><span>Basic Midgame Tactics 象棋战术初步 李海鸣 林秦</span></a></li><li class="mod-breadcrumbs__item breadcrumb-item active"><span>Basic Xiangqi (Chinese Chess) Tactics 01c Clearance Tactic</span></li>    </ol>
+    </nav>
+    </div>
+</div>
+
+        </div>
+        
+                <div class="grid-child container-sidebar-left">
+            <div class="sidebar-left card ">
+            <h3 class="card-header ">Main Menu</h3>        <div class="card-body">
+                <ul class="mod-menu mod-list nav ">
+<li class="nav-item item-435 default"><a href="/index.php?option=com_content&amp;view=article&amp;id=96&amp;Itemid=435&amp;lang=en" >Home</a></li><li class="nav-item item-507"><a href="/index.php?option=com_content&amp;view=article&amp;id=111&amp;Itemid=507&amp;lang=en" >About xqinenglish</a></li><li class="nav-item item-506 deeper parent"><a href="/index.php?option=com_content&amp;view=article&amp;id=97&amp;Itemid=506&amp;lang=en" >Announcements</a><ul class="mod-menu__sub list-unstyled small"><li class="nav-item item-627"><a href="/index.php?option=com_content&amp;view=category&amp;id=102&amp;Itemid=627&amp;lang=en" target="_blank">Archives</a></li></ul></li><li class="nav-item item-608"><a href="/index.php?option=com_content&amp;view=featured&amp;Itemid=608&amp;lang=en" >Featured Articles</a></li><li class="nav-item item-504"><a href="/index.php?option=com_content&amp;view=category&amp;id=110&amp;Itemid=504&amp;lang=en" >Basics of Xiangqi</a></li><li class="nav-item item-522"><a href="/index.php?option=com_content&amp;view=category&amp;id=106&amp;Itemid=522&amp;lang=en" >Basic Kills</a></li><li class="nav-item item-503"><a href="/index.php?option=com_content&amp;view=categories&amp;id=103&amp;Itemid=503&amp;lang=en" >Ancient Manuals</a></li><li class="nav-item item-511"><a href="/index.php?option=com_content&amp;view=categories&amp;id=112&amp;Itemid=511&amp;lang=en" >Opening</a></li><li class="nav-item item-510 current active"><a href="/index.php?option=com_content&amp;view=categories&amp;id=113&amp;Itemid=510&amp;lang=en" aria-current="location">Midgame</a></li><li class="nav-item item-509"><a href="/index.php?option=com_content&amp;view=categories&amp;id=111&amp;Itemid=509&amp;lang=en" >Endgame</a></li><li class="nav-item item-505"><a href="/index.php?option=com_content&amp;view=categories&amp;id=105&amp;Itemid=505&amp;lang=en" >Xiangqi Puzzles</a></li><li class="nav-item item-512"><a href="/index.php?option=com_content&amp;view=categories&amp;id=121&amp;Itemid=512&amp;lang=en" >Problems</a></li><li class="nav-item item-532 deeper parent"><a href="/index.php?option=com_content&amp;view=categories&amp;id=175&amp;Itemid=532&amp;lang=en" >Match Records</a><ul class="mod-menu__sub list-unstyled small"><li class="nav-item item-562"><a href="/index.php?option=com_content&amp;view=categories&amp;id=187&amp;Itemid=562&amp;lang=en" >China A League</a></li></ul></li><li class="nav-item item-533"><a href="/index.php?option=com_content&amp;view=categories&amp;id=176&amp;Itemid=533&amp;lang=en" >Annotated Games</a></li></ul>
+    </div>
+</div>
+<div class="sidebar-left card ">
+            <h3 class="card-header ">Main Menu</h3>        <div class="card-body">
+                <ul class="mod-menu mod-list nav ">
+<li class="nav-item item-523"><a href="/index.php?option=com_content&amp;view=category&amp;id=161&amp;Itemid=523&amp;lang=en" >Xiangqi History</a></li><li class="nav-item item-583"><a href="/index.php?option=com_content&amp;view=category&amp;id=277&amp;Itemid=583&amp;lang=en" >Xiangqi Culture</a></li><li class="nav-item item-526"><a href="/index.php?option=com_content&amp;view=category&amp;id=117&amp;Itemid=526&amp;lang=en" >Xiangqi Greats</a></li><li class="nav-item item-542"><a href="/index.php?option=com_content&amp;view=category&amp;id=116&amp;Itemid=542&amp;lang=en" >Photo Gallery</a></li><li class="nav-item item-569"><a href="/index.php?option=com_content&amp;view=category&amp;id=119&amp;Itemid=569&amp;lang=en" >Xq Articles</a></li></ul>
+    </div>
+</div>
+<div class="sidebar-left card ">
+            <h3 class="card-header ">Others</h3>        <div class="card-body">
+                <ul class="mod-menu mod-list nav ">
+<li class="nav-item item-513"><a href="/index.php?option=com_content&amp;view=categories&amp;id=122&amp;Itemid=513&amp;lang=en" >Publications</a></li><li class="nav-item item-671"><a href="/index.php?option=com_content&amp;view=category&amp;id=276&amp;Itemid=671&amp;lang=en" >Meet and Play</a></li><li class="nav-item item-540"><a href="/index.php?option=com_content&amp;view=category&amp;id=179&amp;Itemid=540&amp;lang=en" >Online play</a></li><li class="nav-item item-541"><a href="/index.php?option=com_content&amp;view=category&amp;id=178&amp;Itemid=541&amp;lang=en" >Computer XQ</a></li><li class="nav-item item-531"><a href="/index.php?option=com_content&amp;view=article&amp;id=219&amp;Itemid=531&amp;lang=en" >Downloads</a></li><li class="nav-item item-549"><a href="/index.php?option=com_content&amp;view=article&amp;id=220&amp;Itemid=549&amp;lang=en" >Links</a></li><li class="nav-item item-529"><a href="/index.php?option=com_content&amp;view=article&amp;id=196&amp;Itemid=529&amp;lang=en" >What they say</a></li><li class="nav-item item-530"><a href="/index.php?option=com_content&amp;view=category&amp;id=173&amp;Itemid=530&amp;lang=en" >Peter Donnelly</a></li><li class="nav-item item-528"><a href="/index.php?option=com_content&amp;view=article&amp;id=195&amp;Itemid=528&amp;lang=en" >Contact Us</a></li><li class="nav-item item-521"><a href="/index.php?option=com_content&amp;view=article&amp;id=121&amp;Itemid=521&amp;lang=en" >Disclaimer &amp; Copyright</a></li><li class="nav-item item-527"><a href="https://paypal.me/xqinenglish?locale.x=en_US " target="_blank" rel="noopener noreferrer">Donations</a></li></ul>
+    </div>
+</div>
+
+        </div>
+        
+        <div class="grid-child container-component">
+            
+            
+            <div id="system-message-container" aria-live="polite"></div>
+
+            <main>
+            <div class="com-content-article item-page" itemscope itemtype="https://schema.org/Article">
+    <meta itemprop="inLanguage" content="en-GB">
+    
+    
+        <div class="page-header">
+        <h1 itemprop="headline">
+            Basic Xiangqi (Chinese Chess) Tactics 01c Clearance Tactic        </h1>
+                            </div>
+        
+        
+            <dl class="article-info text-muted">
+
+            <dt class="article-info-term">
+                    </dt>
+
+                    <dd class="createdby" itemprop="author" itemscope itemtype="https://schema.org/Person">
+    <span class="icon-user icon-fw" aria-hidden="true"></span>
+                    Written by: <span itemprop="name">Jim Png</span>    </dd>
+        
+        
+        
+        
+        
+    
+            
+        
+            </dl>
+    
+    
+        
+                                                <div itemprop="articleBody" class="com-content-article__body">
+        <h1><span style="color: #800000;">Chapter 1c: Clearance Tactic 挪</span></h1>
+<p>This tactic is one of the more complicated tactics.</p>
+<p>Definition from the Webmaster's <a href="https://www.amazon.com/Lexicon-Xiangqi-Chinese-Chess-English/dp/9574347079/">Lexicon of Xiangqi (Chinese Chess) Terms in English</a>.</p>
+<blockquote>
+<p>Sometimes, a friendly piece would get in the way of an important piece on the board such that the latter cannot function effectively. By using the clearance tactic, the hindering piece is moved away, allowing the important piece to be able to make threats. Clearance is different from simply moving the hindering piece away as the act of moving that piece away usually constitutes a check, a threat to capture material or other functions. Therefore, with just one move, a player would be able to make a threat with the hindering piece, while at the same time, clear the way for another piece to prepare to attack. For example, a clearance sacrifice is achieved by moving the hindering piece away, offering it as a sacrifice to the opponent while at the same time allow other pieces to become major threats.<br />Shifting was the term used to refer to this tactic in the free e-book given away on the WXF website and was a direct translation of the Chinese term.</p>
+</blockquote>
+<p>The Chinese for the term is 腾挪 (téng nuó) or 挪 for short.</p>
+<p>There was some bad coding in the original page when the Webmaster transferred the site. The full boards are now uploaded.<br />Note: The Webmaster has made a series of videos to explain the tactic more clear. <a href="https://www.youtube.com/playlist?list=PLSgklQ5ZjutrQ24JjNmVwnkp82VKWHgHQ" target="_blank" rel="noopener">Click here for the entire playlist on Youtube</a>.</p>
+<p>&nbsp;</p>
+<center><iframe src="https://www.xqinenglish.com/DhtmlXQ/DhtmlXQ_www_dpxq_com_Eng_x.htm" name="NoFile_
+[DhtmlXQiFrame]
+[DhtmlXQ_ver]www_dpxq_com[/DhtmlXQ_ver]
+[DhtmlXQ_init]500,350[/DhtmlXQ_init]
+[DhtmlXQ_title]Basic Midgame Tactics 010301 Clearing chariot for cannon attack[/DhtmlXQ_title]
+[DhtmlXQ_event][/DhtmlXQ_event]
+[DhtmlXQ_date][/DhtmlXQ_date]
+[DhtmlXQ_place][/DhtmlXQ_place]
+[DhtmlXQ_round][/DhtmlXQ_round]
+[DhtmlXQ_table][/DhtmlXQ_table]
+[DhtmlXQ_red]&lt;&lt;象棋戰術初步&gt;&gt;[/DhtmlXQ_red]
+[DhtmlXQ_redteam][/DhtmlXQ_redteam]
+[DhtmlXQ_redrating][/DhtmlXQ_redrating]
+[DhtmlXQ_blacktime][/DhtmlXQ_time]
+[DhtmlXQ_black]Basic Midgame Tactics[/DhtmlXQ_black]
+[DhtmlXQ_blackteam][/DhtmlXQ_blackteam]
+[DhtmlXQ_blackrating][/DhtmlXQ_blackrating]
+[DhtmlXQ_blacktime][/DhtmlXQ_time]
+[DhtmlXQ_result]未知[/DhtmlXQ_result]
+[DhtmlXQ_remark]李海鳴 林秦[/DhtmlXQ_remark]
+[DhtmlXQ_author]jim xqinenglish[/DhtmlXQ_author]
+[DhtmlXQ_binit]3199473949486999678899052646869964664241405060829902990324438499[/DhtmlXQ_binit]
+[DhtmlXQ_movelist]88688274472941306737[/DhtmlXQ_movelist]
+[DhtmlXQ_move_0_4_1]6454686654646717[/DhtmlXQ_move_0_4_1]
+[DhtmlXQ_move_0_4_2]021267176687698764681712[/DhtmlXQ_move_0_4_2]
+[DhtmlXQ_move_2_7_3]17128768[/DhtmlXQ_move_2_7_3]
+[DhtmlXQ_comment0]Basic Midgame Tactics 010301 Clearing chariot for Cannon attack||||In this variation of the Clearing tactic, the Cannon is the main attacKpiece. ||It also happens to be a very commonly used tactic, especially when your chariot and Cannons get entangled. ||Three examples are given. ||||In this example, both sides are relatively equal. ||Red gets to go first. ||Usually, one would consider to play C1=3 to contain the black horse and chariot. However, on furhter analysis, black can defend with H9+8 to link the horses, followed by H8+9 to attack reds chariot instead!||That is why one might feel uneasy with playing C1=3 now. ||But for any person well versed in the Clearing tactic, the following moves may be played...[/DhtmlXQ_comment0]
+[DhtmlXQ_comment3]!||And Red would be sure to gain material now. ||After retreating the elephant, Red is now poised to play R3=8 for the checkmate threat with the two chariots, while at the same time be attacKthe Black*s Chariot as planned. ||The following three black counters would show the devastating consequences of reds Clearing tactic.[/DhtmlXQ_comment3]
+[DhtmlXQ_comment5]Red wins for sure as black would lose his chariot to avoid reds checkmate.[/DhtmlXQ_comment5]
+[DhtmlXQ_comment1_7]Red gains material![/DhtmlXQ_comment1_7]
+[DhtmlXQ_comment2_7]Correct move[/DhtmlXQ_comment2_7]
+[DhtmlXQ_comment2_9]And Red has the material advantage![/DhtmlXQ_comment2_9]
+[DhtmlXQ_comment3_7]Blunder![/DhtmlXQ_comment3_7]
+[DhtmlXQ_comment3_8]And black would get to checkmate first![/DhtmlXQ_comment3_8]
+[DhtmlXQ_type]实战全局/开局[/DhtmlXQ_type]
+[DhtmlXQ_timerule][/DhtmlXQ_timerule]
+[DhtmlXQ_endtype][/DhtmlXQ_endtype]
+[DhtmlXQ_owner]jim xqinenglish[/DhtmlXQ_owner]
+[DhtmlXQ_firstnum]0[/DhtmlXQ_firstnum]
+[DhtmlXQ_gametype][/DhtmlXQ_gametype]
+[DhtmlXQ_generator]www.ccbridge.net[/DhtmlXQ_generator]
+&lt;!-- Paste the UUB code here --&gt;
+
+[DhtmlXQ_zoom]1.00.500[/DhtmlXQ_zoom]
+[/DhtmlXQiFrame]" width="500" height="350" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe>
+<p>&nbsp;</p>
+<iframe title="YouTube video player" src="https://www.youtube.com/embed/kbD3XNp41P4" width="560" height="315" frameborder="0" allowfullscreen="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"></iframe>
+<p>&nbsp;</p>
+<iframe src="https://www.xqinenglish.com/DhtmlXQ/DhtmlXQ_www_dpxq_com_Eng_x.htm" name="NoFile_
+[DhtmlXQiFrame]
+
+
+[DhtmlXQ_ver]www_dpxq_com[/DhtmlXQ_ver]
+[DhtmlXQ_init]500,350[/DhtmlXQ_init]
+[DhtmlXQ_title]Basic Midgame Tactics 010302 Clearing chariot for cannon attack[/DhtmlXQ_title]
+[DhtmlXQ_event][/DhtmlXQ_event]
+[DhtmlXQ_date][/DhtmlXQ_date]
+[DhtmlXQ_place][/DhtmlXQ_place]
+[DhtmlXQ_round][/DhtmlXQ_round]
+[DhtmlXQ_table][/DhtmlXQ_table]
+[DhtmlXQ_red]&lt;&lt;象棋戰術初步&gt;&gt;[/DhtmlXQ_red]
+[DhtmlXQ_redteam][/DhtmlXQ_redteam]
+[DhtmlXQ_redrating][/DhtmlXQ_redrating]
+[DhtmlXQ_blacktime][/DhtmlXQ_time]
+[DhtmlXQ_black]Basic Midgame Tactics[/DhtmlXQ_black]
+[DhtmlXQ_blackteam][/DhtmlXQ_blackteam]
+[DhtmlXQ_blackrating][/DhtmlXQ_blackrating]
+[DhtmlXQ_blacktime][/DhtmlXQ_time]
+[DhtmlXQ_result]未知[/DhtmlXQ_result]
+[DhtmlXQ_remark]李海鳴 林秦[/DhtmlXQ_remark]
+[DhtmlXQ_author]jim xqinenglish[/DhtmlXQ_author]
+[DhtmlXQ_binit]3167294849599999352047064686999914026041405099626632990423438399[/DhtmlXQ_binit]
+[DhtmlXQ_movelist]47371410356510206566[/DhtmlXQ_movelist]
+[DhtmlXQ_move_0_2_1]66673732141032424132353210204202[/DhtmlXQ_move_0_2_1]
+[DhtmlXQ_move_1_6_2]60423130[/DhtmlXQ_move_1_6_2]
+[DhtmlXQ_move_1_6_3]4152313040414262676235314142305052415051022131414232412110125141[/DhtmlXQ_move_1_6_3]
+[DhtmlXQ_comment0]Basic Midgame Tactics 010302 Clearing chariot for Cannon attack||||In this example, Clearing the Cannon to capture material while exposing the Cannon for a potential kill is shown. ||Red has the obvious advantage, but what does Red have to do to deliver the final blow?[/DhtmlXQ_comment0]
+[DhtmlXQ_comment1]!||Red threatens to play C6+5.[/DhtmlXQ_comment1]
+[DhtmlXQ_comment3]!||Red shifts the chariot to expose a potential checkmate threat with R6+1. ||Black would have to play R2=3 to save himself, at the expense of his chariot. ||Red wins.[/DhtmlXQ_comment3]
+[DhtmlXQ_comment1_9]Red has the obvious advantage![/DhtmlXQ_comment1_9]
+[DhtmlXQ_comment3_21]Checkmate.[/DhtmlXQ_comment3_21]
+[DhtmlXQ_type]实战全局/开局[/DhtmlXQ_type]
+[DhtmlXQ_timerule][/DhtmlXQ_timerule]
+[DhtmlXQ_endtype][/DhtmlXQ_endtype]
+[DhtmlXQ_owner]jim xqinenglish[/DhtmlXQ_owner]
+[DhtmlXQ_firstnum]0[/DhtmlXQ_firstnum]
+[DhtmlXQ_gametype][/DhtmlXQ_gametype]
+[DhtmlXQ_generator]www.ccbridge.net[/DhtmlXQ_generator]
+&lt;!-- Paste the UUB code here --&gt;
+
+[DhtmlXQ_zoom]1.00.500[/DhtmlXQ_zoom]
+[/DhtmlXQiFrame]" width="500" height="350" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe>
+<p>&nbsp;</p>
+<iframe title="YouTube video player" src="https://www.youtube.com/embed/F-vRYQFz3Ow" width="560" height="315" frameborder="0" allowfullscreen="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"></iframe>
+<p>&nbsp;</p>
+<iframe src="https://www.xqinenglish.com/DhtmlXQ/DhtmlXQ_www_dpxq_com_Eng_x.htm" name="NoFile_
+[DhtmlXQiFrame]
+
+
+[DhtmlXQ_ver]www_dpxq_com[/DhtmlXQ_ver]
+[DhtmlXQ_init]500,350[/DhtmlXQ_init]
+[DhtmlXQ_title]Basic Midgame Tactics 010303 Clearing chariot for cannon attack[/DhtmlXQ_title]
+[DhtmlXQ_event][/DhtmlXQ_event]
+[DhtmlXQ_date][/DhtmlXQ_date]
+[DhtmlXQ_place][/DhtmlXQ_place]
+[DhtmlXQ_round][/DhtmlXQ_round]
+[DhtmlXQ_table][/DhtmlXQ_table]
+[DhtmlXQ_red]&lt;&lt;象棋戰術初步&gt;&gt;[/DhtmlXQ_red]
+[DhtmlXQ_redteam][/DhtmlXQ_redteam]
+[DhtmlXQ_redrating][/DhtmlXQ_redrating]
+[DhtmlXQ_blacktime][/DhtmlXQ_time]
+[DhtmlXQ_black]Basic Midgame Tactics[/DhtmlXQ_black]
+[DhtmlXQ_blackteam][/DhtmlXQ_blackteam]
+[DhtmlXQ_blackrating][/DhtmlXQ_blackrating]
+[DhtmlXQ_blacktime][/DhtmlXQ_time]
+[DhtmlXQ_result]未知[/DhtmlXQ_result]
+[DhtmlXQ_remark]李海鳴 林秦[/DhtmlXQ_remark]
+[DhtmlXQ_author]jim xqinenglish[/DhtmlXQ_author]
+[DhtmlXQ_binit]1307293949486967254799054666869910620230405060993112420343638399[/DhtmlXQ_binit]
+[DhtmlXQ_movelist]4717313213333233171030410715[/DhtmlXQ_movelist]
+[DhtmlXQ_move_0_7_1]2520333010300220[/DhtmlXQ_move_0_7_1]
+[DhtmlXQ_move_0_2_2]101117123132[/DhtmlXQ_move_0_2_2]
+[DhtmlXQ_move_0_1_3]25221211471750412225425266656042133310203331202531112565694765051113525413150506154554146755636455436243[/DhtmlXQ_move_0_1_3]
+[DhtmlXQ_comment0]Basic Midgame Tactics 010303 Clearing chariot for Cannon attack||||This is the third example in this section. ||In this example, Red shifts his chariot to for a fork while revealing his Cannon to attack.[/DhtmlXQ_comment0]
+[DhtmlXQ_comment2]Bad move.[/DhtmlXQ_comment2]
+[DhtmlXQ_comment3]!||Red is now attacKthe two chariots at the same time.[/DhtmlXQ_comment3]
+[DhtmlXQ_comment7]Red superior. ||Red should not play R7+5 now.[/DhtmlXQ_comment7]
+[DhtmlXQ_comment1_8]And Black would be able to salvage his plight by forcing an exchange of chariots.[/DhtmlXQ_comment1_8]
+[DhtmlXQ_comment2_2]Advised move. ||Black would now be prepared to play C2+5...[/DhtmlXQ_comment2_2]
+[DhtmlXQ_comment2_4]And black would regain lost material.[/DhtmlXQ_comment2_4]
+[DhtmlXQ_type]实战全局/开局[/DhtmlXQ_type]
+[DhtmlXQ_timerule][/DhtmlXQ_timerule]
+[DhtmlXQ_endtype][/DhtmlXQ_endtype]
+[DhtmlXQ_owner]jim xqinenglish[/DhtmlXQ_owner]
+[DhtmlXQ_firstnum]0[/DhtmlXQ_firstnum]
+[DhtmlXQ_gametype][/DhtmlXQ_gametype]
+[DhtmlXQ_generator]www.ccbridge.net[/DhtmlXQ_generator]
+&lt;!-- Paste the UUB code here --&gt;
+
+[DhtmlXQ_zoom]1.00.500[/DhtmlXQ_zoom]
+[/DhtmlXQiFrame]" width="500" height="350" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe>
+<p>&nbsp;</p>
+<iframe title="YouTube video player" src="https://www.youtube.com/embed/tb4MiDPCRz4" width="560" height="315" frameborder="0" allowfullscreen="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"></iframe>
+<p>&nbsp;</p>
+</center>
+<p>&nbsp;</p>
+<h2>Reference:</h2>
+<p><strong>李海鸣 和 林秦.</strong> 象棋战术初步. 北京&nbsp;: 新华书店北京发行, 1986. 7015.2281.</p>     </div>
+
+        
+        
+<nav class="pagenavigation">
+    <span class="pagination ms-0">
+                <a class="btn btn-sm btn-secondary previous" href="/index.php?option=com_content&amp;view=article&amp;id=1177:basic-xiangqi-chinese-chess-tactics-01b-clearance-tactic&amp;catid=223&amp;Itemid=510&amp;lang=en" rel="prev">
+            <span class="visually-hidden">
+                Previous article: Basic Xiangqi (Chinese Chess) Tactics 01b Clearance Tactic            </span>
+            <span class="icon-chevron-left" aria-hidden="true"></span> <span aria-hidden="true">Prev</span>            </a>
+                    <a class="btn btn-sm btn-secondary next" href="/index.php?option=com_content&amp;view=article&amp;id=1179:basic-xiangqi-chinese-chess-tactics-01d-clearance-tactic&amp;catid=223&amp;Itemid=510&amp;lang=en" rel="next">
+            <span class="visually-hidden">
+                Next article: Basic Xiangqi (Chinese Chess) Tactics 01d Clearance Tactic            </span>
+            <span aria-hidden="true">Next</span> <span class="icon-chevron-right" aria-hidden="true"></span>            </a>
+        </span>
+</nav>
+                                        </div>
+
+            </main>
+            
+        </div>
+
+                <div class="grid-child container-sidebar-right">
+            <div class="sidebar-right card ">
+            <h3 class="card-header ">Latest Additions</h3>        <div class="card-body">
+                <ul class="mod-articleslatest latestnews mod-list">
+    <li itemscope itemtype="https://schema.org/Article">
+        <a href="/index.php?option=com_content&amp;view=article&amp;id=1328:sun-zis-art-of-war-chapter-08c-applied-to-xiangqi-chinese-chess&amp;catid=319&amp;Itemid=510&amp;lang=en" itemprop="url">
+            <span itemprop="name">
+                Sun Zi's Art of War Chapter 08c applied to Xiangqi (Chinese Chess)            </span>
+        </a>
+    </li>
+    <li itemscope itemtype="https://schema.org/Article">
+        <a href="/index.php?option=com_content&amp;view=article&amp;id=1327:sun-zis-art-of-war-chapter-08b-applied-to-xiangqi-chinese-chess&amp;catid=319&amp;Itemid=510&amp;lang=en" itemprop="url">
+            <span itemprop="name">
+                Sun Zi's Art of War Chapter 08b applied to Xiangqi (Chinese Chess)            </span>
+        </a>
+    </li>
+    <li itemscope itemtype="https://schema.org/Article">
+        <a href="/index.php?option=com_content&amp;view=article&amp;id=1321:sun-zis-art-of-war-chapter-08a-applied-to-xiangqi-chinese-chess&amp;catid=319&amp;Itemid=510&amp;lang=en" itemprop="url">
+            <span itemprop="name">
+                Sun Zi's Art of War Chapter 08a applied to Xiangqi (Chinese Chess)              </span>
+        </a>
+    </li>
+    <li itemscope itemtype="https://schema.org/Article">
+        <a href="/index.php?option=com_content&amp;view=article&amp;id=1320:sun-zis-art-of-war-chapter-07g-applied-to-xiangqi-chinese-chess&amp;catid=314&amp;Itemid=510&amp;lang=en" itemprop="url">
+            <span itemprop="name">
+                Sun Zi's Art of War Chapter 07g applied to Xiangqi (Chinese Chess)             </span>
+        </a>
+    </li>
+    <li itemscope itemtype="https://schema.org/Article">
+        <a href="/index.php?option=com_content&amp;view=article&amp;id=1319:sun-zis-art-of-war-chapter-07f-applied-to-xiangqi-chinese-chess&amp;catid=314&amp;Itemid=510&amp;lang=en" itemprop="url">
+            <span itemprop="name">
+                Sun Zi's Art of War Chapter 07f applied to Xiangqi (Chinese Chess)             </span>
+        </a>
+    </li>
+    <li itemscope itemtype="https://schema.org/Article">
+        <a href="/index.php?option=com_content&amp;view=article&amp;id=1318:sun-zis-art-of-war-chapter-07c-applied-to-xiangqi-chinese-chess-2&amp;catid=314&amp;Itemid=510&amp;lang=en" itemprop="url">
+            <span itemprop="name">
+                Sun Zi's Art of War Chapter 07e applied to Xiangqi (Chinese Chess)            </span>
+        </a>
+    </li>
+    <li itemscope itemtype="https://schema.org/Article">
+        <a href="/index.php?option=com_content&amp;view=article&amp;id=1317:sun-zis-art-of-war-chapter-07d-applied-to-xiangqi-chinese-chess&amp;catid=314&amp;Itemid=510&amp;lang=en" itemprop="url">
+            <span itemprop="name">
+                Sun Zi's Art of War Chapter 07d applied to Xiangqi (Chinese Chess)             </span>
+        </a>
+    </li>
+    <li itemscope itemtype="https://schema.org/Article">
+        <a href="/index.php?option=com_content&amp;view=article&amp;id=1316:sun-zis-art-of-war-chapter-07c-applied-to-xiangqi-chinese-chess&amp;catid=314&amp;Itemid=510&amp;lang=en" itemprop="url">
+            <span itemprop="name">
+                Sun Zi's Art of War Chapter 07c applied to Xiangqi (Chinese Chess)            </span>
+        </a>
+    </li>
+    <li itemscope itemtype="https://schema.org/Article">
+        <a href="/index.php?option=com_content&amp;view=article&amp;id=1315:sun-zis-art-of-war-chapter-07b-applied-to-xiangqi-chinese-chess&amp;catid=314&amp;Itemid=510&amp;lang=en" itemprop="url">
+            <span itemprop="name">
+                Sun Zi's Art of War Chapter 07b applied to Xiangqi (Chinese Chess)            </span>
+        </a>
+    </li>
+    <li itemscope itemtype="https://schema.org/Article">
+        <a href="/index.php?option=com_content&amp;view=article&amp;id=1314:sun-zis-art-of-war-chapter-07a-applied-to-xiangqi-chinese-chess&amp;catid=314&amp;Itemid=510&amp;lang=en" itemprop="url">
+            <span itemprop="name">
+                Sun Zi's Art of War Chapter 07a applied to Xiangqi (Chinese Chess)             </span>
+        </a>
+    </li>
+</ul>
+    </div>
+</div>
+<div class="sidebar-right card ">
+        <div class="card-body">
+                
+<div id="mod-custom170" class="mod-custom custom">
+    <!-- Adsense 02 -->
+<p><ins class="adsbygoogle" style="display: block;" data-ad-client="ca-pub-9047787675764676" data-ad-slot="5444184478" data-ad-format="auto" data-full-width-responsive="true"></ins></p></div>
+    </div>
+</div>
+<div class="sidebar-right card ">
+        <div class="card-body">
+                
+<form class="mod-finder js-finder-searchform form-search" action="/index.php?option=com_finder&amp;view=search&amp;Itemid=435&amp;lang=en" method="get" role="search">
+    <label for="mod-finder-searchword137" class="finder">Search</label><input type="text" name="q" id="mod-finder-searchword137" class="js-finder-search-query form-control" value="" placeholder="Search &hellip;">
+            <input type="hidden" name="option" value="com_finder"><input type="hidden" name="view" value="search"><input type="hidden" name="Itemid" value="435"><input type="hidden" name="lang" value="en"></form>
+    </div>
+</div>
+
+        </div>
+        
+                <div class="grid-child container-bottom-a">
+            <div class="bottom-a card ">
+            <h3 class="card-header ">Play Xiangqi</h3>        <div class="card-body">
+                
+<div id="mod-custom162" class="mod-custom custom">
+    <center>A simple app to play Xiangqi on this site!<br />
+<p>Developed by Code Monkey King.</p>
+<!-- Play Xiangqi, developer version -->
+<p><iframe src="https://maksimkorzh.github.io/interactive-xiangqi-apps/apps/wukong-dev/gui/xiangqi.html" width="425" height="600" id="inlineFrameExample" style="border: 0px solid white;" title="Inline Frame Example" frameborder="0"></iframe></p>
+</center></div>
+    </div>
+</div>
+
+        </div>
+        
+            </div>
+
+        <footer class="container-footer footer full-width">
+        <div class="grid-child">
+            <div class="mod-footer">
+    <div class="footer1">Copyright &#169; 2026 xqinenglish. All Rights Reserved.</div>
+    <div class="footer2"><a href="https://www.joomla.org">Joomla!</a> is Free Software released under the <a href="https://www.gnu.org/licenses/gpl-2.0.html">GNU General Public License.</a></div>
+</div>
+<ul class="jj_sl_navigation jj_transition right"><li class="jj_sl_facebook"><a href="https://www.facebook.com/xiangqiinenglish/" target="_blank"><span class="jj_social_text">Follow via Facebook</span><span class="jj_sprite jj_facebook"></span></a></li><li class="jj_sl_youtube"><a href="https://www.youtube.com/c/wwwxqinenglishcom" target="_blank"><span class="jj_social_text">Follow via Youtube</span><span class="jj_sprite jj_youtube"></span></a></li><li class="jj_sl_twitter"><a href="https://twitter.com/xqinenglish" target="_blank"><span class="jj_social_text">Follow via Twitter</span><span class="jj_sprite jj_twitter"></span></a></li><li class="jj_sl_custom1"><a href="https://www.tiktok.com/@xqinenglish" target="_blank"><span class="jj_social_text">Follow via Tiktok</span><span class="jj_sprite_custom jj_custom1"></span></a></li></ul>
+        </div>
+    </footer>
+    
+    
+    
+<link rel="stylesheet" type="text/css" href="/media/vendor/debugbar/vendor/highlightjs/styles/github.css">
+<link rel="stylesheet" type="text/css" href="/media/vendor/debugbar/debugbar.css">
+<link rel="stylesheet" type="text/css" href="/media/vendor/debugbar/widgets.css">
+<link rel="stylesheet" type="text/css" href="/media/vendor/debugbar/openhandler.css">
+<link rel="stylesheet" type="text/css" href="/media/plg_system_debug/widgets/info/widget.min.css">
+<link rel="stylesheet" type="text/css" href="/media/plg_system_debug/widgets/sqlqueries/widget.min.css">
+<script type="text/javascript" src="/media/vendor/debugbar/vendor/highlightjs/highlight.pack.js" defer></script>
+<script type="text/javascript" src="/media/vendor/debugbar/debugbar.js" defer></script>
+<script type="text/javascript" src="/media/vendor/debugbar/widgets.js" defer></script>
+<script type="text/javascript" src="/media/vendor/debugbar/openhandler.js" defer></script>
+<script type="text/javascript" src="/media/plg_system_debug/widgets/info/widget.min.js" defer></script>
+<script type="text/javascript" src="/media/plg_system_debug/widgets/sqlqueries/widget.min.js" defer></script>
+<script type="module">
+var phpdebugbar = new PhpDebugBar.DebugBar();
+phpdebugbar.addTab("info", new PhpDebugBar.DebugBar.Tab({"icon":"info-circle","title":"J! Info", "widget": new PhpDebugBar.Widgets.InfoWidget()}));
+phpdebugbar.addIndicator("memory", new PhpDebugBar.DebugBar.Indicator({"icon":"cogs","tooltip":"Memory Usage"}), "right");
+phpdebugbar.addTab("request", new PhpDebugBar.DebugBar.Tab({"icon":"tags","title":"Request", "widget": new PhpDebugBar.Widgets.VariableListWidget()}));
+phpdebugbar.addTab("session", new PhpDebugBar.DebugBar.Tab({"icon":"key","title":"Session", "widget": new PhpDebugBar.Widgets.VariableListWidget()}));
+phpdebugbar.addIndicator("profileTime", new PhpDebugBar.DebugBar.Indicator({"icon":"clock-o","tooltip":"Request Duration"}), "right");
+phpdebugbar.addTab("profile", new PhpDebugBar.DebugBar.Tab({"icon":"clock-o","title":"Profile", "widget": new PhpDebugBar.Widgets.TimelineWidget()}));
+phpdebugbar.addTab("queries", new PhpDebugBar.DebugBar.Tab({"icon":"database","title":"Queries", "widget": new PhpDebugBar.Widgets.SQLQueriesWidget()}));
+phpdebugbar.setDataMap({
+"info": ["info", {}],
+"memory": ["memory.peak_usage_str", '0B'],
+"request": ["request", {}],
+"session": ["session.data", []],
+"profileTime": ["profile.duration_str", '0ms'],
+"profile": ["profile", {}],
+"queries": ["queries.data", []],
+"queries:badge": ["queries.count", null]
+});
+phpdebugbar.restoreState();
+phpdebugbar.ajaxHandler = new PhpDebugBar.AjaxHandler(phpdebugbar, undefined, true);
+if (jQuery) phpdebugbar.ajaxHandler.bindToJquery(jQuery);
+phpdebugbar.setOpenHandler(new PhpDebugBar.OpenHandler({"url":"\/index.php?option=com_ajax&plugin=debug&group=system&format=raw&action=openhandler&fce55deb9a0689cd6c76f0960ad16af9=1"}));
+phpdebugbar.addDataSet({"__meta":{"id":"X7efb31ece0d4aa33f55654c00ec30c87","datetime":"2026-04-22 23:25:00","utime":1776871500.726569,"method":"GET","uri":"\/index.php?option=com_content&view=article&id=1178&catid=223&Itemid=510&lang=en","ip":"128.237.82.212"},"info":{"phpVersion":"8.2.28","joomlaVersion":"4.2.9","requestId":"X7efb31ece0d4aa33f55654c00ec30c87","identity":{"type":"guest"},"response":{"status_code":200},"template":{"template":"cassiopeia","home":"1","id":16},"database":{"dbserver":"mysql","dbversion":"10.11.6-MariaDB","dbcollation":"utf8mb3_general_ci","dbconnectioncollation":"utf8mb4_general_ci","dbconnectionencryption":"","dbconnencryptsupported":false}},"juser":{"user_id":0},"memory":{"peak_usage":1996976,"peak_usage_str":"2MB"},"request":{"$_GET":"array:6 [\n  \"option\" => \"com_content\"\n  \"view\" => \"article\"\n  \"id\" => \"1178\"\n  \"catid\" => \"223\"\n  \"Itemid\" => \"510\"\n  \"lang\" => \"en\"\n]","$_POST":"[]","$_SESSION":"array:1 [\n  \"joomla\" => \"TzoyNDoiSm9vbWxhXFJlZ2lzdHJ5XFJlZ2lzdHJ5IjozOntzOjc6IgAqAGRhdGEiO086ODoic3RkQ2xhc3MiOjU6e3M6Nzoic2Vzc2lvbiI7Tzo4OiJzdGRDbGFzcyI6Mzp7czo3OiJjb3VudGVyIjtpOjU7czo1OiJ0aW1lciI7Tzo4OiJzdGRDbGFzcyI6Mzp7czo1OiJzdGFydCI7aToxNzc2ODcxNDg3O3M6NDoibGFzdCI7aToxNzc2ODcxNDk1O3M6Mzoibm93IjtpOjE3NzY4NzE0OTc7fXM6NToidG9rZW4iO3M6MzI6IjQ4MjE3YWRmODdkMjAzNzI3NTg4YmRmYTdlOGRjMmJjIjt9czo4OiJyZWdpc3RyeSI7TzoyNDoiSm9vbWxhXFJlZ2lzdHJ5XFJlZ2lzdHJ5IjozOntzOjc6IgAqAGRhdGEiO086ODoic3RkQ2xhc3MiOjA6e31zOjE0OiIAKgBpbml0aWFsaXplZCI7YjowO3M6OToic2VwYXJhdG9yIjtzOjE6Ii4iO31zOjQ6InVzZXIiO086MjA6Ikpvb21sYVxDTVNcVXNlclxVc2VyIjoxOntzOjI6ImlkIjtpOjA7fXM6MjU6InBsZ19zeXN0ZW1fbGFuZ3VhZ2VmaWx0ZXIiO086ODoic3RkQ2xhc3MiOjE6e3M6ODoibGFuZ3VhZ2UiO3M6NToiZW4tR0IiO31zOjIyOiJQSFBERUJVR0JBUl9TVEFDS19EQVRBIjthOjA6e319czoxNDoiACoAaW5pdGlhbGl6ZWQiO2I6MDtzOjk6InNlcGFyYXRvciI7czoxOiIuIjt9\"\n]","$_COOKIE":"array:1 [\n  \"cc789d06d5a146cad9b5c4fc8f8ebda1\" => \"921749d3bcc10fabe6ae6efbaeb990f8\"\n]","$_SERVER":"array:40 [\n  \"USER\" => \"Joomla\"\n  \"HOME\" => \"\/var\/packages\/Joomla\/home\"\n  \"SCRIPT_NAME\" => \"\/index.php\"\n  \"REQUEST_URI\" => \"\/index.php?option=com_content&view=article&id=1178&catid=223&Itemid=510&lang=en\"\n  \"QUERY_STRING\" => \"option=com_content&view=article&id=1178&catid=223&Itemid=510&lang=en\"\n  \"REQUEST_METHOD\" => \"GET\"\n  \"SERVER_PROTOCOL\" => \"HTTP\/1.1\"\n  \"GATEWAY_INTERFACE\" => \"CGI\/1.1\"\n  \"REMOTE_PORT\" => \"48582\"\n  \"SCRIPT_FILENAME\" => \"\/var\/services\/web_packages\/joomla\/index.php\"\n  \"SERVER_ADMIN\" => \"[no address given]\"\n  \"CONTEXT_DOCUMENT_ROOT\" => \"\/var\/services\/web_packages\/joomla\"\n  \"CONTEXT_PREFIX\" => \"\"\n  \"REQUEST_SCHEME\" => \"https\"\n  \"DOCUMENT_ROOT\" => \"\/var\/services\/web_packages\/joomla\"\n  \"REMOTE_ADDR\" => \"128.237.82.212\"\n  \"SERVER_PORT\" => \"443\"\n  \"SERVER_ADDR\" => \"220.132.65.38\"\n  \"SERVER_NAME\" => \"www.xqinenglish.com\"\n  \"SERVER_SOFTWARE\" => \"Apache\/2.4.63 (Unix)\"\n  \"SERVER_SIGNATURE\" => \"\"\n  \"PATH\" => \"\/sbin:\/bin:\/usr\/sbin:\/usr\/bin:\/usr\/syno\/sbin:\/usr\/syno\/bin:\/usr\/local\/sbin:\/usr\/local\/bin\"\n  \"HTTP_COOKIE\" => \"cc789d06d5a146cad9b5c4fc8f8ebda1=921749d3bcc10fabe6ae6efbaeb990f8\"\n  \"HTTP_ACCEPT_LANGUAGE\" => \"en-US,en;q=0.9\"\n  \"HTTP_ACCEPT\" => \"text\/html,application\/xhtml+xml,application\/xml;q=0.9,*\/*;q=0.8\"\n  \"HTTP_ACCEPT_ENCODING\" => \"gzip, deflate, zstd\"\n  \"HTTP_USER_AGENT\" => \"Mozilla\/5.0 (compatible; XiangqiRAGBot\/1.0; +https:\/\/github.com\/GuchaIll\/Capstone_Guided_Chinese_Chess)\"\n  \"HTTP_CONNECTION\" => \"close\"\n  \"HTTP_HOST\" => \"www.xqinenglish.com\"\n  \"HTTP_X_FORWARDED_PORT\" => \"443\"\n  \"HTTP_X_FORWARDED_PROTO\" => \"https\"\n  \"HTTP_X_REAL_IP\" => \"128.237.82.212\"\n  \"HTTP_X_FORWARDED_BY\" => \"220.132.65.38\"\n  \"HOST\" => \"www.xqinenglish.com\"\n  \"MOD_X_SENDFILE_ENABLED\" => \"yes\"\n  \"HTTPS\" => \"on\"\n  \"FCGI_ROLE\" => \"RESPONDER\"\n  \"PHP_SELF\" => \"\/index.php\"\n  \"REQUEST_TIME_FLOAT\" => 1776871500.5078\n  \"REQUEST_TIME\" => 1776871500\n]"},"session":{"data":{"session":"array:3 [\n  \"counter\" => 6\n  \"timer\" => array:3 [\n    \"start\" => 1776871487\n    \"last\" => 1776871497\n    \"now\" => 1776871500\n  ]\n  \"token\" => \"***redacted***\"\n]","registry":"array:3 [\n  \"data\" => []\n  \"initialized\" => false\n  \"separator\" => \".\"\n]","user":"array:18 [\n  \"id\" => 0\n  \"name\" => null\n  \"username\" => null\n  \"email\" => null\n  \"password\" => \"***redacted***\"\n  \"password_clear\" => \"***redacted***\"\n  \"block\" => null\n  \"sendEmail\" => 0\n  \"registerDate\" => null\n  \"lastvisitDate\" => null\n  \"activation\" => null\n  \"params\" => null\n  \"groups\" => array:1 [\n    0 => \"13\"\n  ]\n  \"guest\" => 1\n  \"lastResetTime\" => null\n  \"resetCount\" => null\n  \"requireReset\" => null\n  \"aid\" => 0\n]","plg_system_languagefilter":"array:1 [\n  \"language\" => \"en-GB\"\n]","PHPDEBUGBAR_STACK_DATA":"[]"}},"profile":{"start":1776871500.507776,"end":1776871500.7338,"duration":0.22602391242980957,"duration_str":"226ms","measures":[{"label":"afterLoad (445.75KB)","start":1776871500.507776,"relative_start":0,"end":1776871500.5117419,"relative_end":-0.22205805778503418,"duration":0.003965854644775391,"duration_str":"3.97ms","params":[],"collector":null},{"label":"afterInitialise (799.21KB)","start":1776871500.5117419,"relative_start":0.003965854644775391,"end":1776871500.7208738,"relative_end":-0.012926101684570312,"duration":0.20913195610046387,"duration_str":"209ms","params":[],"collector":null},{"label":"afterCache (199.36KB)","start":1776871500.7208738,"relative_start":0.21309781074523926,"end":1776871500.724788,"relative_end":-0.009011983871459961,"duration":0.0039141178131103516,"duration_str":"3.91ms","params":[],"collector":null}],"rawMarks":[{"prefix":"Application","time":3.9658546447753906,"totalTime":3.9658546447753906,"memory":0.435302734375,"totalMemory":0.7937088012695312,"label":"afterLoad"},{"prefix":"Application","time":209.13195610046387,"totalTime":213.09781074523926,"memory":0.7804794311523438,"totalMemory":1.574188232421875,"label":"afterInitialise"},{"prefix":"Application","time":3.9141178131103516,"totalTime":217.0119285583496,"memory":0.1946868896484375,"totalMemory":1.7688751220703125,"label":"afterCache"}]},"queries":{"data":{"statements":[{"sql":"SELECT @@SESSION.sql_mode;","params":[],"duration_str":"134\u03bcs","memory_str":"968B","caller":"\/volume1\/web_packages\/joomla\/libraries\/vendor\/joomla\/database\/src\/Mysqli\/MysqliDriver.php:293","callstack":[],"explain":[],"explain_col":[],"profile":[]},{"sql":"SELECT `data`\nFROM `nkn0q_session`\nWHERE `session_id` = ?","params":{"1":{"value":"921749d3bcc10fabe6ae6efbaeb990f8","dataType":"string","length":0,"driverOptions":[]}},"duration_str":"148\u03bcs","memory_str":"1KB","caller":"\/volume1\/web_packages\/joomla\/libraries\/vendor\/joomla\/session\/src\/Handler\/DatabaseHandler.php:261","callstack":[],"explain":[],"explain_col":[],"profile":[]},{"sql":"SELECT `session_id`\nFROM `nkn0q_session`\nWHERE `session_id` = :session_id LIMIT 1","params":{":session_id":{"value":"921749d3bcc10fabe6ae6efbaeb990f8","dataType":"string","length":0,"driverOptions":[]}},"duration_str":"127\u03bcs","memory_str":"1.31KB","caller":"\/volume1\/web_packages\/joomla\/libraries\/src\/Session\/MetadataManager.php:187","callstack":[],"explain":[],"explain_col":[],"profile":[]},{"sql":"UPDATE `nkn0q_session`\nSET `guest` = :guest\n\t, `time` = :time\n\t, `userid` = :user_id\n\t, `username` = :username\n\t, `client_id` = :client_id\nWHERE `session_id` = :session_id","params":{":session_id":{"value":"921749d3bcc10fabe6ae6efbaeb990f8","dataType":"string","length":0,"driverOptions":[]},":guest":{"value":1,"dataType":"int","length":0,"driverOptions":[]},":time":{"value":1776871500,"dataType":"string","length":0,"driverOptions":[]},":user_id":{"value":0,"dataType":"int","length":0,"driverOptions":[]},":username":{"value":"","dataType":"string","length":0,"driverOptions":[]},":client_id":{"value":0,"dataType":"int","length":0,"driverOptions":[]}},"duration_str":"186ms","memory_str":"992B","caller":"\/volume1\/web_packages\/joomla\/libraries\/src\/Session\/MetadataManager.php:316","callstack":[],"explain":[],"explain_col":[],"profile":[]},{"sql":"SELECT `extension_id` AS `id`,`element` AS `option`,`params`,`enabled`\nFROM `nkn0q_extensions`\nWHERE `type` = 'component' AND `state` = 0 AND `enabled` = 1","params":[],"duration_str":"435\u03bcs","memory_str":"1.56KB","caller":"\/volume1\/web_packages\/joomla\/libraries\/src\/Component\/ComponentHelper.php:393","callstack":[],"explain":[],"explain_col":[],"profile":[]},{"sql":"SELECT `id`,`rules`\nFROM `nkn0q_viewlevels`","params":[],"duration_str":"162\u03bcs","memory_str":"672B","caller":"\/volume1\/web_packages\/joomla\/libraries\/src\/Access\/Access.php:955","callstack":[],"explain":[],"explain_col":[],"profile":[]},{"sql":"SELECT `b`.`id`\nFROM `nkn0q_usergroups` AS `a`\nLEFT JOIN `nkn0q_usergroups` AS `b` ON `b`.`lft` <= `a`.`lft` AND `b`.`rgt` >= `a`.`rgt`\nWHERE `a`.`id` = :guest","params":{":guest":{"value":13,"dataType":"int","length":0,"driverOptions":[]}},"duration_str":"228\u03bcs","memory_str":"1.33KB","caller":"\/volume1\/web_packages\/joomla\/libraries\/src\/Access\/Access.php:868","callstack":[],"explain":[],"explain_col":[],"profile":[]},{"sql":"SELECT `folder` AS `type`,`element` AS `name`,`params` AS `params`,`extension_id` AS `id`\nFROM `nkn0q_extensions`\nWHERE `enabled` = 1 AND `type` = 'plugin' AND `state` IN (0,1) AND `access` IN (:preparedArray1,:preparedArray2)\nORDER BY `ordering`","params":{":preparedArray1":{"value":1,"dataType":"int","length":0,"driverOptions":[]},":preparedArray2":{"value":5,"dataType":"int","length":0,"driverOptions":[]}},"duration_str":"842\u03bcs","memory_str":"3.48KB","caller":"\/volume1\/web_packages\/joomla\/libraries\/src\/Plugin\/PluginHelper.php:283","callstack":[],"explain":[],"explain_col":[],"profile":[]},{"sql":"SELECT *\nFROM `nkn0q_languages`\nWHERE `published` = 1\nORDER BY `ordering` ASC","params":[],"duration_str":"173\u03bcs","memory_str":"2.22KB","caller":"\/volume1\/web_packages\/joomla\/libraries\/src\/Language\/LanguageHelper.php:142","callstack":[],"explain":[],"explain_col":[],"profile":[]},{"sql":"SELECT `element`,`name`,`client_id`,`extension_id`\nFROM `nkn0q_extensions`\nWHERE `type` = 'language' AND `state` = 0 AND `enabled` = 1","params":[],"duration_str":"294\u03bcs","memory_str":"816B","caller":"\/volume1\/web_packages\/joomla\/libraries\/src\/Language\/LanguageHelper.php:213","callstack":[],"explain":[],"explain_col":[],"profile":[]},{"sql":"SELECT `m`.`id`,`m`.`menutype`,`m`.`title`,`m`.`alias`,`m`.`note`,`m`.`link`,`m`.`type`,`m`.`level`,`m`.`language`,`m`.`browserNav`,`m`.`access`,`m`.`params`,`m`.`home`,`m`.`img`,`m`.`template_style_id`,`m`.`component_id`,`m`.`parent_id`,`m`.`path` AS `route`,`e`.`element` AS `component`\nFROM `nkn0q_menu` AS `m`\nLEFT JOIN `nkn0q_extensions` AS `e` ON `m`.`component_id` = `e`.`extension_id`\nWHERE \n(\n(`m`.`published` = 1 AND `m`.`parent_id` > 0 AND `m`.`client_id` = 0) AND \n(`m`.`publish_up` IS NULL OR `m`.`publish_up` <= :currentDate1)) AND \n(`m`.`publish_down` IS NULL OR `m`.`publish_down` >= :currentDate2)\nORDER BY `m`.`lft`","params":{":currentDate1":{"value":"2026-04-22 15:25:00","dataType":"string","length":0,"driverOptions":[]},":currentDate2":{"value":"2026-04-22 15:25:00","dataType":"string","length":0,"driverOptions":[]}},"duration_str":"704\u03bcs","memory_str":"51.8KB","caller":"\/volume1\/web_packages\/joomla\/libraries\/src\/Menu\/SiteMenu.php:166","callstack":[],"explain":[],"explain_col":[],"profile":[]}],"nb_statements":11,"accumulated_duration_str":"189ms","memory_usage_str":"66.07KB","xdebug_link":"","root_path":"\/volume1\/web_packages\/joomla"},"count":11}}, "X7efb31ece0d4aa33f55654c00ec30c87");
+
+</script>
+</body>
+</html>
