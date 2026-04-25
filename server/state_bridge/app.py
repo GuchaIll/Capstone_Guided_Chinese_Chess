@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
+from cv_validation import FenDiffError, derive_move_from_fen_diff
 from events import Event, EventBus, EventType
 from state import GameStateBridge, STARTING_FEN
 from engine_relay import EngineRelay
@@ -28,6 +29,8 @@ logger = logging.getLogger("state_bridge")
 state = GameStateBridge()
 bus = EventBus()
 relay = EngineRelay(state, bus)
+DEFAULT_SUGGEST_DEPTH = 5
+DEFAULT_AI_DIFFICULTY = 4
 
 
 def _looks_like_xiangqi_fen(fen: str) -> bool:
@@ -190,17 +193,127 @@ async def health():
     return {"status": "ok"}
 
 
+async def _publish_led_command(command: str) -> None:
+    state.leds_off = command == "off"
+    await bus.publish(Event(
+        type=EventType.LED_COMMAND,
+        data={"command": command},
+    ))
+
+
+async def _publish_cv_validation_error(cv_fen: str, reason: str, *, status_code: int) -> JSONResponse:
+    await bus.publish(Event(
+        type=EventType.CV_VALIDATION_ERROR,
+        data={
+            "source": "cv",
+            "cv_fen": cv_fen,
+            "current_fen": state.fen,
+            "reason": reason,
+        },
+    ))
+    await _publish_led_command("on")
+    return JSONResponse(
+        {
+            "accepted": False,
+            "source": "cv",
+            "reason": reason,
+        },
+        status_code=status_code,
+    )
+
+
+async def _publish_best_move_from_suggestion(fen: str) -> None:
+    try:
+        result = await relay.send_suggest(fen, DEFAULT_SUGGEST_DEPTH)
+    except asyncio.TimeoutError:
+        logger.warning("Timed out retrieving best move suggestion for accepted CV FEN")
+        return
+
+    move = result.get("move", "")
+    if len(move) < 4:
+        return
+
+    from_sq = move[:2]
+    to_sq = move[2:4]
+    state.set_best_move(from_sq, to_sq)
+    await bus.publish(Event(
+        type=EventType.BEST_MOVE,
+        data={"from": from_sq, "to": to_sq},
+    ))
+
+
 # =====================================================================
 # POST — state mutations (each publishes an event)
 # =====================================================================
 
 @app.post("/state/fen")
 async def post_fen(body: FenPayload):
+    if body.source == "cv":
+        state.apply_fen(body.fen, source="cv")
+        if not _looks_like_xiangqi_fen(body.fen):
+            return await _publish_cv_validation_error(
+                body.fen,
+                "malformed FEN",
+                status_code=400,
+            )
+
+        try:
+            derived_move = derive_move_from_fen_diff(state.fen, body.fen)
+        except FenDiffError as exc:
+            return await _publish_cv_validation_error(
+                body.fen,
+                str(exc),
+                status_code=422,
+            )
+
+        try:
+            legal = await relay.send_legal_moves_for_square(state.fen, derived_move.from_sq)
+        except asyncio.TimeoutError:
+            return JSONResponse({"error": "Engine timeout"}, status_code=504)
+
+        if derived_move.to_sq not in legal.get("targets", []):
+            return await _publish_cv_validation_error(
+                body.fen,
+                "move not in legal moves",
+                status_code=422,
+            )
+
+        state.apply_move(
+            derived_move.from_sq,
+            derived_move.to_sq,
+            piece=derived_move.piece,
+            fen_after=body.fen,
+        )
+        await _publish_led_command("on")
+        await bus.publish(Event(
+            type=EventType.FEN_UPDATE,
+            data={
+                "fen": body.fen,
+                "source": "cv",
+                "side_to_move": state.side_to_move,
+                "result": state.game_result,
+                "is_check": state.is_check,
+            },
+        ))
+        await _publish_best_move_from_suggestion(body.fen)
+        await relay.send_ai_move(DEFAULT_AI_DIFFICULTY)
+        return {
+            "accepted": True,
+            "status": "FEN updated",
+            "source": body.source,
+            "move": derived_move.move,
+        }
+
     state.apply_fen(body.fen, source=body.source)
-    event_type = EventType.CV_CAPTURE if body.source == "cv" else EventType.FEN_UPDATE
     await bus.publish(Event(
-        type=event_type,
-        data={"fen": body.fen, "source": body.source},
+        type=EventType.FEN_UPDATE,
+        data={
+            "fen": body.fen,
+            "source": body.source,
+            "side_to_move": state.side_to_move,
+            "result": state.game_result,
+            "is_check": state.is_check,
+        },
     ))
     return {"status": "FEN updated", "source": body.source}
 
@@ -218,9 +331,18 @@ async def post_move(body: MovePayload):
 
 @app.post("/state/select")
 async def post_select(body: SelectPayload):
-    # Ask the engine for legal moves — relay will publish PIECE_SELECTED
-    await relay.send_legal_moves(body.square)
-    return {"status": "Selection forwarded to engine"}
+    try:
+        result = await relay.send_legal_moves_for_square(state.fen, body.square)
+    except asyncio.TimeoutError:
+        return JSONResponse({"error": "Engine timeout"}, status_code=504)
+
+    targets = result.get("targets", [])
+    state.set_selection(body.square, targets)
+    await bus.publish(Event(
+        type=EventType.PIECE_SELECTED,
+        data={"square": body.square, "targets": targets},
+    ))
+    return {"status": "Selection forwarded to engine", "targets": targets}
 
 
 @app.post("/state/best-move")
@@ -235,11 +357,7 @@ async def post_best_move(body: BestMovePayload):
 
 @app.post("/state/led-command")
 async def post_led_command(body: LedCommandPayload):
-    state.leds_off = body.command == "off"
-    await bus.publish(Event(
-        type=EventType.LED_COMMAND,
-        data={"command": body.command},
-    ))
+    await _publish_led_command(body.command)
     return {"status": f"LED command '{body.command}' published"}
 
 
@@ -287,12 +405,7 @@ async def engine_ai_move(body: AiMovePayload):
 @app.post("/engine/reset")
 async def engine_reset():
     await relay.send_reset()
-    state.move_history.clear()
-    state.last_move = None
-    state.selected_square = None
-    state.legal_moves = []
-    state.best_move_from = None
-    state.best_move_to = None
+    state.reset()
     await bus.publish(Event(type=EventType.GAME_RESET, data={}))
     return {"status": "Game reset"}
 
@@ -368,6 +481,38 @@ async def engine_validate_fen(body: ValidateFenPayload):
         return JSONResponse({"error": "Engine timeout"}, status_code=504)
 
 
+def _moving_side_squares(fen: str) -> list[str]:
+    """Return squares (algebraic) holding pieces of the side-to-move.
+
+    Reduces the legal-moves enumeration from 90 squares to ~16 by skipping
+    empty squares and pieces that cannot move on this turn. Avoids flooding
+    the engine WebSocket and starving concurrent game messages.
+    """
+    parts = fen.split()
+    if len(parts) < 2:
+        return []
+    red_to_move = parts[1].lower() == "w"
+    ranks = parts[0].split("/")
+    if len(ranks) != 10:
+        return []
+
+    squares: list[str] = []
+    for rank_idx, rank_str in enumerate(ranks):
+        rank = 9 - rank_idx  # FEN lists rank 9 first
+        col = 0
+        for ch in rank_str:
+            if ch.isdigit():
+                col += int(ch)
+                continue
+            if col >= 9:
+                break
+            piece_is_red = ch.isupper()
+            if piece_is_red == red_to_move:
+                squares.append(f"{chr(ord('a') + col)}{rank}")
+            col += 1
+    return squares
+
+
 @app.post("/engine/legal-moves")
 async def engine_legal_moves(body: LegalMovesPayload):
     """Get legal moves for a square (or all squares) at a given FEN."""
@@ -376,18 +521,16 @@ async def engine_legal_moves(body: LegalMovesPayload):
             result = await relay.send_legal_moves_for_square(body.fen, body.square)
             return JSONResponse(result)
         else:
-            # All legal moves: iterate a-i × 0-9
+            # Only iterate squares with pieces of the side-to-move (~16 vs 90)
             all_moves: list[str] = []
-            for col_ch in "abcdefghi":
-                for row in range(10):
-                    sq = f"{col_ch}{row}"
-                    try:
-                        result = await relay.send_legal_moves_for_square(body.fen, sq)
-                        targets = result.get("targets", [])
-                        for t in targets:
-                            all_moves.append(f"{sq}{t}")
-                    except asyncio.TimeoutError:
-                        continue
+            for sq in _moving_side_squares(body.fen):
+                try:
+                    result = await relay.send_legal_moves_for_square(body.fen, sq)
+                    targets = result.get("targets", [])
+                    for t in targets:
+                        all_moves.append(f"{sq}{t}")
+                except asyncio.TimeoutError:
+                    continue
             return {"type": "all_legal_moves", "moves": all_moves}
     except asyncio.TimeoutError:
         return JSONResponse({"error": "Engine timeout"}, status_code=504)

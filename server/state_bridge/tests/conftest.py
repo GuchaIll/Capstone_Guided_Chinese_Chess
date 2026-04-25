@@ -29,6 +29,16 @@ class FakeRelay:
         self.calls: list[tuple[Any, ...]] = []
         self.run_calls = 0
         self._stop = False
+        self.legal_moves_by_square: dict[str, list[str]] = {
+            "b0": ["a2", "c2"],
+            "e3": ["e4", "e5"],
+            "a0": ["a1", "a2"],
+        }
+        self.suggestion_response: dict[str, Any] = {
+            "type": "suggestion",
+            "move": "b0c2",
+            "score": 120,
+        }
 
     async def run(self) -> None:
         self.run_calls += 1
@@ -47,6 +57,14 @@ class FakeRelay:
     async def send_legal_moves(self, square: str) -> None:
         self.calls.append(("legal_moves", square))
 
+    async def send_legal_moves_for_square(self, fen: str, square: str) -> dict[str, Any]:
+        self.calls.append(("legal_moves_for_square", fen, square))
+        return {
+            "type": "legal_moves",
+            "square": square,
+            "targets": list(self.legal_moves_by_square.get(square, [])),
+        }
+
     async def send_ai_move(self, difficulty: int | None = None) -> None:
         self.calls.append(("ai_move", difficulty))
 
@@ -55,6 +73,10 @@ class FakeRelay:
 
     async def send_reset(self) -> None:
         self.calls.append(("reset",))
+
+    async def send_suggest(self, fen: str, depth: int) -> dict[str, Any]:
+        self.calls.append(("suggest", fen, depth))
+        return dict(self.suggestion_response)
 
 
 @pytest.fixture
@@ -89,7 +111,11 @@ class _ConnectedRequest:
 def capture_sse_events(bridge_testbed):
     app_module, _, _, _ = bridge_testbed
 
-    async def _capture(expected: int = 1) -> asyncio.Task[list[dict[str, Any]]]:
+    async def _capture(
+        expected: int = 1,
+        *,
+        include_state_sync: bool = False,
+    ) -> asyncio.Task[list[dict[str, Any]]]:
         response = await app_module.sse_events(_ConnectedRequest())
 
         async def _reader() -> list[dict[str, Any]]:
@@ -98,7 +124,10 @@ def capture_sse_events(bridge_testbed):
                 text = chunk.decode() if isinstance(chunk, bytes) else chunk
                 for line in text.splitlines():
                     if line.startswith("data: "):
-                        events.append(json.loads(line[6:]))
+                        payload = json.loads(line[6:])
+                        if not include_state_sync and payload.get("type") == "state_sync":
+                            continue
+                        events.append(payload)
                         if len(events) >= expected:
                             return events
             return events

@@ -129,6 +129,122 @@ async def test_relay_sends_expected_outbound_commands(running_relay):
 
 
 @pytest.mark.asyncio
+async def test_relay_request_response_helpers_cover_analyze_suggest_validate_and_make_move(running_relay):
+    relay, _, _, server = running_relay
+
+    analyze_task = asyncio.create_task(relay.send_analyze("fen-a", 3))
+    assert await server.next_message() == {"type": "analyze_position", "fen": "fen-a", "difficulty": 3}
+    await server.send({"type": "analysis", "score": 42, "features": {"fen": "fen-a"}})
+    assert await asyncio.wait_for(analyze_task, 1.0) == {
+        "type": "analysis",
+        "score": 42,
+        "features": {"fen": "fen-a"},
+    }
+
+    suggest_task = asyncio.create_task(relay.send_suggest("fen-b", 5))
+    assert await server.next_message() == {"type": "set_position", "fen": "fen-b"}
+    await server.send(
+        {
+            "type": "state",
+            "fen": "fen-b",
+            "side_to_move": "red",
+            "result": "in_progress",
+            "is_check": False,
+        }
+    )
+    assert await server.next_message() == {"type": "suggest", "difficulty": 5}
+    await server.send({"type": "suggestion", "move": "b0c2", "score": 100})
+    assert await asyncio.wait_for(suggest_task, 1.0) == {
+        "type": "suggestion",
+        "move": "b0c2",
+        "score": 100,
+    }
+
+    validate_task = asyncio.create_task(relay.send_validate_fen("fen-c"))
+    assert await server.next_message() == {"type": "set_position", "fen": "fen-c"}
+    await server.send(
+        {
+            "type": "state",
+            "fen": "fen-c",
+            "side_to_move": "red",
+            "result": "in_progress",
+            "is_check": False,
+        }
+    )
+    assert await asyncio.wait_for(validate_task, 1.0) == {
+        "type": "state",
+        "fen": "fen-c",
+        "side_to_move": "red",
+        "result": "in_progress",
+        "is_check": False,
+    }
+
+    make_move_task = asyncio.create_task(relay.send_make_move("fen-d", "a0a1"))
+    assert await server.next_message() == {"type": "set_position", "fen": "fen-d"}
+    await server.send(
+        {
+            "type": "state",
+            "fen": "fen-d",
+            "side_to_move": "red",
+            "result": "in_progress",
+            "is_check": False,
+        }
+    )
+    assert await server.next_message() == {"type": "move", "move": "a0a1"}
+    await server.send(
+        {
+            "type": "move_result",
+            "valid": True,
+            "move": "a0a1",
+            "fen": "fen-after",
+            "result": "in_progress",
+            "is_check": False,
+        }
+    )
+    assert await asyncio.wait_for(make_move_task, 1.0) == {
+        "type": "move_result",
+        "valid": True,
+        "move": "a0a1",
+        "fen": "fen-after",
+        "result": "in_progress",
+        "is_check": False,
+    }
+
+
+@pytest.mark.asyncio
+async def test_request_response_helpers_do_not_publish_or_mutate_bridge_state(running_relay):
+    relay, state, bus, server = running_relay
+    queue = bus.subscribe()
+
+    try:
+        legal_task = asyncio.create_task(relay.send_legal_moves_for_square("fen-e", "b0"))
+        assert await server.next_message() == {"type": "set_position", "fen": "fen-e"}
+        await server.send(
+            {
+                "type": "state",
+                "fen": "fen-e",
+                "side_to_move": "red",
+                "result": "in_progress",
+                "is_check": False,
+            }
+        )
+        assert await server.next_message() == {"type": "legal_moves", "square": "b0"}
+        await server.send({"type": "legal_moves", "square": "b0", "targets": ["c2"]})
+        assert await asyncio.wait_for(legal_task, 1.0) == {
+            "type": "legal_moves",
+            "square": "b0",
+            "targets": ["c2"],
+        }
+
+        assert state.fen != "fen-e"
+        assert state.selected_square is None
+        with pytest.raises(asyncio.TimeoutError):
+            await asyncio.wait_for(queue.get(), 0.05)
+    finally:
+        bus.unsubscribe(queue)
+
+
+@pytest.mark.asyncio
 async def test_relay_translates_state_message_into_bridge_state_and_event(running_relay):
     _, state, bus, server = running_relay
     queue = bus.subscribe()

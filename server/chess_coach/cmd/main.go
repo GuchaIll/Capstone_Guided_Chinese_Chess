@@ -100,16 +100,10 @@ func buildEngineClient(logger *slog.Logger) engine.EngineClient {
 		logger.Info("using BridgeClient (state bridge)", "url", bridgeURL)
 		return engine.NewBridgeClient(bridgeURL)
 	}
-	if wsURL := os.Getenv("ENGINE_WS_URL"); wsURL != "" {
-		ws := engine.NewWSClient(wsURL)
-		if err := ws.Connect(); err != nil {
-			logger.Warn("WSClient connect failed, falling back to MockEngine", "err", err)
-			return &engine.MockEngine{}
-		}
-		logger.Info("using WSClient (direct engine WS)", "url", wsURL)
-		return ws
-	}
-	logger.Info("no BRIDGE_URL or ENGINE_WS_URL set, using MockEngine")
+	// WSClient (direct WebSocket to engine) is intentionally excluded from the
+	// fallback chain. All engine communication must flow through the state bridge
+	// to keep the coaching service decoupled from the engine transport.
+	logger.Info("BRIDGE_URL not set — using MockEngine (set BRIDGE_URL to connect to state bridge)")
 	return &engine.MockEngine{}
 }
 

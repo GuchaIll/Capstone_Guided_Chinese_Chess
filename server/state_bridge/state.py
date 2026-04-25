@@ -80,6 +80,20 @@ class GameStateBridge:
         self.best_move_from = from_sq
         self.best_move_to = to_sq
 
+    def reset(self) -> None:
+        self.fen = STARTING_FEN
+        self.side_to_move = "red"
+        self.game_result = "in_progress"
+        self.is_check = False
+        self.last_move = None
+        self.move_history.clear()
+        self.selected_square = None
+        self.legal_moves = []
+        self.best_move_from = None
+        self.best_move_to = None
+        self.cv_fen = None
+        self.leds_off = False
+
     def to_dict(self) -> dict:
         return {
             "fen": self.fen,

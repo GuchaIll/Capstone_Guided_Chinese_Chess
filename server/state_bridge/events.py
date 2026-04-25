@@ -18,6 +18,7 @@ class EventType(str, Enum):
     FEN_UPDATE = "fen_update"
     MOVE_MADE = "move_made"
     CV_CAPTURE = "cv_capture"
+    CV_VALIDATION_ERROR = "cv_validation_error"
     LED_COMMAND = "led_command"
     BEST_MOVE = "best_move"
     PIECE_SELECTED = "piece_selected"

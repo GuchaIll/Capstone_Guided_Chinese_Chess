@@ -141,6 +141,7 @@ func RegisterChessTools(reg *core.ToolRegistry, eng engine.EngineClient) error {
 		&ValidateFENTool{Engine: eng},
 		&AnalyzePositionTool{Engine: eng},
 		&CheckMoveTool{Engine: eng},
+		&GetLegalMovesTool{Engine: eng},
 		&ValidateEngineTool{Engine: eng},
 		&GetPrincipalVariationTool{Engine: eng},
 		&GetMoveRankingsTool{Engine: eng},
@@ -161,6 +162,34 @@ func RegisterChessTools(reg *core.ToolRegistry, eng engine.EngineClient) error {
 }
 
 // ── New engine-backed tools ──
+
+// GetLegalMovesTool returns all legal moves for a position.
+type GetLegalMovesTool struct {
+	Engine engine.EngineClient
+}
+
+func (t *GetLegalMovesTool) Name() string        { return "get_legal_moves" }
+func (t *GetLegalMovesTool) Description() string { return "Return all legal moves for the given FEN position." }
+func (t *GetLegalMovesTool) Parameters() []core.ToolParameter {
+	return []core.ToolParameter{
+		{Name: "fen", Type: "string", Description: "FEN position string", Required: true},
+	}
+}
+
+func (t *GetLegalMovesTool) Execute(ctx context.Context, args json.RawMessage) (string, error) {
+	var p struct {
+		FEN string `json:"fen"`
+	}
+	if err := json.Unmarshal(args, &p); err != nil {
+		return "", fmt.Errorf("get_legal_moves: %w", err)
+	}
+	moves, err := t.Engine.LegalMoves(ctx, p.FEN)
+	if err != nil {
+		return "", fmt.Errorf("get_legal_moves: %w", err)
+	}
+	out, _ := json.Marshal(map[string]interface{}{"moves": moves, "count": len(moves)})
+	return string(out), nil
+}
 
 // GetPrincipalVariationTool returns the principal variation for a position.
 type GetPrincipalVariationTool struct {

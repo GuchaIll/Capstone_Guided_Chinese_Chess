@@ -178,6 +178,7 @@ def handle_game_reset(_data: dict) -> None:
 
 
 EVENT_HANDLERS = {
+    "state_sync": handle_fen_update,
     "fen_update": handle_fen_update,
     "cv_capture": handle_fen_update,
     "piece_selected": handle_piece_selected,

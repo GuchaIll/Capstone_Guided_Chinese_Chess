@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import asyncio
+
 from state import STARTING_FEN
 
 
 ALT_FEN = "9/9/9/9/9/9/9/9/9/9 b - - 0 1"
-NEXT_FEN = "9/9/9/9/9/9/9/9/9/9 w - - 0 1"
+CV_BASE_FEN = "4k4/9/9/9/9/9/9/9/9/R3K4 w - - 0 1"
+CV_SUCCESS_FEN = "4k4/9/9/9/9/9/9/9/R8/4K4 b - - 0 2"
+AMBIGUOUS_CV_FEN = "9/4k4/9/9/9/9/9/9/R8/4K4 b - - 0 2"
+ILLEGAL_CV_FEN = "4k4/9/9/9/9/9/9/9/9/4KR3 b - - 0 2"
 
 
 def test_health_and_initial_state(client):
@@ -30,9 +35,6 @@ def test_health_and_initial_state(client):
     }
 
 
-import asyncio
-
-
 async def test_post_engine_fen_updates_state_and_emits_fen_update(client, bridge_testbed, capture_sse_events):
     _, state, _, _ = bridge_testbed
     task = await capture_sse_events()
@@ -46,26 +48,132 @@ async def test_post_engine_fen_updates_state_and_emits_fen_update(client, bridge
     assert events[0]["type"] == "fen_update"
     assert events[0]["data"]["fen"] == ALT_FEN
     assert events[0]["data"]["source"] == "engine"
-    assert isinstance(events[0]["ts"], float)
+    assert events[0]["data"]["side_to_move"] == "black"
 
     assert state.fen == ALT_FEN
     assert state.side_to_move == "black"
     assert state.cv_fen is None
 
 
-async def test_post_cv_fen_updates_cv_fen_only_and_emits_cv_capture(client, bridge_testbed, capture_sse_events):
-    _, state, _, _ = bridge_testbed
-    task = await capture_sse_events()
+async def test_post_cv_fen_accepts_valid_move_and_emits_led_resume_then_fen_update_and_best_move(
+    client,
+    bridge_testbed,
+    capture_sse_events,
+):
+    _, state, _, relay = bridge_testbed
+    state.apply_fen(CV_BASE_FEN, source="engine")
+    task = await capture_sse_events(expected=3)
 
-    response = client.post("/state/fen", json={"fen": NEXT_FEN, "source": "cv"})
+    response = client.post("/state/fen", json={"fen": CV_SUCCESS_FEN, "source": "cv"})
 
     assert response.status_code == 200
+    assert response.json() == {
+        "accepted": True,
+        "status": "FEN updated",
+        "source": "cv",
+        "move": "a0a1",
+    }
+
     events = await asyncio.wait_for(task, 2.0)
-    assert events[0]["type"] == "cv_capture"
-    assert events[0]["data"] == {"fen": NEXT_FEN, "source": "cv"}
+    assert [event["type"] for event in events] == ["led_command", "fen_update", "best_move"]
+    assert events[0]["data"] == {"command": "on"}
+    assert events[1]["data"]["fen"] == CV_SUCCESS_FEN
+    assert events[1]["data"]["source"] == "cv"
+    assert events[2]["data"] == {"from": "b0", "to": "c2"}
+
+    assert state.fen == CV_SUCCESS_FEN
+    assert state.cv_fen == CV_SUCCESS_FEN
+    assert state.last_move is not None
+    assert state.last_move.from_sq == "a0"
+    assert state.last_move.to_sq == "a1"
+    assert state.best_move_from == "b0"
+    assert state.best_move_to == "c2"
+    assert state.leds_off is False
+    assert relay.calls == [
+        ("legal_moves_for_square", CV_BASE_FEN, "a0"),
+        ("suggest", CV_SUCCESS_FEN, 5),
+        ("ai_move", 4),
+    ]
+
+
+async def test_post_cv_fen_rejects_malformed_fen_and_emits_validation_error_and_led_restore(
+    client,
+    bridge_testbed,
+    capture_sse_events,
+):
+    _, state, _, _ = bridge_testbed
+    state.leds_off = True
+    task = await capture_sse_events(expected=2)
+
+    response = client.post("/state/fen", json={"fen": "not a fen", "source": "cv"})
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "accepted": False,
+        "source": "cv",
+        "reason": "malformed FEN",
+    }
+
+    events = await asyncio.wait_for(task, 2.0)
+    assert [event["type"] for event in events] == ["cv_validation_error", "led_command"]
+    assert events[0]["data"]["cv_fen"] == "not a fen"
+    assert events[0]["data"]["current_fen"] == STARTING_FEN
+    assert events[0]["data"]["reason"] == "malformed FEN"
+    assert events[1]["data"] == {"command": "on"}
 
     assert state.fen == STARTING_FEN
-    assert state.cv_fen == NEXT_FEN
+    assert state.cv_fen == "not a fen"
+    assert state.leds_off is False
+
+
+async def test_post_cv_fen_rejects_ambiguous_board_change(
+    client,
+    bridge_testbed,
+    capture_sse_events,
+):
+    _, state, _, relay = bridge_testbed
+    state.apply_fen(CV_BASE_FEN, source="engine")
+    task = await capture_sse_events(expected=2)
+
+    response = client.post("/state/fen", json={"fen": AMBIGUOUS_CV_FEN, "source": "cv"})
+
+    assert response.status_code == 422
+    assert "ambiguous board change" in response.json()["reason"]
+
+    events = await asyncio.wait_for(task, 2.0)
+    assert events[0]["type"] == "cv_validation_error"
+    assert "ambiguous board change" in events[0]["data"]["reason"]
+    assert events[1]["type"] == "led_command"
+    assert relay.calls == []
+    assert state.fen == CV_BASE_FEN
+    assert state.cv_fen == AMBIGUOUS_CV_FEN
+
+
+async def test_post_cv_fen_rejects_illegal_derived_move(
+    client,
+    bridge_testbed,
+    capture_sse_events,
+):
+    _, state, _, relay = bridge_testbed
+    state.apply_fen(CV_BASE_FEN, source="engine")
+    relay.legal_moves_by_square["a0"] = ["a2"]
+    task = await capture_sse_events(expected=2)
+
+    response = client.post("/state/fen", json={"fen": ILLEGAL_CV_FEN, "source": "cv"})
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "accepted": False,
+        "source": "cv",
+        "reason": "move not in legal moves",
+    }
+
+    events = await asyncio.wait_for(task, 2.0)
+    assert [event["type"] for event in events] == ["cv_validation_error", "led_command"]
+    assert events[0]["data"]["reason"] == "move not in legal moves"
+    assert relay.calls == [("legal_moves_for_square", CV_BASE_FEN, "a0")]
+    assert state.fen == CV_BASE_FEN
+    assert state.cv_fen == ILLEGAL_CV_FEN
 
 
 async def test_post_move_records_state_and_emits_event(client, bridge_testbed, capture_sse_events):
@@ -123,16 +231,24 @@ async def test_post_led_command_updates_state_and_emits_event(client, bridge_tes
     assert state.leds_off is True
 
 
-def test_select_forwards_to_relay_without_mutating_selection(client, bridge_testbed):
+async def test_select_updates_selection_state_and_emits_piece_selected(client, bridge_testbed, capture_sse_events):
     _, state, _, relay = bridge_testbed
+    relay.legal_moves_by_square["e3"] = ["e4", "e5"]
+    task = await capture_sse_events()
 
     response = client.post("/state/select", json={"square": "e3"})
 
     assert response.status_code == 200
-    assert response.json() == {"status": "Selection forwarded to engine"}
-    assert relay.calls == [("legal_moves", "e3")]
-    assert state.selected_square is None
-    assert state.legal_moves == []
+    assert response.json() == {
+        "status": "Selection forwarded to engine",
+        "targets": ["e4", "e5"],
+    }
+    events = await asyncio.wait_for(task, 2.0)
+    assert events[0]["type"] == "piece_selected"
+    assert events[0]["data"] == {"square": "e3", "targets": ["e4", "e5"]}
+    assert state.selected_square == "e3"
+    assert state.legal_moves == ["e4", "e5"]
+    assert relay.calls == [("legal_moves_for_square", STARTING_FEN, "e3")]
 
 
 def test_engine_passthrough_endpoints_forward_to_relay(client, bridge_testbed):
@@ -152,11 +268,13 @@ def test_engine_passthrough_endpoints_forward_to_relay(client, bridge_testbed):
     ]
 
 
-async def test_engine_reset_clears_overlay_state_and_emits_game_reset(client, bridge_testbed, capture_sse_events):
+async def test_engine_reset_restores_starting_state_and_emits_game_reset(client, bridge_testbed, capture_sse_events):
     _, state, _, relay = bridge_testbed
     state.apply_move("a0", "a1", piece="R")
+    state.apply_fen(ALT_FEN, source="cv")
     state.set_selection("a0", ["a1", "a2"])
     state.set_best_move("b2", "b3")
+    state.leds_off = True
 
     task = await capture_sse_events()
     response = client.post("/engine/reset")
@@ -167,12 +285,15 @@ async def test_engine_reset_clears_overlay_state_and_emits_game_reset(client, br
 
     assert relay.calls == [("reset",)]
     assert events[0]["type"] == "game_reset"
+    assert state.fen == STARTING_FEN
     assert state.last_move is None
     assert state.move_history == []
     assert state.selected_square is None
     assert state.legal_moves == []
     assert state.best_move_from is None
     assert state.best_move_to is None
+    assert state.cv_fen is None
+    assert state.leds_off is False
 
 
 async def test_compatibility_endpoints_match_bridge_contracts(client, bridge_testbed, capture_sse_events):

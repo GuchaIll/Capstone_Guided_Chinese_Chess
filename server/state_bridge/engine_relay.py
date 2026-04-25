@@ -37,7 +37,9 @@ class EngineRelay:
         self._ws: websockets.WebSocketClientProtocol | None = None
         self._outbox: asyncio.Queue[str] = asyncio.Queue()
         # Request-response support: pending futures keyed by expected msg type.
-        self._pending: dict[str, asyncio.Future] = {}
+        # The bool marks whether bridge state/event side effects should be
+        # suppressed for the matching response.
+        self._pending: dict[str, tuple[asyncio.Future, bool]] = {}
 
     # ------------------------------------------------------------------
     # Public API — called by the bridge app to send commands to engine
@@ -66,13 +68,19 @@ class EngineRelay:
 
     # ── Request-response methods (wait for engine reply) ─────────────
 
-    async def _send_and_wait(self, msg: dict, expect_type: str,
-                             timeout: float = 15.0) -> dict:
+    async def _send_and_wait(
+        self,
+        msg: dict,
+        expect_type: str,
+        timeout: float = 15.0,
+        *,
+        suppress_side_effects: bool = False,
+    ) -> dict:
         """Send *msg* and wait for the first inbound message with
         type == *expect_type*, returning it as a dict."""
         loop = asyncio.get_running_loop()
         fut: asyncio.Future[dict] = loop.create_future()
-        self._pending[expect_type] = fut
+        self._pending[expect_type] = (fut, suppress_side_effects)
         await self._send(msg)
         try:
             return await asyncio.wait_for(fut, timeout)
@@ -100,7 +108,11 @@ class EngineRelay:
 
     async def send_suggest(self, fen: str, depth: int) -> dict:
         """Request best move suggestion — waits for the engine reply."""
-        await self._send({"type": "set_position", "fen": fen})
+        await self._send_and_wait(
+            {"type": "set_position", "fen": fen},
+            expect_type="state",
+            suppress_side_effects=True,
+        )
         return await self._send_and_wait(
             {"type": "suggest", "difficulty": depth},
             expect_type="suggestion",
@@ -120,25 +132,33 @@ class EngineRelay:
         return await self._send_and_wait(
             {"type": "set_position", "fen": fen},
             expect_type="state",  # successful set_position returns "state"
+            suppress_side_effects=True,
         )
 
     async def send_legal_moves_for_square(self, fen: str, square: str) -> dict:
         """Set position then get legal moves for a square — waits for reply."""
-        await self._send({"type": "set_position", "fen": fen})
-        # Wait a bit for set_position to be processed
-        await asyncio.sleep(0.05)
+        await self._send_and_wait(
+            {"type": "set_position", "fen": fen},
+            expect_type="state",
+            suppress_side_effects=True,
+        )
         return await self._send_and_wait(
             {"type": "legal_moves", "square": square},
             expect_type="legal_moves",
+            suppress_side_effects=True,
         )
 
     async def send_make_move(self, fen: str, move: str) -> dict:
         """Set position then make a move — waits for move_result."""
-        await self._send({"type": "set_position", "fen": fen})
-        await asyncio.sleep(0.05)
+        await self._send_and_wait(
+            {"type": "set_position", "fen": fen},
+            expect_type="state",
+            suppress_side_effects=True,
+        )
         return await self._send_and_wait(
             {"type": "move", "move": move},
             expect_type="move_result",
+            suppress_side_effects=True,
         )
 
     # ------------------------------------------------------------------
@@ -224,18 +244,22 @@ class EngineRelay:
 
         # ── Resolve pending request-response futures ─────────────────
         if msg_type in self._pending:
-            fut = self._pending.pop(msg_type)
+            fut, suppress_side_effects = self._pending.pop(msg_type)
             if not fut.done():
                 fut.set_result(msg)
-                # For "state" and "legal_moves" we still fall through to
-                # update the bridge state and publish events.
+                if suppress_side_effects:
+                    return
+                # For live engine-originated messages, still fall through to
+                # update bridge state and publish events.
                 if msg_type not in ("state", "legal_moves", "move_result", "ai_move"):
                     return
         # Also resolve "state" futures when we get an error (validate_fen).
         if msg_type == "error" and "state" in self._pending:
-            fut = self._pending.pop("state")
+            fut, suppress_side_effects = self._pending.pop("state")
             if not fut.done():
                 fut.set_result(msg)
+                if suppress_side_effects:
+                    return
                 # Still fall through to log the error.
 
         if msg_type == "state":
