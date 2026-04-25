@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import Piece from './Piece';
 import {
   PieceType,
@@ -6,34 +6,46 @@ import {
   Position,
   SuggestedMove,
   EMPTY,
-  RED,
+  BLACK,
   getPieceColor,
   fileToLetter,
+  notationToPosition,
 } from '../types';
 import './ChessBoard.css';
 
 interface ChessBoardProps {
   board: PieceType[][];
   sideToMove: Side;
+  playerSide: Side;
   onMove: (from: string, to: string) => boolean;
-  lastMove?: { from: Position; to: Position };
   legalTargets: string[];
   suggestedMove: SuggestedMove | null;
   onPieceSelected: (square: string) => void;
   onPieceDeselected: () => void;
   aiThinking: boolean;
+  opponentMove?: { from: Position; to: Position };
+  // Tentative move applied locally but not yet committed to the engine.
+  // The board renders this overlay so the player can see their pending move.
+  pendingMove: { from: string; to: string } | null;
+  // Master interaction gate (controlled by App.tsx turnPhase). When false the
+  // board ignores clicks/drags entirely — used to block input while the
+  // engine is thinking or while the player needs to acknowledge an AI move.
+  canInteract: boolean;
 }
 
 export default function ChessBoard({
   board,
   sideToMove,
+  playerSide,
   onMove,
-  lastMove,
   legalTargets,
   suggestedMove,
   onPieceSelected,
   onPieceDeselected,
   aiThinking,
+  opponentMove,
+  pendingMove,
+  canInteract,
 }: ChessBoardProps) {
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
   const [draggedPiece, setDraggedPiece] = useState<{
@@ -41,11 +53,53 @@ export default function ChessBoard({
     from: Position;
   } | null>(null);
 
+  // Resolve pendingMove squares once per render so click/drag handlers can
+  // reference them without re-parsing notation.
+  const pendingFromPos = useMemo(
+    () => (pendingMove ? notationToPosition(pendingMove.from) : null),
+    [pendingMove],
+  );
+  const pendingToPos = useMemo(
+    () => (pendingMove ? notationToPosition(pendingMove.to) : null),
+    [pendingMove],
+  );
+
+  // Display board = committed board with the pending move overlaid. The
+  // committed `board` prop remains the engine's truth; this derivation
+  // keeps render and state cleanly separated.
+  const displayBoard = useMemo(() => {
+    if (!pendingFromPos || !pendingToPos) return board;
+    const next = board.map((file) => [...file]);
+    const piece = next[pendingFromPos.file][pendingFromPos.rank];
+    if (piece === EMPTY) return board; // pendingMove out of sync with board
+    next[pendingFromPos.file][pendingFromPos.rank] = EMPTY;
+    next[pendingToPos.file][pendingToPos.rank] = piece;
+    return next;
+  }, [board, pendingFromPos, pendingToPos]);
+
   // Clear selection when side changes (e.g., after move or AI turn)
   useEffect(() => {
     setSelectedPosition(null);
     onPieceDeselected();
-  }, [sideToMove, onPieceDeselected]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sideToMove]); // onPieceDeselected is stable; exclude to avoid misleading dep
+
+  // If the pending move is cleared (committed or taken back), drop any
+  // stale local selection so the board returns to a clean state.
+  useEffect(() => {
+    if (!pendingMove) {
+      setSelectedPosition(null);
+      setDraggedPiece(null);
+    }
+  }, [pendingMove]);
+
+  useEffect(() => {
+    if (!canInteract) {
+      setSelectedPosition(null);
+      setDraggedPiece(null);
+      onPieceDeselected();
+    }
+  }, [canInteract, onPieceDeselected]);
 
   // Select a piece and notify parent
   const selectPiece = useCallback((file: number, rank: number) => {
@@ -60,14 +114,14 @@ export default function ChessBoard({
     onPieceDeselected();
   }, [onPieceDeselected]);
 
-  // Is the player's turn (not AI thinking)?
-  const isPlayerTurn = sideToMove === RED && !aiThinking;
+  // Is the player's turn (not AI thinking, interaction allowed by App phase)?
+  const isPlayerTurn = sideToMove === playerSide && !aiThinking && canInteract;
 
   // Handle clicking on an intersection
   const handleIntersectionClick = useCallback((file: number, rank: number) => {
     if (!isPlayerTurn) return;
 
-    const clickedPiece = board[file][rank];
+    const clickedPiece = displayBoard[file][rank];
     const clickedPieceColor = getPieceColor(clickedPiece);
 
     if (selectedPosition) {
@@ -78,7 +132,7 @@ export default function ChessBoard({
       }
 
       // Clicking on another own piece - select it instead
-      if (clickedPieceColor === sideToMove) {
+      if (clickedPieceColor === playerSide) {
         selectPiece(file, rank);
         return;
       }
@@ -95,28 +149,28 @@ export default function ChessBoard({
       }
     } else {
       // No piece selected - select if it's current player's piece
-      if (clickedPieceColor === sideToMove) {
+      if (clickedPieceColor === playerSide) {
         selectPiece(file, rank);
       }
     }
-  }, [board, selectedPosition, sideToMove, onMove, isPlayerTurn, selectPiece, deselectPiece]);
+  }, [displayBoard, selectedPosition, playerSide, onMove, isPlayerTurn, selectPiece, deselectPiece]);
 
   // Handle drag start
   const handleDragStart = useCallback((file: number, rank: number) => {
     if (!isPlayerTurn) return;
 
-    const piece = board[file][rank];
+    const piece = displayBoard[file][rank];
     const pieceColor = getPieceColor(piece);
 
-    if (pieceColor === sideToMove) {
+    if (pieceColor === playerSide) {
       setDraggedPiece({ piece, from: { file, rank } });
       selectPiece(file, rank);
     }
-  }, [board, sideToMove, isPlayerTurn, selectPiece]);
+  }, [displayBoard, playerSide, isPlayerTurn, selectPiece]);
 
   // Handle drag end (drop)
   const handleDrop = useCallback((file: number, rank: number) => {
-    if (!draggedPiece) return;
+    if (!draggedPiece || !isPlayerTurn) return;
 
     const fromStr = `${fileToLetter(draggedPiece.from.file)}${draggedPiece.from.rank}`;
     const toStr = `${fileToLetter(file)}${rank}`;
@@ -128,16 +182,7 @@ export default function ChessBoard({
 
     setDraggedPiece(null);
     deselectPiece();
-  }, [draggedPiece, onMove, deselectPiece]);
-
-  // Check if a position is part of the last move
-  const isLastMovePosition = useCallback((file: number, rank: number): boolean => {
-    if (!lastMove) return false;
-    return (
-      (lastMove.from.file === file && lastMove.from.rank === rank) ||
-      (lastMove.to.file === file && lastMove.to.rank === rank)
-    );
-  }, [lastMove]);
+  }, [draggedPiece, onMove, deselectPiece, isPlayerTurn]);
 
   // Convert file/rank to notation for comparison
   const getNotation = (file: number, rank: number): string => {
@@ -158,6 +203,16 @@ export default function ChessBoard({
   const isSuggestedTo = (file: number, rank: number): boolean => {
     if (!suggestedMove) return false;
     return suggestedMove.to === getNotation(file, rank);
+  };
+
+  const isOpponentFrom = (file: number, rank: number): boolean => {
+    if (!opponentMove) return false;
+    return opponentMove.from.file === file && opponentMove.from.rank === rank;
+  };
+
+  const isOpponentTo = (file: number, rank: number): boolean => {
+    if (!opponentMove) return false;
+    return opponentMove.to.file === file && opponentMove.to.rank === rank;
   };
 
   return (
@@ -224,25 +279,34 @@ export default function ChessBoard({
 
         {/* Intersection points and pieces */}
         <div className="intersections">
-          {Array.from({ length: 10 }, (_, rankFromTop) => {
-            const rank = 9 - rankFromTop;
+          {Array.from({ length: 10 }, (_, rankIdx) => {
+            const rank = playerSide === BLACK ? rankIdx : 9 - rankIdx;
             return (
               <div key={rank} className="rank-row">
-                {Array.from({ length: 9 }, (_, file) => {
-                  const piece = board[file][rank];
+                {Array.from({ length: 9 }, (_, fileIdx) => {
+                  const file = playerSide === BLACK ? 8 - fileIdx : fileIdx;
+                  const piece = displayBoard[file][rank];
                   const isSelected = selectedPosition?.file === file && selectedPosition?.rank === rank;
-                  const isLastMove = isLastMovePosition(file, rank);
                   const isLegal = isLegalTarget(file, rank);
+                  const isCaptureTarget = isLegal && piece !== EMPTY && getPieceColor(piece) !== playerSide;
                   const isSugFrom = isSuggestedFrom(file, rank);
                   const isSugTo = isSuggestedTo(file, rank);
+                  const isOppFrom = isOpponentFrom(file, rank);
+                  const isOppTo = isOpponentTo(file, rank);
+                  const isPendFrom = pendingFromPos?.file === file && pendingFromPos?.rank === rank;
+                  const isPendTo = pendingToPos?.file === file && pendingToPos?.rank === rank;
 
                   const classNames = [
                     'intersection',
                     isSelected ? 'selected' : '',
-                    isLastMove ? 'last-move' : '',
                     isLegal ? 'legal-target' : '',
+                    isCaptureTarget ? 'capture-target' : '',
                     isSugFrom ? 'suggested-from' : '',
                     isSugTo ? 'suggested-to' : '',
+                    isOppFrom ? 'opponent-from' : '',
+                    isOppTo ? 'opponent-to' : '',
+                    isPendFrom ? 'pending-from' : '',
+                    isPendTo ? 'pending-to' : '',
                   ].filter(Boolean).join(' ');
 
                   return (
@@ -256,7 +320,7 @@ export default function ChessBoard({
                       {piece !== EMPTY && (
                         <Piece
                           piece={piece}
-                          draggable={isPlayerTurn && getPieceColor(piece) === sideToMove}
+                          draggable={isPlayerTurn && getPieceColor(piece) === playerSide}
                           onDragStart={() => handleDragStart(file, rank)}
                         />
                       )}
@@ -274,14 +338,20 @@ export default function ChessBoard({
 
         {/* File labels (a-i) */}
         <div className="file-labels">
-          {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'].map((letter) => (
+          {(playerSide === BLACK
+            ? ['i', 'h', 'g', 'f', 'e', 'd', 'c', 'b', 'a']
+            : ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']
+          ).map((letter) => (
             <span key={letter} className="file-label">{letter}</span>
           ))}
         </div>
 
         {/* Rank labels (0-9) */}
         <div className="rank-labels">
-          {Array.from({ length: 10 }, (_, i) => 9 - i).map((rank) => (
+          {(playerSide === BLACK
+            ? Array.from({ length: 10 }, (_, i) => i)
+            : Array.from({ length: 10 }, (_, i) => 9 - i)
+          ).map((rank) => (
             <span key={rank} className="rank-label">{rank}</span>
           ))}
         </div>
