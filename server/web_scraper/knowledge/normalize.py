@@ -100,13 +100,35 @@ def sha256_text(text: str) -> str:
 
 # ── Boilerplate removal ──────────────────────────────────────────────────────
 
+_STRUCTURAL_TAGS = {"html", "body", "main", "article", "section", "div"}
+
 def _is_boilerplate_tag(tag: Tag) -> bool:
     """Return True if a tag looks like navigation/ads/widgets."""
     tag_name = tag.name or ""
     if tag_name in _STRIP_TAGS:
         return True
-    classes = " ".join(tag.get("class", []))
-    tag_id = tag.get("id", "")
+    # Never strip structural page-level containers — their class names
+    # (e.g. "has-sidebar-left") describe layout, not content identity.
+    if tag_name in _STRUCTURAL_TAGS:
+        attrs = tag.attrs or {}
+        classes = " ".join(attrs.get("class", []))
+        tag_id = attrs.get("id", "")
+        combined = f"{classes} {tag_id}"
+        # Only strip if the element is clearly an isolated widget/sidebar div,
+        # not a layout wrapper (check that the word appears as a standalone class).
+        standalone_classes = set(attrs.get("class", []))
+        boilerplate_classes = {
+            "sidebar", "sidebar-left", "sidebar-right", "widget", "module",
+            "comment", "comments", "related", "share", "social", "advertisement",
+            "advert", "popup", "banner", "newsletter", "toolbar", "topbar",
+            "breadcrumb", "pagination", "login", "signup",
+        }
+        if standalone_classes & boilerplate_classes:
+            return True
+        return False
+    attrs = tag.attrs or {}
+    classes = " ".join(attrs.get("class", []))
+    tag_id = attrs.get("id", "")
     combined = f"{classes} {tag_id}"
     return bool(_BOILERPLATE_PATTERNS.search(combined))
 

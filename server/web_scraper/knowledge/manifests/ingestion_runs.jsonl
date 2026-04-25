@@ -1,0 +1,4 @@
+{"collection": "openings", "status": "ok", "total_chunks": 111, "inserted": 111, "errors": 0, "run_at": "2026-04-22T16:47:53.332410+00:00"}
+{"collection": "tactics", "status": "ok", "total_chunks": 31, "inserted": 31, "errors": 0, "run_at": "2026-04-22T16:47:59.898685+00:00"}
+{"collection": "endgames", "status": "ok", "total_chunks": 80, "inserted": 80, "errors": 0, "run_at": "2026-04-22T16:48:07.549770+00:00"}
+{"collection": "beginner_principles", "status": "ok", "total_chunks": 199, "inserted": 199, "errors": 0, "run_at": "2026-04-22T16:48:23.568331+00:00"}

@@ -5,12 +5,14 @@ notes:
   - "This manifest is acquisition-first: unresolved resources are intentionally recorded with canonical_url: null instead of guessed URLs."
   - "Wave 1 sources are the recommended first batch for building the initial Xiangqi RAG corpus."
   - "expected_collections must stay aligned with the active Go coach collections: openings, tactics, endgames, beginner_principles."
+  - "2026-04-22: Corrected 10 xqinenglish canonical URLs by crawling master category pages (catid=110, 226, 225, 223, 207). Old URLs used wrong article IDs and were serving incorrect or 404 content. Raw files at raw/xqinenglish/ must be re-fetched with --force."
+  - "2026-04-22: Resolved xqinenglish_tjm_practical_endgames URL (catid=220). Added xiangqi_com_how_to_play and xiangqi_com_pieces_and_moves as new Wave 1 sources."
 
 sources:
   - source_id: xqinenglish_opening_basics_05
-    title: "Basics of Xiangqi 05 The Opening Phase"
+    title: "Basics of Xiangqi (Chinese Chess) 05 The Opening Phase"
     site_name: xqinenglish
-    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=108:basics-of-xiangqi-05-the-opening-phase&catid=110&Itemid=504&lang=en"
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=169&catid=110&Itemid=504&lang=en"
     url_status: resolved
     phase: opening
     format: html
@@ -21,12 +23,12 @@ sources:
     status: planned
     expected_collections: [openings, beginner_principles]
     tags: [opening, principles, beginner]
-    notes: "General opening principles and phase definition. Resolve canonical xqinenglish article URL first."
+    notes: "General opening principles and phase definition. Corrected article ID from 108 to 169 (verified via catid=110 category listing)."
 
   - source_id: xqinenglish_choosing_opening
-    title: "Choosing your Xiangqi Opening"
+    title: "Choosing your Xiangqi (Chinese Chess) Opening"
     site_name: xqinenglish
-    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=107:choosing-your-xiangqi-opening&catid=110&Itemid=504&lang=en"
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=983&catid=226&Itemid=511&lang=en"
     url_status: resolved
     phase: opening
     format: html
@@ -37,12 +39,12 @@ sources:
     status: planned
     expected_collections: [openings, beginner_principles]
     tags: [opening, repertoire, beginner]
-    notes: "How to select an opening line based on characteristics."
+    notes: "How to select an opening line based on characteristics. Corrected article ID from 107 to 983, catid from 110 to 226 (verified via Opening Basics category listing)."
 
   - source_id: xqinenglish_intro_opening
-    title: "Introduction to the Xiangqi Opening"
+    title: "Introduction to the Xiangqi (Chinese Chess) Opening"
     site_name: xqinenglish
-    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=106:introduction-to-the-xiangqi-opening&catid=110&Itemid=504&lang=en"
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=105&catid=226&Itemid=511&lang=en"
     url_status: resolved
     phase: opening
     format: html
@@ -53,7 +55,7 @@ sources:
     status: planned
     expected_collections: [openings, beginner_principles]
     tags: [opening, principles]
-    notes: "Introductory opening overview; good bootstrap source for opening and beginner retrieval."
+    notes: "Introductory opening overview; good bootstrap source for opening and beginner retrieval. Corrected article ID from 106 to 105, catid from 110 to 226 (verified via Opening Basics category listing)."
 
   - source_id: xiangqi_com_opening_principles_10
     title: "10 Most Important Opening Principles"
@@ -155,9 +157,9 @@ sources:
     notes: "Focus on tactical motifs such as forks and forcing captures."
 
   - source_id: xqinenglish_strategical_advice_middle_game
-    title: "Strategical Advice in the Xiangqi Middle Game"
+    title: "Strategical Advice in the Xiangqi (Chinese Chess) Middle Game"
     site_name: xqinenglish
-    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=152:strategical-advice-in-the-xiangqi-middle-game&catid=111&Itemid=510&lang=en"
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=1076&catid=225&Itemid=510&lang=en"
     url_status: resolved
     phase: middlegame
     format: html
@@ -168,7 +170,7 @@ sources:
     status: planned
     expected_collections: [tactics, beginner_principles]
     tags: [middlegame, strategy]
-    notes: "Comprehensive strategic principles; likely high-value for general coaching retrieval."
+    notes: "Comprehensive strategic principles; likely high-value for general coaching retrieval. Corrected article ID from 152 to 1076, catid from 111 to 225 (verified via Midgame Introduction category listing)."
 
   - source_id: xqinenglish_intro_midgame
     title: "Introduction to the Xiangqi Midgame"
@@ -187,9 +189,9 @@ sources:
     notes: "Overview of middlegame strategy and tactics."
 
   - source_id: xqinenglish_tactics_01c_clearance
-    title: "Tactics 01c - Clearance Tactic"
+    title: "Basic Xiangqi (Chinese Chess) Tactics 01c Clearance Tactic"
     site_name: xqinenglish
-    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=166:basic-midgame-tactics-01c-clearance&catid=111&Itemid=510&lang=en"
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=1178&catid=223&Itemid=510&lang=en"
     url_status: resolved
     phase: middlegame
     format: html
@@ -200,12 +202,12 @@ sources:
     status: planned
     expected_collections: [tactics, beginner_principles]
     tags: [middlegame, tactics, clearance]
-    notes: "Preserve motif definition and worked examples as separate chunks when possible."
+    notes: "Preserve motif definition and worked examples as separate chunks when possible. Corrected article ID from 166 to 1178, catid from 111 to 223 (verified via Basic Midgame Tactics category listing)."
 
   - source_id: xqinenglish_tactics_07c_dislodge
-    title: "Tactics 07c - Dislodge"
+    title: "Basic Xiangqi (Chinese Chess) Tactics 07c Dislodge"
     site_name: xqinenglish
-    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=179:basic-midgame-tactics-07c-dislodge&catid=111&Itemid=510&lang=en"
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=1103&catid=223&Itemid=510&lang=en"
     url_status: resolved
     phase: middlegame
     format: html
@@ -216,7 +218,7 @@ sources:
     status: planned
     expected_collections: [tactics, beginner_principles]
     tags: [middlegame, tactics, dislodge]
-    notes: "Capture terminology variants like dislodging, chasing away, and deflection if present."
+    notes: "Capture terminology variants like dislodging, chasing away, and deflection if present. Corrected article ID from 179 to 1103, catid from 111 to 223 (verified via Basic Midgame Tactics category listing)."
 
   - source_id: wxf_36_stratagems
     title: "Xiangqi and the 36 Stratagems"
@@ -235,9 +237,9 @@ sources:
     notes: "Use transcript extraction only if reliable text is available; otherwise keep as metadata-only until reviewed."
 
   - source_id: xqinenglish_endgame_basics_08
-    title: "Basics of Xiangqi 08 The Endgame"
+    title: "Basics of Xiangqi (Chinese Chess) 08 The Endgame"
     site_name: xqinenglish
-    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=109:basics-of-xiangqi-08-the-endgame&catid=110&Itemid=504&lang=en"
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=172&catid=110&Itemid=504&lang=en"
     url_status: resolved
     phase: endgame
     format: html
@@ -248,7 +250,7 @@ sources:
     status: planned
     expected_collections: [endgames, beginner_principles]
     tags: [endgame, beginner]
-    notes: "General endgame primer; useful across explain-puzzle and endgame-principle retrieval."
+    notes: "General endgame primer; useful across explain-puzzle and endgame-principle retrieval. Corrected article ID from 109 to 172 (verified via catid=110 category listing)."
 
   - source_id: xqinenglish_puzzles_henry_hong_congfa
     title: "Puzzles by Henry Hong Congfa"
@@ -285,8 +287,8 @@ sources:
   - source_id: xqinenglish_tjm_practical_endgames
     title: "TJM Practical Endgames"
     site_name: xqinenglish
-    canonical_url: null
-    url_status: unresolved
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=category&id=220&Itemid=509&lang=en"
+    url_status: resolved
     phase: endgame
     format: html
     extraction_method: html_content_div
@@ -296,7 +298,7 @@ sources:
     status: planned
     expected_collections: [endgames]
     tags: [endgame, practical_endgames]
-    notes: "Chunk by endgame category or practical motif."
+    notes: "Category hub with 31 articles covering practical endgame patterns. Crawl individual article links from this category page; chunk by endgame motif."
 
   - source_id: xiangqi_com_eleven_endgame_compositions
     title: "The Eleven Endgame Compositions"
@@ -395,9 +397,9 @@ sources:
     notes: "Strategy/philosophy crossover source; route chunks by section content."
 
   - source_id: xqinenglish_basic_checkmate_methods
-    title: "Basic Xiangqi Checkmate Methods"
+    title: "Introduction to Basic Kills in Xiangqi (Chinese Chess)"
     site_name: xqinenglish
-    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=446:basic-xiangqi-checkmate-methods&catid=273&Itemid=572&lang=en"
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
     url_status: resolved
     phase: general
     format: html
@@ -407,8 +409,8 @@ sources:
     wave: 1
     status: planned
     expected_collections: [endgames, beginner_principles]
-    tags: [checkmate, principles, endgame]
-    notes: "Strong fit for explain_tactic and explain_puzzle_objective style retrieval."
+    tags: [checkmate, principles, endgame, basic_kills]
+    notes: "Overview article for the Basic Kills section covering all piece-based checkmate patterns. Corrected article ID from 446 to 100, catid from 273 to 207, Itemid from 572 to 522 (verified via Basic Kills category listing)."
 
   - source_id: chess_polyglot_xiangqi_proverbs
     title: "Xiangqi proverbs"
@@ -443,9 +445,9 @@ sources:
     notes: "Use primarily as a discovery source for additional resources, not as a first-pass learning corpus."
 
   - source_id: xqinenglish_basics_of_play
-    title: "Basics of Xiangqi Play"
+    title: "Basics of Xiangqi (Chinese Chess) 01 General Introduction"
     site_name: xqinenglish
-    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=107:basics-of-xiangqi-play&catid=110&Itemid=504&lang=en"
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=167&catid=110&Itemid=504&lang=en"
     url_status: resolved
     phase: all_phases
     format: html
@@ -456,12 +458,12 @@ sources:
     status: planned
     expected_collections: [beginner_principles, openings, endgames]
     tags: [beginner, guide, all_phases]
-    notes: "Basic rules and how to win. Good seed source for beginner_principles."
+    notes: "General introduction covering basic rules and how to win. Good seed source for beginner_principles. Corrected article ID from 107 to 167 (verified via catid=110 Basics series listing)."
 
   - source_id: xqinenglish_how_to_play_basics_02
-    title: "How to Play Xiangqi (Basics 02)"
+    title: "Basics of Xiangqi (Chinese Chess) 02 How to Play"
     site_name: xqinenglish
-    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=105:how-to-play-xiangqi-basics-02&catid=110&Itemid=504&lang=en"
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=101&catid=110&Itemid=504&lang=en"
     url_status: resolved
     phase: all_phases
     format: html
@@ -472,7 +474,39 @@ sources:
     status: planned
     expected_collections: [beginner_principles]
     tags: [beginner, rules, guide]
-    notes: "Step-by-step guide to setting up and playing."
+    notes: "Step-by-step guide to setting up and playing. Corrected article ID from 105 to 101 (verified via catid=110 Basics series listing)."
+
+  - source_id: xiangqi_com_how_to_play
+    title: "How to Play Xiangqi"
+    site_name: xiangqi.com
+    canonical_url: "https://www.xiangqi.com/how-to-play-xiangqi"
+    url_status: resolved
+    phase: all_phases
+    format: html
+    extraction_method: css_selector_content
+    raw_subdir: xiangqi_com
+    priority: P0
+    wave: 1
+    status: planned
+    expected_collections: [beginner_principles, openings, endgames]
+    tags: [beginner, guide, all_phases, rules]
+    notes: "Comprehensive beginner guide covering rules, tactics, strategy, and learning methods. Good single-article overview for bootstrapping all collections."
+
+  - source_id: xiangqi_com_pieces_and_moves
+    title: "Pieces and Moves in Xiangqi"
+    site_name: xiangqi.com
+    canonical_url: "https://www.xiangqi.com/help/pieces-and-moves"
+    url_status: resolved
+    phase: all_phases
+    format: html
+    extraction_method: css_selector_content
+    raw_subdir: xiangqi_com
+    priority: P0
+    wave: 1
+    status: planned
+    expected_collections: [beginner_principles]
+    tags: [beginner, pieces, rules, moves]
+    notes: "Reference page covering all 7 piece types, movement rules, palace and river mechanics. Chunk one entry per piece type."
 
   - source_id: wxf_introduction_to_xiangqi
     title: "Introduction to Xiangqi"

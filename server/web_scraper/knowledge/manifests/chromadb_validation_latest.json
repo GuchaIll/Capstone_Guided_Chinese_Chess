@@ -1,0 +1,3844 @@
+{
+  "ran_at": "2026-04-22T17:25:12.323757+00:00",
+  "status": "failed",
+  "health": {
+    "chromadb": {
+      "ok": true,
+      "status_code": 200
+    },
+    "embedding": {
+      "ok": true,
+      "status_code": 200
+    }
+  },
+  "summary": {
+    "count_checks_passed": true,
+    "structure_checks_passed": true,
+    "metadata_checks_passed": true,
+    "semantic_checks_passed": false,
+    "isolation_checks_passed": false,
+    "duplicate_leakage_detected": true,
+    "overall_pass": false
+  },
+  "collections": {
+    "openings": {
+      "collection_id": "84c96a97-f8fc-44be-bde5-03995b6230dc",
+      "expected_count": 111,
+      "actual_count": 111,
+      "count_matches_input": true,
+      "exists": true,
+      "retrieved_rows": 111,
+      "structural_keys": [
+        "data",
+        "documents",
+        "embeddings",
+        "ids",
+        "included",
+        "metadatas",
+        "uris"
+      ],
+      "has_ids": true,
+      "has_documents": true,
+      "has_metadatas": true,
+      "has_embeddings": true,
+      "missing_documents": 0,
+      "missing_metadatas": 0,
+      "missing_embeddings": 0,
+      "metadata_collection_mismatches": [],
+      "sample_collection_metadata": [
+        "openings",
+        "openings",
+        "openings",
+        "openings",
+        "openings"
+      ],
+      "sample_ids": [
+        "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-000",
+        "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-001",
+        "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-002",
+        "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-003",
+        "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-004"
+      ],
+      "sample_previews": [
+        "Basics of Xiangqi (Chinese Chess) 05 The Opening Phase If we were to dissect the game of Xiangqi or International Chess, we would find that it consists of the Opening Phase , th...",
+        "First Move Initiative/Advantage By default, Red moves first, which gives Red a slight advantage known as the First Move Initiative. Initiative (先手) can be defined as having the ...",
+        "Goals for the Opening System The goal for Red in the opening is to gain traction or momentum in the Opening Phase such that this advantage can turn into a winning position. Ther..."
+      ]
+    },
+    "tactics": {
+      "collection_id": "df04541e-3bae-492c-b62e-d2555d9481e5",
+      "expected_count": 31,
+      "actual_count": 31,
+      "count_matches_input": true,
+      "exists": true,
+      "retrieved_rows": 31,
+      "structural_keys": [
+        "data",
+        "documents",
+        "embeddings",
+        "ids",
+        "included",
+        "metadatas",
+        "uris"
+      ],
+      "has_ids": true,
+      "has_documents": true,
+      "has_metadatas": true,
+      "has_embeddings": true,
+      "missing_documents": 0,
+      "missing_metadatas": 0,
+      "missing_embeddings": 0,
+      "metadata_collection_mismatches": [],
+      "sample_collection_metadata": [
+        "tactics",
+        "tactics",
+        "tactics",
+        "tactics",
+        "tactics"
+      ],
+      "sample_ids": [
+        "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-000",
+        "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-001",
+        "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-002",
+        "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-003",
+        "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-004"
+      ],
+      "sample_previews": [
+        "Strategical Advice in the Xiangqi (Chinese Chess) Middle Game Author: Jim Png from www.xqinenglish.com Note: This article first appeared on Xiangqi.com. A game of Xiangqi is div...",
+        "based on the principles listed in Grandmaster Liu Dianzhong's book and remains one of the most comprehensive pieces of advice the author has encountered. There were plenty of ex...",
+        "(1) The top priority is to gain control of the situation before attempting to gain positional advantage or material advantage The two colors in Xiangqi are like different sides ..."
+      ]
+    },
+    "endgames": {
+      "collection_id": "b0e1e534-1ba7-4cc5-8a36-bebb91b052fe",
+      "expected_count": 80,
+      "actual_count": 80,
+      "count_matches_input": true,
+      "exists": true,
+      "retrieved_rows": 80,
+      "structural_keys": [
+        "data",
+        "documents",
+        "embeddings",
+        "ids",
+        "included",
+        "metadatas",
+        "uris"
+      ],
+      "has_ids": true,
+      "has_documents": true,
+      "has_metadatas": true,
+      "has_embeddings": true,
+      "missing_documents": 0,
+      "missing_metadatas": 0,
+      "missing_embeddings": 0,
+      "metadata_collection_mismatches": [],
+      "sample_collection_metadata": [
+        "endgames",
+        "endgames",
+        "endgames",
+        "endgames",
+        "endgames"
+      ],
+      "sample_ids": [
+        "xqinenglish/endgame/xqinenglish_endgame_basics_08#endgames#chunk-000",
+        "xqinenglish/endgame/xqinenglish_endgame_basics_08#endgames#chunk-001",
+        "xqinenglish/general/xqinenglish_basic_checkmate_methods#endgames#chunk-000",
+        "xqinenglish/general/xqinenglish_basic_checkmate_methods#endgames#chunk-001",
+        "xqinenglish/general/xqinenglish_basic_checkmate_methods#endgames#chunk-002"
+      ],
+      "sample_previews": [
+        "The Xiangqi Endgame ---“it starts and ends with the endgame…” In Xiangqi, the end game can be defined as the last phase of the game. Thisphase is usually the stage where the fin...",
+        "Practical Endgames In the last century, advances in endgame theory have allowed Xiangqi experts to identify various situations whereby the result can be predicted with certainty...",
+        "Introduction to Basic Kills in Xiangqi (Chinese Chess) An Introduction to the Basic Kills in Xiangqi (Chinese Chess) After learning how to move the pieces, it would be best to l..."
+      ]
+    },
+    "beginner_principles": {
+      "collection_id": "a51323ac-7a39-4a75-be30-c16202d34fae",
+      "expected_count": 199,
+      "actual_count": 199,
+      "count_matches_input": true,
+      "exists": true,
+      "retrieved_rows": 199,
+      "structural_keys": [
+        "data",
+        "documents",
+        "embeddings",
+        "ids",
+        "included",
+        "metadatas",
+        "uris"
+      ],
+      "has_ids": true,
+      "has_documents": true,
+      "has_metadatas": true,
+      "has_embeddings": true,
+      "missing_documents": 0,
+      "missing_metadatas": 0,
+      "missing_embeddings": 0,
+      "metadata_collection_mismatches": [],
+      "sample_collection_metadata": [
+        "beginner_principles",
+        "beginner_principles",
+        "beginner_principles",
+        "beginner_principles",
+        "beginner_principles"
+      ],
+      "sample_ids": [
+        "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-000",
+        "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-001",
+        "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-002",
+        "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-003",
+        "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-004"
+      ],
+      "sample_previews": [
+        "Basics of Xiangqi (Chinese Chess) 05 The Opening Phase If we were to dissect the game of Xiangqi or International Chess, we would find that it consists of the Opening Phase , th...",
+        "First Move Initiative/Advantage By default, Red moves first, which gives Red a slight advantage known as the First Move Initiative. Initiative (先手) can be defined as having the ...",
+        "Goals for the Opening System The goal for Red in the opening is to gain traction or momentum in the Opening Phase such that this advantage can turn into a winning position. Ther..."
+      ]
+    }
+  },
+  "semantic_matrix": {
+    "openings": {
+      "query": "central cannon opening strategy control the center early develop pieces in the opening",
+      "expected_best": "openings",
+      "actual_best": "openings",
+      "pass": true,
+      "results": {
+        "openings": {
+          "top_distance": 0.3951210379600525,
+          "top_id": "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-012",
+          "top_preview": "Cannon: Leading the Charge The Cannon is usually the first piece to be moved. The Central Cannon Opening (中炮 zhōng pào, C2=5) is the most commonly used opening. It has been esti...",
+          "result_count": 3
+        },
+        "tactics": {
+          "top_distance": 0.5611097092484254,
+          "top_id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-005",
+          "top_preview": "The Devil is in the Details When the situation and material are even, the deciding factor is usually the position of the pieces. Well-placed pieces with potential for further de...",
+          "result_count": 3
+        },
+        "endgames": {
+          "top_distance": 0.44077829356841325,
+          "top_id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-026",
+          "top_preview": "4.2 What are the Common Chinese Chess Opening lines? - Same Direction Cannons Same Direction Cannons - Opposite Direction Cannons Opposite Direction Cannons - Central Cannon vs....",
+          "result_count": 3
+        },
+        "beginner_principles": {
+          "top_distance": 0.3951210379600525,
+          "top_id": "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-012",
+          "top_preview": "Cannon: Leading the Charge The Cannon is usually the first piece to be moved. The Central Cannon Opening (中炮 zhōng pào, C2=5) is the most commonly used opening. It has been esti...",
+          "result_count": 3
+        }
+      }
+    },
+    "tactics": {
+      "query": "fork attack pin piece clearance tactic dislodge tactical motif",
+      "expected_best": "tactics",
+      "actual_best": "tactics",
+      "pass": true,
+      "results": {
+        "openings": {
+          "top_distance": 0.6279382109642029,
+          "top_id": "xqinenglish/opening/xqinenglish_choosing_opening#openings#chunk-007",
+          "top_preview": "Tooth for Tooth Style 对攻型 duì gōng xíng As the saying goes, \"Attack is the best defense.\" Tooth for Tooth counters refers to opening lines whereby both colors go at it right fro...",
+          "result_count": 3
+        },
+        "tactics": {
+          "top_distance": 0.476960316455294,
+          "top_id": "xqinenglish/middlegame/xqinenglish_tactics_07c_dislodge#tactics#chunk-000",
+          "top_preview": "Chapter 7: Dislodge 逐 Chasing away or dislodging an enemy piece is a type of midgame tactic that is worthy of study. This tactic is used when fighting for the important lines, t...",
+          "result_count": 3
+        },
+        "endgames": {
+          "top_distance": 0.630553398507667,
+          "top_id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-019",
+          "top_preview": "3.3 Capturing tactics Here is a list of Xiangqi Capturing tactics: - Fork Fork - Skewer Skewer - Discovered Attack Discovered Attack - Pin Pin - Trapping Trapping - Elimination ...",
+          "result_count": 3
+        },
+        "beginner_principles": {
+          "top_distance": 0.4769604802131653,
+          "top_id": "xqinenglish/middlegame/xqinenglish_tactics_07c_dislodge#beginner_principles#chunk-000",
+          "top_preview": "Chapter 7: Dislodge 逐 Chasing away or dislodging an enemy piece is a type of midgame tactic that is worthy of study. This tactic is used when fighting for the important lines, t...",
+          "result_count": 3
+        }
+      }
+    },
+    "endgames": {
+      "query": "king opposition zugzwang practical endgame king and pawn technique",
+      "expected_best": "endgames",
+      "actual_best": "beginner_principles",
+      "pass": false,
+      "results": {
+        "openings": {
+          "top_distance": 0.514758825302124,
+          "top_id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-029",
+          "top_preview": "4.5 How to Play Chinese Chess Endgame? (Main article: 10 Most Important Xiangqi Endgame Principles ) Solid knowledge for Endgame is indispensable in order to become a strong xia...",
+          "result_count": 3
+        },
+        "tactics": {
+          "top_distance": 0.5439923709551506,
+          "top_id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-012",
+          "top_preview": "Trade away the enemy's essential pieces. Utilize the King to join in combat. There was an example of a game by Grandmaster Liu Dahua, who utilized his King very early to provide...",
+          "result_count": 3
+        },
+        "endgames": {
+          "top_distance": 0.47166228559266443,
+          "top_id": "xqinenglish/endgame/xqinenglish_endgame_basics_08#endgames#chunk-001",
+          "top_preview": "Practical Endgames In the last century, advances in endgame theory have allowed Xiangqi experts to identify various situations whereby the result can be predicted with certainty...",
+          "result_count": 3
+        },
+        "beginner_principles": {
+          "top_distance": 0.47166192531585693,
+          "top_id": "xqinenglish/endgame/xqinenglish_endgame_basics_08#beginner_principles#chunk-001",
+          "top_preview": "Practical Endgames In the last century, advances in endgame theory have allowed Xiangqi experts to identify various situations whereby the result can be predicted with certainty...",
+          "result_count": 3
+        }
+      }
+    },
+    "beginner_principles": {
+      "query": "develop pieces early protect the king avoid moving the same piece twice beginner fundamentals",
+      "expected_best": "beginner_principles",
+      "actual_best": "beginner_principles",
+      "pass": true,
+      "results": {
+        "openings": {
+          "top_distance": 0.49979168176651,
+          "top_id": "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-005",
+          "top_preview": "Things to do: - 1. Try to move your major pieces (Chariot, horse, Cannon) to control important positions on the board as early as possible. This is perhaps the most important ru...",
+          "result_count": 3
+        },
+        "tactics": {
+          "top_distance": 0.49648197601749733,
+          "top_id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-005",
+          "top_preview": "The Devil is in the Details When the situation and material are even, the deciding factor is usually the position of the pieces. Well-placed pieces with potential for further de...",
+          "result_count": 3
+        },
+        "endgames": {
+          "top_distance": 0.47858395274435095,
+          "top_id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#endgames#chunk-003",
+          "top_preview": "Basic Kills are relatively simple with fixed patterns for recognition. Basic Kills in Xiangqi (Chinese Chess) have been broken down into various tactical combinations for study....",
+          "result_count": 3
+        },
+        "beginner_principles": {
+          "top_distance": 0.43566287167353546,
+          "top_id": "xqinenglish/all_phases/xqinenglish_how_to_play_basics_02#beginner_principles#chunk-001",
+          "top_preview": "How to Play Xiangqi Learning how to play a game of Xiangqi would mean to learn how to move the chess pieces on the Xiangqi chessboard to capture the enemy king. There are seven ...",
+          "result_count": 3
+        }
+      }
+    }
+  },
+  "isolation_tests": [
+    {
+      "query": "develop pieces early and control the center",
+      "expected_best": "openings",
+      "expected_weak": "tactics",
+      "label": "opening concept in tactics",
+      "actual_best": "beginner_principles",
+      "pass": false,
+      "ranking": [
+        {
+          "collection": "beginner_principles",
+          "top_distance": 0.4199340343475342,
+          "top_id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-005",
+          "top_preview": "The Devil is in the Details When the situation and material are even, the deciding factor is usually the position of the pieces. Well-placed pieces with potential for further de..."
+        },
+        {
+          "collection": "tactics",
+          "top_distance": 0.4199342725013695,
+          "top_id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-005",
+          "top_preview": "The Devil is in the Details When the situation and material are even, the deciding factor is usually the position of the pieces. Well-placed pieces with potential for further de..."
+        },
+        {
+          "collection": "endgames",
+          "top_distance": 0.5664449522598483,
+          "top_id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#endgames#chunk-003",
+          "top_preview": "Basic Kills are relatively simple with fixed patterns for recognition. Basic Kills in Xiangqi (Chinese Chess) have been broken down into various tactical combinations for study...."
+        },
+        {
+          "collection": "openings",
+          "top_distance": 0.5831252932548523,
+          "top_id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-010",
+          "top_preview": "2.2 How to set up the Board? (Main article: How to Start ) The Xiangqi board is a 9 × 10 square consisting of 9 vertical lines intersected by 10 horizontal lines. The vertical l..."
+        }
+      ]
+    },
+    {
+      "query": "fork attack with tactical motif",
+      "expected_best": "tactics",
+      "expected_weak": "openings",
+      "label": "tactical concept in openings",
+      "actual_best": "beginner_principles",
+      "pass": false,
+      "ranking": [
+        {
+          "collection": "beginner_principles",
+          "top_distance": 0.601891279220581,
+          "top_id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-014",
+          "top_preview": "Attacking the enemy's weak spots is the best defense! When the enemy is attacking a particular area on the board, and you have the means to launch a counter-attack, it is a good..."
+        },
+        {
+          "collection": "tactics",
+          "top_distance": 0.6018913552422295,
+          "top_id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-014",
+          "top_preview": "Attacking the enemy's weak spots is the best defense! When the enemy is attacking a particular area on the board, and you have the means to launch a counter-attack, it is a good..."
+        },
+        {
+          "collection": "openings",
+          "top_distance": 0.6071535348892212,
+          "top_id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-019",
+          "top_preview": "3.3 Capturing tactics Here is a list of Xiangqi Capturing tactics: - Fork Fork - Skewer Skewer - Discovered Attack Discovered Attack - Pin Pin - Trapping Trapping - Elimination ..."
+        },
+        {
+          "collection": "endgames",
+          "top_distance": 0.6071536121383003,
+          "top_id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-019",
+          "top_preview": "3.3 Capturing tactics Here is a list of Xiangqi Capturing tactics: - Fork Fork - Skewer Skewer - Discovered Attack Discovered Attack - Pin Pin - Trapping Trapping - Elimination ..."
+        }
+      ]
+    },
+    {
+      "query": "king opposition and zugzwang in practical endgames",
+      "expected_best": "endgames",
+      "expected_weak": "openings",
+      "label": "endgame concept in openings",
+      "actual_best": "beginner_principles",
+      "pass": false,
+      "ranking": [
+        {
+          "collection": "beginner_principles",
+          "top_distance": 0.4641299247741699,
+          "top_id": "xqinenglish/endgame/xqinenglish_endgame_basics_08#beginner_principles#chunk-001",
+          "top_preview": "Practical Endgames In the last century, advances in endgame theory have allowed Xiangqi experts to identify various situations whereby the result can be predicted with certainty..."
+        },
+        {
+          "collection": "endgames",
+          "top_distance": 0.46412993053491547,
+          "top_id": "xqinenglish/endgame/xqinenglish_endgame_basics_08#endgames#chunk-001",
+          "top_preview": "Practical Endgames In the last century, advances in endgame theory have allowed Xiangqi experts to identify various situations whereby the result can be predicted with certainty..."
+        },
+        {
+          "collection": "openings",
+          "top_distance": 0.5342913269996643,
+          "top_id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-031",
+          "top_preview": "4.6.1 Theoretical Endgame patterns involving Chariots Endgames involving Chariots means that both players have Chariot(s) in the current phase: - Chariot, Horse, and Advisor wou..."
+        },
+        {
+          "collection": "tactics",
+          "top_distance": 0.5342952270078443,
+          "top_id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-021",
+          "top_preview": "Balanced development of the pieces and a steady improvement of the situation. An example was given in the book of a game. Grandmaster Yu Youhua played the match against Master H..."
+        }
+      ]
+    },
+    {
+      "query": "basic opening fundamentals for beginners",
+      "expected_best": "beginner_principles",
+      "expected_weak": "tactics",
+      "label": "beginner concept in tactics",
+      "actual_best": "openings",
+      "pass": false,
+      "ranking": [
+        {
+          "collection": "openings",
+          "top_distance": 0.3742832541465759,
+          "top_id": "xqinenglish/opening/xqinenglish_intro_opening#openings#chunk-011",
+          "top_preview": "Choose a practical and conventional opening. Conventional and orthodox openings have stood the test of time. While unconventional or unorthodox openings may seem flashy and inte..."
+        },
+        {
+          "collection": "beginner_principles",
+          "top_distance": 0.3742832541465759,
+          "top_id": "xqinenglish/opening/xqinenglish_intro_opening#beginner_principles#chunk-011",
+          "top_preview": "Choose a practical and conventional opening. Conventional and orthodox openings have stood the test of time. While unconventional or unorthodox openings may seem flashy and inte..."
+        },
+        {
+          "collection": "tactics",
+          "top_distance": 0.5321603794866565,
+          "top_id": "xqinenglish/middlegame/xqinenglish_intro_midgame#tactics#chunk-000",
+          "top_preview": "Introduction to the Xiangqi (Chinese Chess) Midgame 中局 The midgame is perhaps the hardest stage in the game of Xiangqi. It is also the defining stage of a player's skill. The op..."
+        },
+        {
+          "collection": "endgames",
+          "top_distance": 0.5654486291564214,
+          "top_id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-003",
+          "top_preview": "3. Basic Xiangqi Tactics 3.1 What are the Xiangqi Basic Attack and Defense Tactics? 3.2 Checkmate tactics 3.3 Capturing tactics - 4. Basic Xiangqi Strategies 4.1 How to Play Xia..."
+        }
+      ]
+    }
+  ],
+  "duplicate_leakage": [
+    {
+      "hash": "7d5f5d1aabac1490d3eb0a70c45920fcf5b49545dc9de6b5d3909221d1c257f1",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-000",
+          "preview": "Basics of Xiangqi (Chinese Chess) 05 The Opening Phase If we were to dissect the game of Xiangqi or International Che..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-000",
+          "preview": "Basics of Xiangqi (Chinese Chess) 05 The Opening Phase If we were to dissect the game of Xiangqi or International Che..."
+        }
+      ]
+    },
+    {
+      "hash": "0437a4545d4a367ac745b3d7a35800660b22b257510419d93749cd80e049abda",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-001",
+          "preview": "First Move Initiative/Advantage By default, Red moves first, which gives Red a slight advantage known as the First Mo..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-001",
+          "preview": "First Move Initiative/Advantage By default, Red moves first, which gives Red a slight advantage known as the First Mo..."
+        }
+      ]
+    },
+    {
+      "hash": "e0dfd3cbe4f2ae4e7c5d738e29d5ba7d204d3df951f4efd4dcb58fdf3e03693c",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-002",
+          "preview": "Goals for the Opening System The goal for Red in the opening is to gain traction or momentum in the Opening Phase suc..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-002",
+          "preview": "Goals for the Opening System The goal for Red in the opening is to gain traction or momentum in the Opening Phase suc..."
+        }
+      ]
+    },
+    {
+      "hash": "2eaac5d220d45af796ca9b66ec30cbb0c002cb47b5cd96211368060dff0cc602",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-003",
+          "preview": "A short word about formations In the Opening Phase, both colors would choose their attacking and defensive formations..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-003",
+          "preview": "A short word about formations In the Opening Phase, both colors would choose their attacking and defensive formations..."
+        }
+      ]
+    },
+    {
+      "hash": "73a357e797ef379675dadde5ae3afb363032faf2f20d40176fca32e9a34e4850",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-004",
+          "preview": "Fundamental Concepts There are many fundamental concepts in the Xiangqi Opening Phase. The Webmaster has found the in..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-004",
+          "preview": "Fundamental Concepts There are many fundamental concepts in the Xiangqi Opening Phase. The Webmaster has found the in..."
+        }
+      ]
+    },
+    {
+      "hash": "94ab9f85acd8fe8a2126dc32f585572b4053a70ce704384f70e35879a7b5edc2",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-005",
+          "preview": "Things to do: - 1. Try to move your major pieces (Chariot, horse, Cannon) to control important positions on the board..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-005",
+          "preview": "Things to do: - 1. Try to move your major pieces (Chariot, horse, Cannon) to control important positions on the board..."
+        }
+      ]
+    },
+    {
+      "hash": "c3c6ee5313477e5c8b2e3397034223190a4b551567455afe8d00631c28f069ed",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-006",
+          "preview": "Things NEVER to do: - 1. Never move the same piece too many times. - 2. Never move the Chariot too late in the openin..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-006",
+          "preview": "Things NEVER to do: - 1. Never move the same piece too many times. - 2. Never move the Chariot too late in the openin..."
+        }
+      ]
+    },
+    {
+      "hash": "39e56894ca43ffd2e51da24ac65deef17ea9b65771dd242a224892f934a7807d",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-007",
+          "preview": "King: Rest. The King does almost NOTHING in the opening. Unlike International Chess, there is no castling in Xiangqi,..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-007",
+          "preview": "King: Rest. The King does almost NOTHING in the opening. Unlike International Chess, there is no castling in Xiangqi,..."
+        }
+      ]
+    },
+    {
+      "hash": "8e4c18fc11477b0b7c480ab7b88f65eae9a0242ea4dd8254316c1411825296e7",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-008",
+          "preview": "Advisors: Allow for prophylactic defense and to consolidate defensive formations. Advisors play a defensive role in t..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-008",
+          "preview": "Advisors: Allow for prophylactic defense and to consolidate defensive formations. Advisors play a defensive role in t..."
+        }
+      ]
+    },
+    {
+      "hash": "32a4a8baddd16b483f6ffca1cedee136d821180470fe70662b5468ceeb26f686",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-009",
+          "preview": "Elephant: Initially used for defense and consolidation. The Elephant has a similar role as the Advisor and is used pr..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-009",
+          "preview": "Elephant: Initially used for defense and consolidation. The Elephant has a similar role as the Advisor and is used pr..."
+        }
+      ]
+    },
+    {
+      "hash": "ae599f3d99977b107f9eef6fb816c532e64493d25f38fa28678aa2e6404a5a0d",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-010",
+          "preview": "Chariots: Occupy important intersections The Chariots are placed at the corners of the board in the array. One of the..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-010",
+          "preview": "Chariots: Occupy important intersections The Chariots are placed at the corners of the board in the array. One of the..."
+        }
+      ]
+    },
+    {
+      "hash": "fc1f0dc9dac21e8487a7455d628532a27ba74d1132866f9acd8c18e6eb683c53",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-011",
+          "preview": "Horses: Defensive role initially Horses have more of a defensive role in the early stages of the Opening Phase. They ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-011",
+          "preview": "Horses: Defensive role initially Horses have more of a defensive role in the early stages of the Opening Phase. They ..."
+        }
+      ]
+    },
+    {
+      "hash": "58db8422a9e5bca88ac303a8fcd02600c5cfeb8f8c15474f90a8c12c3e5606f4",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#openings#chunk-012",
+          "preview": "Cannon: Leading the Charge The Cannon is usually the first piece to be moved. The Central Cannon Opening (中炮 zhōng pà..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_opening_basics_05#beginner_principles#chunk-012",
+          "preview": "Cannon: Leading the Charge The Cannon is usually the first piece to be moved. The Central Cannon Opening (中炮 zhōng pà..."
+        }
+      ]
+    },
+    {
+      "hash": "87c834b9a1a806bdec774b88ce8c2313a961d659475114dbe87b59ae5f7cdcce",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#openings#chunk-000",
+          "preview": "Choosing your Xiangqi (Chinese Chess) Opening Author: Jim Png, webmaster of www.xqinenglish.com Note：This article fir..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#beginner_principles#chunk-000",
+          "preview": "Choosing your Xiangqi (Chinese Chess) Opening Author: Jim Png, webmaster of www.xqinenglish.com Note：This article fir..."
+        }
+      ]
+    },
+    {
+      "hash": "8aac4a56933f3f23c7fe6682daeb0d821b809dd84c7d66c68e955ec62ccb2b13",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#openings#chunk-001",
+          "preview": "Some important concepts Red would start the game and could choose to be aggressive and attack with the first move. He..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#beginner_principles#chunk-001",
+          "preview": "Some important concepts Red would start the game and could choose to be aggressive and attack with the first move. He..."
+        }
+      ]
+    },
+    {
+      "hash": "d5fa90afd17703ecd98778a59b6c0c8da4a59b776ff114e5a076dedf7300e34f",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#openings#chunk-002",
+          "preview": "A Short Summary of the Different Opening Moves and Counters in Xiangqi Before continuing, it would be imperative to h..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#beginner_principles#chunk-002",
+          "preview": "A Short Summary of the Different Opening Moves and Counters in Xiangqi Before continuing, it would be imperative to h..."
+        }
+      ]
+    },
+    {
+      "hash": "71ce329b373e947798d755d89c7e11cfb9ed5666dca357d95c6b4ff347de4917",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#openings#chunk-003",
+          "preview": "The Traditional Way of Classifying Xiangqi Openings There are many different classifications of the Xiangqi openings...."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#beginner_principles#chunk-003",
+          "preview": "The Traditional Way of Classifying Xiangqi Openings There are many different classifications of the Xiangqi openings...."
+        }
+      ]
+    },
+    {
+      "hash": "027d39d1bd4f4fa24e4c39f29d3d611a8fc3d2fdc151a8757dd9d85fa619392c",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#openings#chunk-004",
+          "preview": "Classifying Xiangqi Openings based on the style of play As can be seen, the early classification of the Xiangqi openi..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#beginner_principles#chunk-004",
+          "preview": "Classifying Xiangqi Openings based on the style of play As can be seen, the early classification of the Xiangqi openi..."
+        }
+      ]
+    },
+    {
+      "hash": "02152c95ffc5e6c3238b004d382d7f9bd2801b4dc4c992465ea9d99ccf0fe775",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#openings#chunk-005",
+          "preview": "Rapid Attacks (Blitzkrieg) Style 急攻型 jí gōng xíng The strategy behind this style would be that Red would throw cautio..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#beginner_principles#chunk-005",
+          "preview": "Rapid Attacks (Blitzkrieg) Style 急攻型 jí gōng xíng The strategy behind this style would be that Red would throw cautio..."
+        }
+      ]
+    },
+    {
+      "hash": "8bcd48e496a4d6f2f6d609d8749f60b84e3cc37b2317740ddbdad7dd9bc75eab",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#openings#chunk-006",
+          "preview": "Measured Attack Style 缓攻型 huǎn gōng xíng This style of play would be much slower-paced than the Rapid Attacking Style..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#beginner_principles#chunk-006",
+          "preview": "Measured Attack Style 缓攻型 huǎn gōng xíng This style of play would be much slower-paced than the Rapid Attacking Style..."
+        }
+      ]
+    },
+    {
+      "hash": "0d9f54a91827eb28c1eaaab59fcea0fa6dd7da230b163b7b96808dc72f91c149",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#openings#chunk-007",
+          "preview": "Tooth for Tooth Style 对攻型 duì gōng xíng As the saying goes, \"Attack is the best defense.\" Tooth for Tooth counters re..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#beginner_principles#chunk-007",
+          "preview": "Tooth for Tooth Style 对攻型 duì gōng xíng As the saying goes, \"Attack is the best defense.\" Tooth for Tooth counters re..."
+        }
+      ]
+    },
+    {
+      "hash": "8561b5c39d1b9d28cb1f9301c6fdcd0c5b2907696fce6a95c2360ee4ae373285",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#openings#chunk-008",
+          "preview": "Slow and Steady Style 稳健性 wěn jiànxìng Opening lines with this style demonstrate a slower pace of the game. The main ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#beginner_principles#chunk-008",
+          "preview": "Slow and Steady Style 稳健性 wěn jiànxìng Opening lines with this style demonstrate a slower pace of the game. The main ..."
+        }
+      ]
+    },
+    {
+      "hash": "bc2786483d21a539a2f5eb568e7d85e82a3bb9cf45695a0b7203b80efb7c7673",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#openings#chunk-009",
+          "preview": "Modern Style 新潮型 xīn cháo xíng The Xiangqi opening has undergone evolutionary changes since the Secret in the Tangeri..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#beginner_principles#chunk-009",
+          "preview": "Modern Style 新潮型 xīn cháo xíng The Xiangqi opening has undergone evolutionary changes since the Secret in the Tangeri..."
+        }
+      ]
+    },
+    {
+      "hash": "4cec10099ec3384e67b3c78773c3b3a6ad15c620f04c148039db5905e80f20b5",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#openings#chunk-010",
+          "preview": "Unorthodox Style 冷门型 lěng mén xíng Unorthodox opening lines refer to variations that are considered NOT to be viable ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#beginner_principles#chunk-010",
+          "preview": "Unorthodox Style 冷门型 lěng mén xíng Unorthodox opening lines refer to variations that are considered NOT to be viable ..."
+        }
+      ]
+    },
+    {
+      "hash": "510d78edb4558db003581577fe43d3b0669522c9ea0fa5468885103d33756847",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#openings#chunk-011",
+          "preview": "Fashionable Opening Lines/Variations 流行型 liú xíng xíng These opening lines are mainly obtained from the major tournam..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#beginner_principles#chunk-011",
+          "preview": "Fashionable Opening Lines/Variations 流行型 liú xíng xíng These opening lines are mainly obtained from the major tournam..."
+        }
+      ]
+    },
+    {
+      "hash": "a57a905143805f551e4361e31955353c0e24a8590d4f383a07fa676a579d5b82",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#openings#chunk-012",
+          "preview": "Scattered/ Formless Style 散手型sǎn shǒu xíng While most opening systems stress the importance of specific formations, s..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#beginner_principles#chunk-012",
+          "preview": "Scattered/ Formless Style 散手型sǎn shǒu xíng While most opening systems stress the importance of specific formations, s..."
+        }
+      ]
+    },
+    {
+      "hash": "c7184d1f9bfd61e62cea5956cf4f468201c18c0ed9e4b55c5c0cc5333966894d",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#openings#chunk-013",
+          "preview": "Symmetrical Style 对称式阵型 duì chèn shì zhèn xíng These opening lines have a common trait: Black would copy Red move for..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#beginner_principles#chunk-013",
+          "preview": "Symmetrical Style 对称式阵型 duì chèn shì zhèn xíng These opening lines have a common trait: Black would copy Red move for..."
+        }
+      ]
+    },
+    {
+      "hash": "8c18cb4c08478c8a65f157b2287ca7ddd3f088c9e6e705f782a9e7337cf5a42f",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#openings#chunk-014",
+          "preview": "Summary When learning the Xiangqi opening, other than being engrossed with the technical aspects of the game, it woul..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#beginner_principles#chunk-014",
+          "preview": "Summary When learning the Xiangqi opening, other than being engrossed with the technical aspects of the game, it woul..."
+        }
+      ]
+    },
+    {
+      "hash": "4dd0790e3135b498241cf398bcd0176fc816c9c4fcb2502ef787ca95b20cb479",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#openings#chunk-015",
+          "preview": "Works Cited 1. 刘, 殿中. 象棋新编教程 象棋布局精要. 北京 : 北京体育大学出版社, 2000. 7-81051-486-5/G.416. 2. 屠, 景明 and 杨, 柏伟. 象棋词典. 上海 : 上海文华出版..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_choosing_opening#beginner_principles#chunk-015",
+          "preview": "Works Cited 1. 刘, 殿中. 象棋新编教程 象棋布局精要. 北京 : 北京体育大学出版社, 2000. 7-81051-486-5/G.416. 2. 屠, 景明 and 杨, 柏伟. 象棋词典. 上海 : 上海文华出版..."
+        }
+      ]
+    },
+    {
+      "hash": "0aacc57079402e2918555a4b987a947d502bdace6f093ba347445d3de1d4c01f",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#openings#chunk-000",
+          "preview": "Introduction to the Xiangqi (Chinese Chess) Opening The Xiangqi Opening is a mammoth topic whereby most Xiangqi enthu..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#beginner_principles#chunk-000",
+          "preview": "Introduction to the Xiangqi (Chinese Chess) Opening The Xiangqi Opening is a mammoth topic whereby most Xiangqi enthu..."
+        }
+      ]
+    },
+    {
+      "hash": "fec74457c19a0b2361cafdca9014f6c0eac72fe35fb80e1b4552d88e229dba9b",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#openings#chunk-001",
+          "preview": "Overview of the Xiangqi Opening The discipline of Xiangqi Openings is so huge that the Webmaster cannot cover it in o..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#beginner_principles#chunk-001",
+          "preview": "Overview of the Xiangqi Opening The discipline of Xiangqi Openings is so huge that the Webmaster cannot cover it in o..."
+        }
+      ]
+    },
+    {
+      "hash": "6e28fe0a6e60839dd276e5968397d4b1a2cb19ba2b72465b627804d0d4e96b69",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#openings#chunk-002",
+          "preview": "A) Infant stage In the late Northern Song dynasty, Xiangqi finally took to its current form. From this period till th..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#beginner_principles#chunk-002",
+          "preview": "A) Infant stage In the late Northern Song dynasty, Xiangqi finally took to its current form. From this period till th..."
+        }
+      ]
+    },
+    {
+      "hash": "0e06f76b3bdf8ca2874650ac28bc1df239a3e073147984fa6f1cf427071b401f",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#openings#chunk-003",
+          "preview": "B) Developmental stage This stage can be said to have started in the Qing dynasty and ended before the founding of mo..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#beginner_principles#chunk-003",
+          "preview": "B) Developmental stage This stage can be said to have started in the Qing dynasty and ended before the founding of mo..."
+        }
+      ]
+    },
+    {
+      "hash": "620ce96be5e9e58dfa17622513704eaaec90714a6ebd7693c1c74d901f616ff7",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#openings#chunk-004",
+          "preview": "C) Prosperous stage After China was unified, the Sports Department of the Peoples Republic of China listed Xiangqi as..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#beginner_principles#chunk-004",
+          "preview": "C) Prosperous stage After China was unified, the Sports Department of the Peoples Republic of China listed Xiangqi as..."
+        }
+      ]
+    },
+    {
+      "hash": "d3f843553b2aaff20cf8c1e61a273c94c33ef6296414b0257e701a0b6df471aa",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#openings#chunk-005",
+          "preview": "Trying to Define the Boundaries of the Opening Phase in Xiangqi It is very hard to define the boundaries of the Openi..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#beginner_principles#chunk-005",
+          "preview": "Trying to Define the Boundaries of the Opening Phase in Xiangqi It is very hard to define the boundaries of the Openi..."
+        }
+      ]
+    },
+    {
+      "hash": "ef632c4aec3b72b58694378438c1b78db395a878ced96fa1f71dc73dbb2ed86f",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#openings#chunk-006",
+          "preview": "Goals of the Xiangqi Opening For Red, the main goal of the Xiangqi Opening is to gain an advantage going into the mid..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#beginner_principles#chunk-006",
+          "preview": "Goals of the Xiangqi Opening For Red, the main goal of the Xiangqi Opening is to gain an advantage going into the mid..."
+        }
+      ]
+    },
+    {
+      "hash": "9256e723d05af5b1a51ab058e74b13f10d0cb02c000f82838c312f043b0f334f",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#openings#chunk-007",
+          "preview": "An Overview of the Classification of the Xiangqi The Classification of the Xiangqi Opening system is very different f..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#beginner_principles#chunk-007",
+          "preview": "An Overview of the Classification of the Xiangqi The Classification of the Xiangqi Opening system is very different f..."
+        }
+      ]
+    },
+    {
+      "hash": "e7ae14e7186b36ea3f189d89bb8d914b1372e607c602fe6a607b92137f6de5b6",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#openings#chunk-008",
+          "preview": "Horse Defense with 7th Pawn Advancement etc... The Webmaster had chatted with International Master Chao Ifan recently..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#beginner_principles#chunk-008",
+          "preview": "Horse Defense with 7th Pawn Advancement etc... The Webmaster had chatted with International Master Chao Ifan recently..."
+        }
+      ]
+    },
+    {
+      "hash": "1544be0dad3be0d7aa5618fef5f1cacb2bf2f208f8cd1fcef2183a33f1beb12d",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#openings#chunk-009",
+          "preview": "How to Learn the Xiangqi Opening A beginner interested in learning Xiangqi would often face the same problem of knowi..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#beginner_principles#chunk-009",
+          "preview": "How to Learn the Xiangqi Opening A beginner interested in learning Xiangqi would often face the same problem of knowi..."
+        }
+      ]
+    },
+    {
+      "hash": "3a1a487afb83523eb2618b35444555d79cf076b61cb324a810f63e93bc5443cd",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#openings#chunk-010",
+          "preview": "Focus on one opening or variation. It would be like choosing a weapon to master. Wanting to learn all the openings an..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#beginner_principles#chunk-010",
+          "preview": "Focus on one opening or variation. It would be like choosing a weapon to master. Wanting to learn all the openings an..."
+        }
+      ]
+    },
+    {
+      "hash": "f2334415929e350439cb640326e18e276601653a79c80a4ee8554ea31b38589d",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#openings#chunk-011",
+          "preview": "Choose a practical and conventional opening. Conventional and orthodox openings have stood the test of time. While un..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#beginner_principles#chunk-011",
+          "preview": "Choose a practical and conventional opening. Conventional and orthodox openings have stood the test of time. While un..."
+        }
+      ]
+    },
+    {
+      "hash": "a0786444fcdb738000431b3f0db387f9b086bdac6fa682b6245db97a209cf53c",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#openings#chunk-012",
+          "preview": "Be sure that you are very familiar with the various variations and sub-variations of that opening you chose. But what..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#beginner_principles#chunk-012",
+          "preview": "Be sure that you are very familiar with the various variations and sub-variations of that opening you chose. But what..."
+        }
+      ]
+    },
+    {
+      "hash": "8a618721089c71bddb2a918ae459b9ab9774b97351205769c7c5a09727e86b06",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#openings#chunk-013",
+          "preview": "Learn some flying daggers Flying daggers is Xiangqi's counterpart for an opening novelty. Knowing some flying daggers..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#beginner_principles#chunk-013",
+          "preview": "Learn some flying daggers Flying daggers is Xiangqi's counterpart for an opening novelty. Knowing some flying daggers..."
+        }
+      ]
+    },
+    {
+      "hash": "32623d1bef140708d83a10d3820895ccaa5fb26a5463ac0c8aa27c8984b98228",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#openings#chunk-014",
+          "preview": "Be practical in your goals. Do not say, \"I am going to master the Central Cannon.\" That would be next to impossible. ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#beginner_principles#chunk-014",
+          "preview": "Be practical in your goals. Do not say, \"I am going to master the Central Cannon.\" That would be next to impossible. ..."
+        }
+      ]
+    },
+    {
+      "hash": "4868c1211c3d24408b43e998c909c6b44ecb55482f437284ac305ec84b0d3db8",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#openings#chunk-015",
+          "preview": "How the section on Xiangqi Openings will be presented on this site The Webmaster will try to present each opening in ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#beginner_principles#chunk-015",
+          "preview": "How the section on Xiangqi Openings will be presented on this site The Webmaster will try to present each opening in ..."
+        }
+      ]
+    },
+    {
+      "hash": "aac798f74a3c4e62b20d5fd05da1a8adbd0ecd01e86cb5c8e40c4909bb8835b8",
+      "collections": [
+        "beginner_principles",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#openings#chunk-016",
+          "preview": "References 1. 朱, 宝位. 棋牌入门丛书 象棋入门. 合肥 : s.n., 1994. 978-7-5337-0734-7. 2. 刘, 殿中. 象棋新编课程 象棋布局精要. 北京 : 北京体育大学出版社, 2000. ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/opening/xqinenglish_intro_opening#beginner_principles#chunk-016",
+          "preview": "References 1. 朱, 宝位. 棋牌入门丛书 象棋入门. 合肥 : s.n., 1994. 978-7-5337-0734-7. 2. 刘, 殿中. 象棋新编课程 象棋布局精要. 北京 : 北京体育大学出版社, 2000. ..."
+        }
+      ]
+    },
+    {
+      "hash": "dce703c76e850a8aaead8161cf48aa01068a0c6bd16ed0307f4559c598adf617",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-000",
+          "preview": "Xiangqi (Chinese Chess) Basics 01 General Introduction Xiangqi 象棋 is an ancient game that has been played by the Chin..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-000",
+          "preview": "Xiangqi (Chinese Chess) Basics 01 General Introduction Xiangqi 象棋 is an ancient game that has been played by the Chin..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-000",
+          "preview": "Xiangqi (Chinese Chess) Basics 01 General Introduction Xiangqi 象棋 is an ancient game that has been played by the Chin..."
+        }
+      ]
+    },
+    {
+      "hash": "ce5a7c79655dd0fbfcfae79a06ca968a8950997c024d43af062d1dcb2d737208",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-001",
+          "preview": "Some common misconceptions Some of the most common reactions that the Webmaster has seen include: - Xiangqi IS Shogi ..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-001",
+          "preview": "Some common misconceptions Some of the most common reactions that the Webmaster has seen include: - Xiangqi IS Shogi ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-001",
+          "preview": "Some common misconceptions Some of the most common reactions that the Webmaster has seen include: - Xiangqi IS Shogi ..."
+        }
+      ]
+    },
+    {
+      "hash": "331668315e4fe0fbfa00f6be5f791c652e222210e2c26f947a9e33aa42228bc2",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-002",
+          "preview": "held very frequently. - There is only one set of rules for Xiangqi. à No, the situation is much more complicated, and..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-002",
+          "preview": "held very frequently. - There is only one set of rules for Xiangqi. à No, the situation is much more complicated, and..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-002",
+          "preview": "held very frequently. - There is only one set of rules for Xiangqi. à No, the situation is much more complicated, and..."
+        }
+      ]
+    },
+    {
+      "hash": "47654e3128fc9d5a5eca04269d4fb9e2fa1181d6cb8d17ca7c221805df009456",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-003",
+          "preview": "Technical aspects The technical aspects of the game would remain the first thing that most people want to know about ..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-003",
+          "preview": "Technical aspects The technical aspects of the game would remain the first thing that most people want to know about ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-003",
+          "preview": "Technical aspects The technical aspects of the game would remain the first thing that most people want to know about ..."
+        }
+      ]
+    },
+    {
+      "hash": "c7df1a17e01a1696cbc09b957365bba4b190db0b618aade6e35a472a27c6c669",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-004",
+          "preview": "How you would play the game The question that most people ask about Xiangqi is, how do you play Xiangqi. It is the to..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-004",
+          "preview": "How you would play the game The question that most people ask about Xiangqi is, how do you play Xiangqi. It is the to..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-004",
+          "preview": "How you would play the game The question that most people ask about Xiangqi is, how do you play Xiangqi. It is the to..."
+        }
+      ]
+    },
+    {
+      "hash": "695d18c8100ee07e461485099d903947b837a705a934f279e8ba3e1432c528b4",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-005",
+          "preview": "The different phases of Xiangqi A game of Xiangqi can be broken down into three different phases: the opening phase, ..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-005",
+          "preview": "The different phases of Xiangqi A game of Xiangqi can be broken down into three different phases: the opening phase, ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-005",
+          "preview": "The different phases of Xiangqi A game of Xiangqi can be broken down into three different phases: the opening phase, ..."
+        }
+      ]
+    },
+    {
+      "hash": "16c10fba2a0c9d3ef8780f5a8a0caeb3a04e15c4caf9c5bfddb957c1e828d437",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-006",
+          "preview": "Tactics and Strategies In general, a strategy can be defined as the general game plan that you have. Tactics would be..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-006",
+          "preview": "Tactics and Strategies In general, a strategy can be defined as the general game plan that you have. Tactics would be..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-006",
+          "preview": "Tactics and Strategies In general, a strategy can be defined as the general game plan that you have. Tactics would be..."
+        }
+      ]
+    },
+    {
+      "hash": "3cf5021c004767a76a34ded0201100b8259cda917f6be51f810c7f714171e38c",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-007",
+          "preview": "Xiangqi Endgame Compositions The term 'endgame composition' was suggested by the Asian Xiangqi Federation (AXF) in a ..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-007",
+          "preview": "Xiangqi Endgame Compositions The term 'endgame composition' was suggested by the Asian Xiangqi Federation (AXF) in a ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-007",
+          "preview": "Xiangqi Endgame Compositions The term 'endgame composition' was suggested by the Asian Xiangqi Federation (AXF) in a ..."
+        }
+      ]
+    },
+    {
+      "hash": "8546aa1602440cd4d3e507b9172e5554a43a90a0b310fa52bd3026ff4b368fa5",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-008",
+          "preview": "How do you improve in Xiangqi It is impossible to answer this question in a very short paragraph. Generally speaking,..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-008",
+          "preview": "How do you improve in Xiangqi It is impossible to answer this question in a very short paragraph. Generally speaking,..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-008",
+          "preview": "How do you improve in Xiangqi It is impossible to answer this question in a very short paragraph. Generally speaking,..."
+        }
+      ]
+    },
+    {
+      "hash": "80a0306eda824234547f8e7aa9e18fcd3b801f1ecf45cb5d2e4bce3e482b5942",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-009",
+          "preview": "Where can you play This topic can be divided into physical play and online play. As mentioned earlier, there are many..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-009",
+          "preview": "Where can you play This topic can be divided into physical play and online play. As mentioned earlier, there are many..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-009",
+          "preview": "Where can you play This topic can be divided into physical play and online play. As mentioned earlier, there are many..."
+        }
+      ]
+    },
+    {
+      "hash": "5a4227cd3c0d8102ba2763834d66eb36962e3a01cd1cb0077b2eef289b274bc1",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-010",
+          "preview": "What books or resources are available There are many books or resources on Xiangqi, but the vast majority of them are..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-010",
+          "preview": "What books or resources are available There are many books or resources on Xiangqi, but the vast majority of them are..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-010",
+          "preview": "What books or resources are available There are many books or resources on Xiangqi, but the vast majority of them are..."
+        }
+      ]
+    },
+    {
+      "hash": "093896ca5f0af509643f60a2eda2e79c8dfb31dd1b906945cd40e4a13d92fe80",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-011",
+          "preview": "What are the differences between Xiangqi and International Chess Another commonly asked question that the Webmaster h..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-011",
+          "preview": "What are the differences between Xiangqi and International Chess Another commonly asked question that the Webmaster h..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-011",
+          "preview": "What are the differences between Xiangqi and International Chess Another commonly asked question that the Webmaster h..."
+        }
+      ]
+    },
+    {
+      "hash": "412ef6a1b592ec869d00eaf5ca999e958cabcda206c5ab4a6432bdc84d5b6a5f",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-012",
+          "preview": "A Short History of Xiangqi In a nutshell, Xiangqi (Chinese Chess) has been played by the Chinese for centuries. The c..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-012",
+          "preview": "A Short History of Xiangqi In a nutshell, Xiangqi (Chinese Chess) has been played by the Chinese for centuries. The c..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-012",
+          "preview": "A Short History of Xiangqi In a nutshell, Xiangqi (Chinese Chess) has been played by the Chinese for centuries. The c..."
+        }
+      ]
+    },
+    {
+      "hash": "3321b32e360ce7916278c5489b40b7f657cdeb429a85f42edc719ea30c8bb035",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-013",
+          "preview": "Culture of Xiangqi As for the culture of Xiangqi, there is much to be said. In ancient times, Chess (used in a generi..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-013",
+          "preview": "Culture of Xiangqi As for the culture of Xiangqi, there is much to be said. In ancient times, Chess (used in a generi..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-013",
+          "preview": "Culture of Xiangqi As for the culture of Xiangqi, there is much to be said. In ancient times, Chess (used in a generi..."
+        }
+      ]
+    },
+    {
+      "hash": "9ca97f96d53c1233aebdc77007bc566a38802b7ddb5e59d2f722454185b40037",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-014",
+          "preview": "Xiangqi Philosophy Xiangqi is also a way to some, the path to understanding the inner self. There was a video clip re..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-014",
+          "preview": "Xiangqi Philosophy Xiangqi is also a way to some, the path to understanding the inner self. There was a video clip re..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-014",
+          "preview": "Xiangqi Philosophy Xiangqi is also a way to some, the path to understanding the inner self. There was a video clip re..."
+        }
+      ]
+    },
+    {
+      "hash": "48c1f5dd42e3c4cae55f6f026e3bdbac1674a21e84cd11784fc032bc48dd7412",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-015",
+          "preview": "Four major governing bodies The official governing body in China is the Chinese Xiangqi Association (CXA) . As the le..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-015",
+          "preview": "Four major governing bodies The official governing body in China is the Chinese Xiangqi Association (CXA) . As the le..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-015",
+          "preview": "Four major governing bodies The official governing body in China is the Chinese Xiangqi Association (CXA) . As the le..."
+        }
+      ]
+    },
+    {
+      "hash": "de7655930c8f287268a687a8a69b4aea6b3832e327bbadb787bc55300df9eea1",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-016",
+          "preview": "A very short introduction to Xiangqi Tournaments As for tournaments, there are A LOT of Xiangqi tournaments happening..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-016",
+          "preview": "A very short introduction to Xiangqi Tournaments As for tournaments, there are A LOT of Xiangqi tournaments happening..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-016",
+          "preview": "A very short introduction to Xiangqi Tournaments As for tournaments, there are A LOT of Xiangqi tournaments happening..."
+        }
+      ]
+    },
+    {
+      "hash": "04c1bbf4c5ec9f3313ffb9734dd1171f6d472cf6b7681e29857cb3b8bb2258bb",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-017",
+          "preview": "Conferring Titles For professional Xiangqi, there is a ranking system for the players in China. The original article ..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-017",
+          "preview": "Conferring Titles For professional Xiangqi, there is a ranking system for the players in China. The original article ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-017",
+          "preview": "Conferring Titles For professional Xiangqi, there is a ranking system for the players in China. The original article ..."
+        }
+      ]
+    },
+    {
+      "hash": "29344c79f8020b5aa8bf6f55c21a9f8d41f6b5294724e38cb4b75ede03aa5e4e",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-018",
+          "preview": "Xiangqi in the Modern-day (computers, internet et cetera) The invention of the computer and the prevalence of the Int..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-018",
+          "preview": "Xiangqi in the Modern-day (computers, internet et cetera) The invention of the computer and the prevalence of the Int..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-018",
+          "preview": "Xiangqi in the Modern-day (computers, internet et cetera) The invention of the computer and the prevalence of the Int..."
+        }
+      ]
+    },
+    {
+      "hash": "1b172e703a277c7875960e43c682fe85785efb9ce62cd8885bee3b1b658db986",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-019",
+          "preview": "Afterthoughts There are a million things in the Webmaster's mind that he can felt he could continue writing. However,..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-019",
+          "preview": "Afterthoughts There are a million things in the Webmaster's mind that he can felt he could continue writing. However,..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-019",
+          "preview": "Afterthoughts There are a million things in the Webmaster's mind that he can felt he could continue writing. However,..."
+        }
+      ]
+    },
+    {
+      "hash": "e2834f4341c11981e9d6a268ce3d374a2a2f5ef173066d18cc72529d2dabe21e",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#openings#chunk-020",
+          "preview": "References 1. 刘, 殿中. 象棋新编课程 象棋初学门径. 北京 : 北京体育大学出版社, 2000. 7-81051-484-9. 2. 傅, 宝胜. 棋迷过招系列 -- 象棋实战技法. 合肥 : 安徽科学技术出版社, ..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#endgames#chunk-020",
+          "preview": "References 1. 刘, 殿中. 象棋新编课程 象棋初学门径. 北京 : 北京体育大学出版社, 2000. 7-81051-484-9. 2. 傅, 宝胜. 棋迷过招系列 -- 象棋实战技法. 合肥 : 安徽科学技术出版社, ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/all_phases/xqinenglish_basics_of_play#beginner_principles#chunk-020",
+          "preview": "References 1. 刘, 殿中. 象棋新编课程 象棋初学门径. 北京 : 北京体育大学出版社, 2000. 7-81051-484-9. 2. 傅, 宝胜. 棋迷过招系列 -- 象棋实战技法. 合肥 : 安徽科学技术出版社, ..."
+        }
+      ]
+    },
+    {
+      "hash": "d31b21c685a50f285c64bc279992014845fd372d47f79c86d5c9641c207b09d3",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-000",
+          "preview": "How to Play Chinese Chess: The #1 Guide for Xiangqi Beginners 中文版 Español Xiangqi (Chinese Chess / cờ tướng) is one o..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-000",
+          "preview": "How to Play Chinese Chess: The #1 Guide for Xiangqi Beginners 中文版 Español Xiangqi (Chinese Chess / cờ tướng) is one o..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-000",
+          "preview": "How to Play Chinese Chess: The #1 Guide for Xiangqi Beginners 中文版 Español Xiangqi (Chinese Chess / cờ tướng) is one o..."
+        }
+      ]
+    },
+    {
+      "hash": "f5d1c6040f38cbd3f6e639f72bbcd0eed54862430397bd2089da380645b007bf",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-001",
+          "preview": "1. The Origin of Xiangqi 1.1 Chaturanga 1.2 The Ancient Chinese General Hanxin - 2. Basic Xiangqi Rules 2.1 Pieces an..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-001",
+          "preview": "1. The Origin of Xiangqi 1.1 Chaturanga 1.2 The Ancient Chinese General Hanxin - 2. Basic Xiangqi Rules 2.1 Pieces an..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-001",
+          "preview": "1. The Origin of Xiangqi 1.1 Chaturanga 1.2 The Ancient Chinese General Hanxin - 2. Basic Xiangqi Rules 2.1 Pieces an..."
+        }
+      ]
+    },
+    {
+      "hash": "5f1e4b98b49495fba706aa0fff50e69231c662c964d3220f8b210f2519302b12",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-002",
+          "preview": "2. Basic Xiangqi Rules 2.1 Pieces and its Values 2.2 How to set up the Xiangqi Board? 2.3 Criteria of Victory 2.4 Cri..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-002",
+          "preview": "2. Basic Xiangqi Rules 2.1 Pieces and its Values 2.2 How to set up the Xiangqi Board? 2.3 Criteria of Victory 2.4 Cri..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-002",
+          "preview": "2. Basic Xiangqi Rules 2.1 Pieces and its Values 2.2 How to set up the Xiangqi Board? 2.3 Criteria of Victory 2.4 Cri..."
+        }
+      ]
+    },
+    {
+      "hash": "e9df2c3c2d9a89f281e2aa6815cd2de96cacc0b54fae9a05b9b8c60dbeaeb77d",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-003",
+          "preview": "3. Basic Xiangqi Tactics 3.1 What are the Xiangqi Basic Attack and Defense Tactics? 3.2 Checkmate tactics 3.3 Capturi..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-003",
+          "preview": "3. Basic Xiangqi Tactics 3.1 What are the Xiangqi Basic Attack and Defense Tactics? 3.2 Checkmate tactics 3.3 Capturi..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-003",
+          "preview": "3. Basic Xiangqi Tactics 3.1 What are the Xiangqi Basic Attack and Defense Tactics? 3.2 Checkmate tactics 3.3 Capturi..."
+        }
+      ]
+    },
+    {
+      "hash": "4c507cd0370d03e3afde28b60c390ae1f0be182848af837f1fd9b506667633e0",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-004",
+          "preview": "4. Basic Xiangqi Strategies 4.1 How to Play Xiangqi Opening? 4.2 What are the Common Chinese Chess Opening lines? 4.3..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-004",
+          "preview": "4. Basic Xiangqi Strategies 4.1 How to Play Xiangqi Opening? 4.2 What are the Common Chinese Chess Opening lines? 4.3..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-004",
+          "preview": "4. Basic Xiangqi Strategies 4.1 How to Play Xiangqi Opening? 4.2 What are the Common Chinese Chess Opening lines? 4.3..."
+        }
+      ]
+    },
+    {
+      "hash": "8ab58d22464801461d8cd7f783d5a9afaa8976b2083019d788f643817b10e5fd",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-005",
+          "preview": "5. How to learn Xiangqi? 5.1 How to Learn Xiangqi by Studying the Games of the Strong Players? 5.2 How to Learn Xiang..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-005",
+          "preview": "5. How to learn Xiangqi? 5.1 How to Learn Xiangqi by Studying the Games of the Strong Players? 5.2 How to Learn Xiang..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-005",
+          "preview": "5. How to learn Xiangqi? 5.1 How to Learn Xiangqi by Studying the Games of the Strong Players? 5.2 How to Learn Xiang..."
+        }
+      ]
+    },
+    {
+      "hash": "d1affb5017936889cff4ead5f9c0e97c608d0beec1725400152b8fb8068b1b48",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-006",
+          "preview": "6. What is the Difference between Xiangqi and Chess? 6. What is the Difference between Xiangqi and Chess? - 7. Additi..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-006",
+          "preview": "6. What is the Difference between Xiangqi and Chess? 6. What is the Difference between Xiangqi and Chess? - 7. Additi..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-006",
+          "preview": "6. What is the Difference between Xiangqi and Chess? 6. What is the Difference between Xiangqi and Chess? - 7. Additi..."
+        }
+      ]
+    },
+    {
+      "hash": "cd4f4d4b017dd3339c58f513b7c148b68e8af29eebb80266ac712f1a4440f37f",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-007",
+          "preview": "7. Additional Information 7.1 What are the Important Xiangqi Tournaments? 7.2 What are the Important Xiangqi Titles? ..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-007",
+          "preview": "7. Additional Information 7.1 What are the Important Xiangqi Tournaments? 7.2 What are the Important Xiangqi Titles? ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-007",
+          "preview": "7. Additional Information 7.1 What are the Important Xiangqi Tournaments? 7.2 What are the Important Xiangqi Titles? ..."
+        }
+      ]
+    },
+    {
+      "hash": "83ec0883acd981e606357de2649ea93dcf9a554565606e9f1110b098155622c8",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-008",
+          "preview": "1.1 Chaturanga Some believe that all chess-like games across the globe have the same root - Chaturanga. Both Xiangqi ..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-008",
+          "preview": "1.1 Chaturanga Some believe that all chess-like games across the globe have the same root - Chaturanga. Both Xiangqi ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-008",
+          "preview": "1.1 Chaturanga Some believe that all chess-like games across the globe have the same root - Chaturanga. Both Xiangqi ..."
+        }
+      ]
+    },
+    {
+      "hash": "ca68a053fb795c5d03be32d3bddd478cbd21fecc5a6e06e21c549dd8efb2d79a",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-009",
+          "preview": "1.2 The Ancient Chinese General Hanxin There is also a story about the origin of Xiangqi that has been passed down in..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-009",
+          "preview": "1.2 The Ancient Chinese General Hanxin There is also a story about the origin of Xiangqi that has been passed down in..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-009",
+          "preview": "1.2 The Ancient Chinese General Hanxin There is also a story about the origin of Xiangqi that has been passed down in..."
+        }
+      ]
+    },
+    {
+      "hash": "2c25fdd994eca788f836651637f5300e2cbd0a695659150079d6ae71b1e6f158",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-010",
+          "preview": "2.2 How to set up the Board? (Main article: How to Start ) The Xiangqi board is a 9 × 10 square consisting of 9 verti..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-010",
+          "preview": "2.2 How to set up the Board? (Main article: How to Start ) The Xiangqi board is a 9 × 10 square consisting of 9 verti..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-010",
+          "preview": "2.2 How to set up the Board? (Main article: How to Start ) The Xiangqi board is a 9 × 10 square consisting of 9 verti..."
+        }
+      ]
+    },
+    {
+      "hash": "af3c2baa72b0334375ae49ad81717e8f6a34bdcb4b1c588f8a85fec169749ab1",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-011",
+          "preview": "2.1 Pieces and its Values (Main article: Pieces and Moves ) There are 32 pieces in Xiangqi, which can be divided into..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-011",
+          "preview": "2.1 Pieces and its Values (Main article: Pieces and Moves ) There are 32 pieces in Xiangqi, which can be divided into..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-011",
+          "preview": "2.1 Pieces and its Values (Main article: Pieces and Moves ) There are 32 pieces in Xiangqi, which can be divided into..."
+        }
+      ]
+    },
+    {
+      "hash": "f9a4a45990c9c1df01ff5b6bd604c55f0e6122e42859be1f622a8a50ba794382",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-012",
+          "preview": "2.4 Criteria of Draw A game is ruled as a \"draw\" if any of the following occurs during the game: - One player propose..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-012",
+          "preview": "2.4 Criteria of Draw A game is ruled as a \"draw\" if any of the following occurs during the game: - One player propose..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-012",
+          "preview": "2.4 Criteria of Draw A game is ruled as a \"draw\" if any of the following occurs during the game: - One player propose..."
+        }
+      ]
+    },
+    {
+      "hash": "1e3061d0dc10123e4d85c5d99ff2dfcc0c5dcf7f74fb10da28e096f7532c8da1",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-013",
+          "preview": "2.3 Criteria of Victory If one of the following occurs during a game, the player is won and the opponent is lost: - C..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-013",
+          "preview": "2.3 Criteria of Victory If one of the following occurs during a game, the player is won and the opponent is lost: - C..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-013",
+          "preview": "2.3 Criteria of Victory If one of the following occurs during a game, the player is won and the opponent is lost: - C..."
+        }
+      ]
+    },
+    {
+      "hash": "7e6f8374c40d5ae60c6d892a419c54dcff5ba3b67e48b6b48541cd6a9fb45678",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-014",
+          "preview": "2.5.1 Repetitive Check “Check” means a move that can threaten the opponent’s General. On Xiangqi.com, the system proh..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-014",
+          "preview": "2.5.1 Repetitive Check “Check” means a move that can threaten the opponent’s General. On Xiangqi.com, the system proh..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-014",
+          "preview": "2.5.1 Repetitive Check “Check” means a move that can threaten the opponent’s General. On Xiangqi.com, the system proh..."
+        }
+      ]
+    },
+    {
+      "hash": "6cb71f066c45156d0858c4ec7c11c68c37889731c44d60f9ed2e1d79eb97f954",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-015",
+          "preview": "2.5.2 Repetitive Chase “Chase” is a move that can threaten one or more opponent’s piece(s). On Xiangqi.com, the syste..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-015",
+          "preview": "2.5.2 Repetitive Chase “Chase” is a move that can threaten one or more opponent’s piece(s). On Xiangqi.com, the syste..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-015",
+          "preview": "2.5.2 Repetitive Chase “Chase” is a move that can threaten one or more opponent’s piece(s). On Xiangqi.com, the syste..."
+        }
+      ]
+    },
+    {
+      "hash": "e51232e1e153684d0811ee8f8bbd62068540cfc877c1f39309770964263202d4",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-016",
+          "preview": "3.1.2 How to Defend against Chase and Check? When being chased, the player can protect his/her pieces by: - Protectin..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-016",
+          "preview": "3.1.2 How to Defend against Chase and Check? When being chased, the player can protect his/her pieces by: - Protectin..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-016",
+          "preview": "3.1.2 How to Defend against Chase and Check? When being chased, the player can protect his/her pieces by: - Protectin..."
+        }
+      ]
+    },
+    {
+      "hash": "d6957e5413356cfd343c530a0d9659daa3195624bb024743f358622f6c47fdd9",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-017",
+          "preview": "3.1.4 Exchange Exchange in Xiangqi means both players capture each side's piece(s) in a series of moves. When the opp..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-017",
+          "preview": "3.1.4 Exchange Exchange in Xiangqi means both players capture each side's piece(s) in a series of moves. When the opp..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-017",
+          "preview": "3.1.4 Exchange Exchange in Xiangqi means both players capture each side's piece(s) in a series of moves. When the opp..."
+        }
+      ]
+    },
+    {
+      "hash": "f576510438296c4de0caddda58f2b4098225dee236cae7bb9a6b7e8f7f595dad",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-018",
+          "preview": "3.2 Checkmate tactics (Main article: An Overview of xiangqi checkmate ) Here is a list of Xiangqi checkmate tactics: ..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-018",
+          "preview": "3.2 Checkmate tactics (Main article: An Overview of xiangqi checkmate ) Here is a list of Xiangqi checkmate tactics: ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-018",
+          "preview": "3.2 Checkmate tactics (Main article: An Overview of xiangqi checkmate ) Here is a list of Xiangqi checkmate tactics: ..."
+        }
+      ]
+    },
+    {
+      "hash": "bad4b0b77f1c87db0b4cc5a01c941ea93d82d482a49258e03b4b9706821463a4",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-019",
+          "preview": "3.3 Capturing tactics Here is a list of Xiangqi Capturing tactics: - Fork Fork - Skewer Skewer - Discovered Attack Di..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-019",
+          "preview": "3.3 Capturing tactics Here is a list of Xiangqi Capturing tactics: - Fork Fork - Skewer Skewer - Discovered Attack Di..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-019",
+          "preview": "3.3 Capturing tactics Here is a list of Xiangqi Capturing tactics: - Fork Fork - Skewer Skewer - Discovered Attack Di..."
+        }
+      ]
+    },
+    {
+      "hash": "65336865b7a8dc00f5c2cc11a6f387d455236e641072a8bb9921ac6742202305",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-020",
+          "preview": "4.1.1 How to use the Chariot in Chinese Chess Opening? - Develop it to spacious positions: The more position it contr..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-020",
+          "preview": "4.1.1 How to use the Chariot in Chinese Chess Opening? - Develop it to spacious positions: The more position it contr..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-020",
+          "preview": "4.1.1 How to use the Chariot in Chinese Chess Opening? - Develop it to spacious positions: The more position it contr..."
+        }
+      ]
+    },
+    {
+      "hash": "7cbf9ea86742f2035920fa8fb2fff0532b52c2a3479bb33bf3617e2a37d15c66",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-021",
+          "preview": "4.1.2 How to use the Horse in Chinese Chess Opening? - Avoid being blocked by Soldier: Horse’s development can be eas..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-021",
+          "preview": "4.1.2 How to use the Horse in Chinese Chess Opening? - Avoid being blocked by Soldier: Horse’s development can be eas..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-021",
+          "preview": "4.1.2 How to use the Horse in Chinese Chess Opening? - Avoid being blocked by Soldier: Horse’s development can be eas..."
+        }
+      ]
+    },
+    {
+      "hash": "c4713b33d41241db04db2d57e4795720e88e052120b18fabdac1f83b2cb2f375",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-022",
+          "preview": "4.1.3 How to use the Cannon in Chinese Chess Opening? - Don’t cross the river immaturely: Cannon might lose its mount..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-022",
+          "preview": "4.1.3 How to use the Cannon in Chinese Chess Opening? - Don’t cross the river immaturely: Cannon might lose its mount..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-022",
+          "preview": "4.1.3 How to use the Cannon in Chinese Chess Opening? - Don’t cross the river immaturely: Cannon might lose its mount..."
+        }
+      ]
+    },
+    {
+      "hash": "03454aa055ba299229a8aaa2484b6bfd43fb7aa463ac55c1c7bbedfedda018b4",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-023",
+          "preview": "4.1.4 How to use the Soldier in Chinese Chess Opening? - Block the opponent’s Horses’ development: You can block your..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-023",
+          "preview": "4.1.4 How to use the Soldier in Chinese Chess Opening? - Block the opponent’s Horses’ development: You can block your..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-023",
+          "preview": "4.1.4 How to use the Soldier in Chinese Chess Opening? - Block the opponent’s Horses’ development: You can block your..."
+        }
+      ]
+    },
+    {
+      "hash": "5b17b29d7b65a435433d7acc28fe5c005d297144c07f8e42a8dc7970c03701bd",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-024",
+          "preview": "4.1.5 How to use the Advisors and Elephants in Chinese Chess Opening? - Advisors are the General's guardians. They pr..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-024",
+          "preview": "4.1.5 How to use the Advisors and Elephants in Chinese Chess Opening? - Advisors are the General's guardians. They pr..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-024",
+          "preview": "4.1.5 How to use the Advisors and Elephants in Chinese Chess Opening? - Advisors are the General's guardians. They pr..."
+        }
+      ]
+    },
+    {
+      "hash": "28787aa5721099f4729bdbca49c0f1d9a6ae6414087dce458ab177a8a99ad6c6",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-025",
+          "preview": "4.1.7 How to use the Generals in Chinese Chess Opening? - Don’t expose it: General is safest in the initial position,..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-025",
+          "preview": "4.1.7 How to use the Generals in Chinese Chess Opening? - Don’t expose it: General is safest in the initial position,..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-025",
+          "preview": "4.1.7 How to use the Generals in Chinese Chess Opening? - Don’t expose it: General is safest in the initial position,..."
+        }
+      ]
+    },
+    {
+      "hash": "d607b19944e9ee998ca42f0f523fc807e1fd5674f619091521eed41f2228596f",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-026",
+          "preview": "4.2 What are the Common Chinese Chess Opening lines? - Same Direction Cannons Same Direction Cannons - Opposite Direc..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-026",
+          "preview": "4.2 What are the Common Chinese Chess Opening lines? - Same Direction Cannons Same Direction Cannons - Opposite Direc..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-026",
+          "preview": "4.2 What are the Common Chinese Chess Opening lines? - Same Direction Cannons Same Direction Cannons - Opposite Direc..."
+        }
+      ]
+    },
+    {
+      "hash": "b10858d2d56d2132d5d18a37a8ef3d7bdabe438e52f6aae13b513bf1bbc69698",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-027",
+          "preview": "4.3 How to Play Chinese Chess Midgame? (Main article: 10 Most Important Xiangqi Midgame Principles ) We usually consi..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-027",
+          "preview": "4.3 How to Play Chinese Chess Midgame? (Main article: 10 Most Important Xiangqi Midgame Principles ) We usually consi..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-027",
+          "preview": "4.3 How to Play Chinese Chess Midgame? (Main article: 10 Most Important Xiangqi Midgame Principles ) We usually consi..."
+        }
+      ]
+    },
+    {
+      "hash": "3a56c4ceebe09c5a7fa2be2a60734ec108016cef2747a73b4f929a84ec752636",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-028",
+          "preview": "4.4 What should the player do in Chinese Chess Midgame? In general, the side that has the advantage (material and/or ..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-028",
+          "preview": "4.4 What should the player do in Chinese Chess Midgame? In general, the side that has the advantage (material and/or ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-028",
+          "preview": "4.4 What should the player do in Chinese Chess Midgame? In general, the side that has the advantage (material and/or ..."
+        }
+      ]
+    },
+    {
+      "hash": "0f830bf7646757284867cbbde5766e63dc3c124136eb53167d04c808b40d93fb",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-029",
+          "preview": "4.5 How to Play Chinese Chess Endgame? (Main article: 10 Most Important Xiangqi Endgame Principles ) Solid knowledge ..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-029",
+          "preview": "4.5 How to Play Chinese Chess Endgame? (Main article: 10 Most Important Xiangqi Endgame Principles ) Solid knowledge ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-029",
+          "preview": "4.5 How to Play Chinese Chess Endgame? (Main article: 10 Most Important Xiangqi Endgame Principles ) Solid knowledge ..."
+        }
+      ]
+    },
+    {
+      "hash": "4a20f4220e3232587d9cc923f7a2d0c2c525c4f668d6f73525dceea038d5a9fe",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-030",
+          "preview": "4.6 What are the Common Chinese Chess Endgame Patterns? Chariots can attack and defend rapidly, since they are the mo..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-030",
+          "preview": "4.6 What are the Common Chinese Chess Endgame Patterns? Chariots can attack and defend rapidly, since they are the mo..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-030",
+          "preview": "4.6 What are the Common Chinese Chess Endgame Patterns? Chariots can attack and defend rapidly, since they are the mo..."
+        }
+      ]
+    },
+    {
+      "hash": "157d482bad2012d543411b44102eaf7ff4238e5d12aaa41c290341d63e27dd2f",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-031",
+          "preview": "4.6.1 Theoretical Endgame patterns involving Chariots Endgames involving Chariots means that both players have Chario..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-031",
+          "preview": "4.6.1 Theoretical Endgame patterns involving Chariots Endgames involving Chariots means that both players have Chario..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-031",
+          "preview": "4.6.1 Theoretical Endgame patterns involving Chariots Endgames involving Chariots means that both players have Chario..."
+        }
+      ]
+    },
+    {
+      "hash": "9bd821774b14f8d977b07b186a1253e9b30c0d2d3d5f4ff87191e38c32fd1684",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-032",
+          "preview": "4.6.2 Theoretical Endgame patterns without Chariots Endgames without chariots means that both players do not have any..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-032",
+          "preview": "4.6.2 Theoretical Endgame patterns without Chariots Endgames without chariots means that both players do not have any..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-032",
+          "preview": "4.6.2 Theoretical Endgame patterns without Chariots Endgames without chariots means that both players do not have any..."
+        }
+      ]
+    },
+    {
+      "hash": "befdb007d24743ea89007d6aef0c7bf65f2151b0437cf45ee8ec843e9e6652a5",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-033",
+          "preview": "4.6.3 Chariot-present vs. Chariot-absent Theoretical Endgame patterns Chariot-present v.s. Chariot-absent endgames me..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-033",
+          "preview": "4.6.3 Chariot-present vs. Chariot-absent Theoretical Endgame patterns Chariot-present v.s. Chariot-absent endgames me..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-033",
+          "preview": "4.6.3 Chariot-present vs. Chariot-absent Theoretical Endgame patterns Chariot-present v.s. Chariot-absent endgames me..."
+        }
+      ]
+    },
+    {
+      "hash": "a7aeee1c125602243b901507c0cc81298778fdef0fdbcac74c2c659442eb5f67",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-034",
+          "preview": "5.1 How to Learn Chinese Chess by Studying the Games of the Strong Players? All players, no matter professionals or a..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-034",
+          "preview": "5.1 How to Learn Chinese Chess by Studying the Games of the Strong Players? All players, no matter professionals or a..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-034",
+          "preview": "5.1 How to Learn Chinese Chess by Studying the Games of the Strong Players? All players, no matter professionals or a..."
+        }
+      ]
+    },
+    {
+      "hash": "f7503caee80418517d80ed09d356dc84879c1859d7b93905f341b9495d007ed5",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-035",
+          "preview": "5.2 How to Learn Chinese Chess by Playing Games? Playing games is the main way to improve your Chinese Chess skills. ..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-035",
+          "preview": "5.2 How to Learn Chinese Chess by Playing Games? Playing games is the main way to improve your Chinese Chess skills. ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-035",
+          "preview": "5.2 How to Learn Chinese Chess by Playing Games? Playing games is the main way to improve your Chinese Chess skills. ..."
+        }
+      ]
+    },
+    {
+      "hash": "9f15e8149b06a99879568b6753b1058ecff50ccb420a9d7254cf137b127b5358",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-036",
+          "preview": "5.3 How to Learn Chinese Chess by Post-game Analysis? Reviewing the game promptly after the game has ended and summar..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-036",
+          "preview": "5.3 How to Learn Chinese Chess by Post-game Analysis? Reviewing the game promptly after the game has ended and summar..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-036",
+          "preview": "5.3 How to Learn Chinese Chess by Post-game Analysis? Reviewing the game promptly after the game has ended and summar..."
+        }
+      ]
+    },
+    {
+      "hash": "d0f02e4031f3a16c89aff20dbbe3bbbae34530aefba834c091d37a94a88334d8",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-037",
+          "preview": "5.4 How to Learn Chinese Chess by Solving Puzzles? Doing puzzles is another important way of practicing. One should b..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-037",
+          "preview": "5.4 How to Learn Chinese Chess by Solving Puzzles? Doing puzzles is another important way of practicing. One should b..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-037",
+          "preview": "5.4 How to Learn Chinese Chess by Solving Puzzles? Doing puzzles is another important way of practicing. One should b..."
+        }
+      ]
+    },
+    {
+      "hash": "564574e781499d88ba2ab3275ceedad8fcd22bba44355280aa95d38657713fe5",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-038",
+          "preview": "5.5 How to Learn Chinese Chess by Seeking Advice from the Strong Players? Apart from the mentioned self-learning meth..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-038",
+          "preview": "5.5 How to Learn Chinese Chess by Seeking Advice from the Strong Players? Apart from the mentioned self-learning meth..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-038",
+          "preview": "5.5 How to Learn Chinese Chess by Seeking Advice from the Strong Players? Apart from the mentioned self-learning meth..."
+        }
+      ]
+    },
+    {
+      "hash": "342613d714c184bc27ea53216e9b5beb6ce3f249da2ecc4586405ca8fa2b19d0",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-039",
+          "preview": "5.6 How to Learn Chinese Chess by Participating in Tournaments? In addition to daily practices, beginners can also im..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-039",
+          "preview": "5.6 How to Learn Chinese Chess by Participating in Tournaments? In addition to daily practices, beginners can also im..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-039",
+          "preview": "5.6 How to Learn Chinese Chess by Participating in Tournaments? In addition to daily practices, beginners can also im..."
+        }
+      ]
+    },
+    {
+      "hash": "78a676be5f8d2ba3077b92cf9b33cdc92996c06de9646111d85c7952aa2537d1",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-040",
+          "preview": "6. What is the Difference between Xiangqi and Chess? Because of the larger board (9x10 vs 8x8), 4 initially opened fi..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-040",
+          "preview": "6. What is the Difference between Xiangqi and Chess? Because of the larger board (9x10 vs 8x8), 4 initially opened fi..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-040",
+          "preview": "6. What is the Difference between Xiangqi and Chess? Because of the larger board (9x10 vs 8x8), 4 initially opened fi..."
+        }
+      ]
+    },
+    {
+      "hash": "3079fbb965e1217188e0606b78668bda0e45da9c97f512f1eea2cd35bb372f21",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-041",
+          "preview": "7.1 What are the Important Xiangqi Tournaments? - World Xiangqi Championship (世界象棋锦标赛) World Xiangqi Championship (世界..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-041",
+          "preview": "7.1 What are the Important Xiangqi Tournaments? - World Xiangqi Championship (世界象棋锦标赛) World Xiangqi Championship (世界..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-041",
+          "preview": "7.1 What are the Important Xiangqi Tournaments? - World Xiangqi Championship (世界象棋锦标赛) World Xiangqi Championship (世界..."
+        }
+      ]
+    },
+    {
+      "hash": "af659fa783576370a00e12257c243a24187dbeb2fb589fb03fae2af21ada09fc",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-042",
+          "preview": "7.2 What are the Important Xiangqi Titles? - International Grandmaster (国际特级大师) International Grandmaster (国际特级大师) - ..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-042",
+          "preview": "7.2 What are the Important Xiangqi Titles? - International Grandmaster (国际特级大师) International Grandmaster (国际特级大师) - ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-042",
+          "preview": "7.2 What are the Important Xiangqi Titles? - International Grandmaster (国际特级大师) International Grandmaster (国际特级大师) - ..."
+        }
+      ]
+    },
+    {
+      "hash": "7a277fff579ff3dba754e583f30635f8ca3b25642181e6a83cda26a9e6c8cfad",
+      "collections": [
+        "beginner_principles",
+        "endgames",
+        "openings"
+      ],
+      "occurrences": [
+        {
+          "collection": "openings",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#openings#chunk-043",
+          "preview": "8. Summary: How to Play and Learn Xiangqi? Learn the rules of xiangqi: how to move and capture pieces; how to judge a..."
+        },
+        {
+          "collection": "endgames",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#endgames#chunk-043",
+          "preview": "8. Summary: How to Play and Learn Xiangqi? Learn the rules of xiangqi: how to move and capture pieces; how to judge a..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xiangqi.com/all_phases/xiangqi_com_how_to_play#beginner_principles#chunk-043",
+          "preview": "8. Summary: How to Play and Learn Xiangqi? Learn the rules of xiangqi: how to move and capture pieces; how to judge a..."
+        }
+      ]
+    },
+    {
+      "hash": "4f2feee174bf8e4ac1ff7cf4e67d127f1cca2fc93b7544cde549df708644b7e7",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-000",
+          "preview": "Strategical Advice in the Xiangqi (Chinese Chess) Middle Game Author: Jim Png from www.xqinenglish.com Note: This art..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-000",
+          "preview": "Strategical Advice in the Xiangqi (Chinese Chess) Middle Game Author: Jim Png from www.xqinenglish.com Note: This art..."
+        }
+      ]
+    },
+    {
+      "hash": "8bc966aaf0217af48929944e4f7c58cccb90627d250c225a480d77fd9c0a68af",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-001",
+          "preview": "based on the principles listed in Grandmaster Liu Dianzhong's book and remains one of the most comprehensive pieces o..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-001",
+          "preview": "based on the principles listed in Grandmaster Liu Dianzhong's book and remains one of the most comprehensive pieces o..."
+        }
+      ]
+    },
+    {
+      "hash": "4499ddbfc81913eb4174ce866f4fe2b71363f4832d950e7aaab63554c9eefcbe",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-002",
+          "preview": "(1) The top priority is to gain control of the situation before attempting to gain positional advantage or material a..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-002",
+          "preview": "(1) The top priority is to gain control of the situation before attempting to gain positional advantage or material a..."
+        }
+      ]
+    },
+    {
+      "hash": "6956b35535c13252beb5e1d40b6a0c03ac97b36dbb42ea72f220c07a83ebe2e8",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-003",
+          "preview": "Be Proactive! Say NO to passive play! When trying to gain initiative or control, the player should always be proactiv..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-003",
+          "preview": "Be Proactive! Say NO to passive play! When trying to gain initiative or control, the player should always be proactiv..."
+        }
+      ]
+    },
+    {
+      "hash": "046698e30820881ad8176b9bbb5c394c8897d769681005235d338e76d286c0b3",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-004",
+          "preview": "Control the situation Controlling the situation is another crucial lesson to learn. What is meant by controlling the ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-004",
+          "preview": "Control the situation Controlling the situation is another crucial lesson to learn. What is meant by controlling the ..."
+        }
+      ]
+    },
+    {
+      "hash": "af3e70537d1fe7fac715dc83cd108414c78a312d5040769b97f6d9154dd37093",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-005",
+          "preview": "The Devil is in the Details When the situation and material are even, the deciding factor is usually the position of ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-005",
+          "preview": "The Devil is in the Details When the situation and material are even, the deciding factor is usually the position of ..."
+        }
+      ]
+    },
+    {
+      "hash": "4b65993bc8d7561e427c76cb165ce19a5948c11caffb548a1258270fe6925a90",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-006",
+          "preview": "Relentlessly Attacking a Weakness(es) (缠绕攻击 chán rào gong jī) In the book, the Grandmaster advocated introduced the c..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-006",
+          "preview": "Relentlessly Attacking a Weakness(es) (缠绕攻击 chán rào gong jī) In the book, the Grandmaster advocated introduced the c..."
+        }
+      ]
+    },
+    {
+      "hash": "194d8fe3c3c8a9d20ceacef9ea983ab0d000df1e34fd6e8869c35b6c5162f1fb",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-007",
+          "preview": "Never forget to defend when attacking and vice versa Attack and defense are different sides of the same coin. As a ga..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-007",
+          "preview": "Never forget to defend when attacking and vice versa Attack and defense are different sides of the same coin. As a ga..."
+        }
+      ]
+    },
+    {
+      "hash": "8c53e49abc414c6491d70766099ca09522e77ee15d85607fe193cd937be9263f",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-008",
+          "preview": "The Price to Pay for Carelessness A player is only allowed to maneuver one piece for every move that is made. That is..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-008",
+          "preview": "The Price to Pay for Carelessness A player is only allowed to maneuver one piece for every move that is made. That is..."
+        }
+      ]
+    },
+    {
+      "hash": "3ac20162b9b31a1801929fe53852bcbaef88c89cc17f6479824e466efd6d6700",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-009",
+          "preview": "Tempi should not be lost after gaining material Material vs. position has always been one of the significant factors ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-009",
+          "preview": "Tempi should not be lost after gaining material Material vs. position has always been one of the significant factors ..."
+        }
+      ]
+    },
+    {
+      "hash": "6d993545d51202a37d5f11ca7949fac16c12167a29a14b90186a61a1304b0a5e",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-010",
+          "preview": "(4) Never be in a hurry to capture 'dead' material. Never be greedy to try to even the material deficit after sacrifi..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-010",
+          "preview": "(4) Never be in a hurry to capture 'dead' material. Never be greedy to try to even the material deficit after sacrifi..."
+        }
+      ]
+    },
+    {
+      "hash": "9979e14d3cc379b5b11fef2280523c63eeb72e7f216fbacc3e134877e0b1e0f8",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-011",
+          "preview": "Trade away the enemy's open Chariot and attack the enemy's weak Horse. A common tactic to use in Xiangqi is to trade ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-011",
+          "preview": "Trade away the enemy's open Chariot and attack the enemy's weak Horse. A common tactic to use in Xiangqi is to trade ..."
+        }
+      ]
+    },
+    {
+      "hash": "4421bcac6f1093d328bfa8b2bbea57a1e3f714ebf8d2e30685dd1a8fd7fadb22",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-012",
+          "preview": "Trade away the enemy's essential pieces. Utilize the King to join in combat. There was an example of a game by Grandm..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-012",
+          "preview": "Trade away the enemy's essential pieces. Utilize the King to join in combat. There was an example of a game by Grandm..."
+        }
+      ]
+    },
+    {
+      "hash": "ad60c9ec0acb3cd4c6f0538be56eeab34e995e504de327a36aed6ac6090d90f9",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-013",
+          "preview": "Avoiding capture is not as powerful as initiating a 'counter-capture.' According to the Grandmaster, this piece of ad..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-013",
+          "preview": "Avoiding capture is not as powerful as initiating a 'counter-capture.' According to the Grandmaster, this piece of ad..."
+        }
+      ]
+    },
+    {
+      "hash": "af56c52073ec01c6fb418c830835b6760ce5069ca20d26de0f1b41584d6bc5f9",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-014",
+          "preview": "Attacking the enemy's weak spots is the best defense! When the enemy is attacking a particular area on the board, and..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-014",
+          "preview": "Attacking the enemy's weak spots is the best defense! When the enemy is attacking a particular area on the board, and..."
+        }
+      ]
+    },
+    {
+      "hash": "90fa68f89bed787ce041285ed01e3b3915f15b3318de9a87364aa155bfb1baa6",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-015",
+          "preview": "(7) Concentrate your strong pieces to attack the enemy's weak area. Attacking a weak area would often require the pla..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-015",
+          "preview": "(7) Concentrate your strong pieces to attack the enemy's weak area. Attacking a weak area would often require the pla..."
+        }
+      ]
+    },
+    {
+      "hash": "e6dc474ea2073c927c503af96ac27e05109a2affde47fa935a87160d8e1df8ef",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-016",
+          "preview": "Concentrating material on one flank In the process of a game, it is almost inevitable that regional areas on the boar..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-016",
+          "preview": "Concentrating material on one flank In the process of a game, it is almost inevitable that regional areas on the boar..."
+        }
+      ]
+    },
+    {
+      "hash": "bd637d6293ebb2723dc671caf15fa7c53bdb8c0da8a5c71e59b0d9df337f4328",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-017",
+          "preview": "(8) When having the upper hand, try to simplify the situation into a winning position. When placed in a disadvantageo..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-017",
+          "preview": "(8) When having the upper hand, try to simplify the situation into a winning position. When placed in a disadvantageo..."
+        }
+      ]
+    },
+    {
+      "hash": "f465542c834071a78fc95baf7e124c2aa62f21dda6b0f09dc9e5e595bc35292c",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-018",
+          "preview": "Appreciate the changes on the board and adjust accordingly To win in Xiangqi, a player would need to be vigilant and ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-018",
+          "preview": "Appreciate the changes on the board and adjust accordingly To win in Xiangqi, a player would need to be vigilant and ..."
+        }
+      ]
+    },
+    {
+      "hash": "3f9d8b0182e056ae317d3076e6cc17224ddd30ab75bf2f53b60a054fe8090bbb",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-019",
+          "preview": "(9) Make use of the Rules of Xiangqi to your advantage The ability of a player to make use of the rules reasonably to..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-019",
+          "preview": "(9) Make use of the Rules of Xiangqi to your advantage The ability of a player to make use of the rules reasonably to..."
+        }
+      ]
+    },
+    {
+      "hash": "5fba4e928c19aff8c4915a567489275ae60790b468e9ff52e8032d76ae8edc26",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-020",
+          "preview": "(10) Coordinate your troops in a versatile and tacit manner The situation on the board is determined by the arrangeme..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-020",
+          "preview": "(10) Coordinate your troops in a versatile and tacit manner The situation on the board is determined by the arrangeme..."
+        }
+      ]
+    },
+    {
+      "hash": "89964950ca36419efce91758741066198d3db4cbca7e66aac916a061ad85ca9c",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-021",
+          "preview": "Balanced development of the pieces and a steady improvement of the situation. An example was given in the book of a g..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-021",
+          "preview": "Balanced development of the pieces and a steady improvement of the situation. An example was given in the book of a g..."
+        }
+      ]
+    },
+    {
+      "hash": "cc0f42b9df9a48b9913009e719a34e2fc72988b3c4a38aef39c2fe244e18aef7",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-022",
+          "preview": "The difference between moving the Left and Right Elephant The Xiangqi board is symmetrical. In the opening phase, pus..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-022",
+          "preview": "The difference between moving the Left and Right Elephant The Xiangqi board is symmetrical. In the opening phase, pus..."
+        }
+      ]
+    },
+    {
+      "hash": "b5c5f1d13dae0ec1828c1cbc5bb4786ed1eb2c20c986d4ebdc71393e01cd1f48",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-023",
+          "preview": "Afterthoughts The advice that Grandmaster Liu Dianzhong gave in his book is very practical. Some of the advice may se..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-023",
+          "preview": "Afterthoughts The advice that Grandmaster Liu Dianzhong gave in his book is very practical. Some of the advice may se..."
+        }
+      ]
+    },
+    {
+      "hash": "96fbe449d7697dbd6fd40a753e3223a33136af5e3da675bcea4cf72bca26f53a",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#tactics#chunk-024",
+          "preview": "Works Cited 1. 刘殿中. 象棋新编教程 象棋中局战法. 北京 : 北京体育大学出版社, 2003. 7-81051-905-0/G.756. 2. contributors, Wikipedia. Thirty-Six ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_strategical_advice_middle_game#beginner_principles#chunk-024",
+          "preview": "Works Cited 1. 刘殿中. 象棋新编教程 象棋中局战法. 北京 : 北京体育大学出版社, 2003. 7-81051-905-0/G.756. 2. contributors, Wikipedia. Thirty-Six ..."
+        }
+      ]
+    },
+    {
+      "hash": "6f37998b2f4bcf54f2fc87f1a2bca39c201711942668c435a57fb6101438349a",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_intro_midgame#tactics#chunk-000",
+          "preview": "Introduction to the Xiangqi (Chinese Chess) Midgame 中局 The midgame is perhaps the hardest stage in the game of Xiangq..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_intro_midgame#beginner_principles#chunk-000",
+          "preview": "Introduction to the Xiangqi (Chinese Chess) Midgame 中局 The midgame is perhaps the hardest stage in the game of Xiangq..."
+        }
+      ]
+    },
+    {
+      "hash": "7800aadce1c9b683ce6bde9b858fc87ff531f1a4819b41af1533e49efe176004",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_intro_midgame#tactics#chunk-001",
+          "preview": "Content: - Midgame Boards uploaded in old Webste by date . - Basics of Xiangqi (Chinese Chess) Tactics 《象棋战术初步》 by Li..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_intro_midgame#beginner_principles#chunk-001",
+          "preview": "Content: - Midgame Boards uploaded in old Webste by date . - Basics of Xiangqi (Chinese Chess) Tactics 《象棋战术初步》 by Li..."
+        }
+      ]
+    },
+    {
+      "hash": "4448adc1c9da47bf7746a9cc88691b0ba8b215992b2ec102f9607c2b11fd2228",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_tactics_01c_clearance#tactics#chunk-000",
+          "preview": "Chapter 1c: Clearance Tactic 挪 This tactic is one of the more complicated tactics. Definition from the Webmaster's Le..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_tactics_01c_clearance#beginner_principles#chunk-000",
+          "preview": "Chapter 1c: Clearance Tactic 挪 This tactic is one of the more complicated tactics. Definition from the Webmaster's Le..."
+        }
+      ]
+    },
+    {
+      "hash": "fa315544e475eb5b96246649bb0140602acd6279c95dfc328a5063fa4ac4b12e",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_tactics_07c_dislodge#tactics#chunk-000",
+          "preview": "Chapter 7: Dislodge 逐 Chasing away or dislodging an enemy piece is a type of midgame tactic that is worthy of study. ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_tactics_07c_dislodge#beginner_principles#chunk-000",
+          "preview": "Chapter 7: Dislodge 逐 Chasing away or dislodging an enemy piece is a type of midgame tactic that is worthy of study. ..."
+        }
+      ]
+    },
+    {
+      "hash": "8b38358037c7c310c32c9931e55c24a00865ccb31cb6947af6de9dd9c361d828",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/middlegame/xqinenglish_tactics_07c_dislodge#tactics#chunk-001",
+          "preview": "C) Ambushing a piece that was not in immediate contact (隔子埋伏) This tactic is very versatile. On the surface, it would..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/middlegame/xqinenglish_tactics_07c_dislodge#beginner_principles#chunk-001",
+          "preview": "C) Ambushing a piece that was not in immediate contact (隔子埋伏) This tactic is very versatile. On the surface, it would..."
+        }
+      ]
+    },
+    {
+      "hash": "64d04c28c2d80288acf5f36988fffd8e9c817ae8cbff9b2ccfba7450238e49c3",
+      "collections": [
+        "beginner_principles",
+        "tactics"
+      ],
+      "occurrences": [
+        {
+          "collection": "tactics",
+          "id": "xqinenglish/general/xqinenglish_proverbs_84_play#tactics#chunk-011",
+          "preview": "Png, Jim Hau Cheng. Lexicon of Xiangqi (Chinese Chess) Terms in English. Taipei : Jim Png Hau Cheng, 2017. 978-957-43..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/general/xqinenglish_proverbs_84_play#beginner_principles#chunk-011",
+          "preview": "Png, Jim Hau Cheng. Lexicon of Xiangqi (Chinese Chess) Terms in English. Taipei : Jim Png Hau Cheng, 2017. 978-957-43..."
+        }
+      ]
+    },
+    {
+      "hash": "300b95a67bbb3d640cf271ad371c6567d7b7805176e8d443c604b3c4ae3dbd71",
+      "collections": [
+        "beginner_principles",
+        "endgames"
+      ],
+      "occurrences": [
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/endgame/xqinenglish_endgame_basics_08#endgames#chunk-000",
+          "preview": "The Xiangqi Endgame ---“it starts and ends with the endgame…” In Xiangqi, the end game can be defined as the last pha..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/endgame/xqinenglish_endgame_basics_08#beginner_principles#chunk-000",
+          "preview": "The Xiangqi Endgame ---“it starts and ends with the endgame…” In Xiangqi, the end game can be defined as the last pha..."
+        }
+      ]
+    },
+    {
+      "hash": "53593369f62be709436a4aed5776269dc51a443f26fefb191ad5b9b0d54135b2",
+      "collections": [
+        "beginner_principles",
+        "endgames"
+      ],
+      "occurrences": [
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/endgame/xqinenglish_endgame_basics_08#endgames#chunk-001",
+          "preview": "Practical Endgames In the last century, advances in endgame theory have allowed Xiangqi experts to identify various s..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/endgame/xqinenglish_endgame_basics_08#beginner_principles#chunk-001",
+          "preview": "Practical Endgames In the last century, advances in endgame theory have allowed Xiangqi experts to identify various s..."
+        }
+      ]
+    },
+    {
+      "hash": "fa18a524b1120e5e2e328846c293665873ed4ef63ffc78635fbbc10a65e403d9",
+      "collections": [
+        "beginner_principles",
+        "endgames"
+      ],
+      "occurrences": [
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#endgames#chunk-000",
+          "preview": "Introduction to Basic Kills in Xiangqi (Chinese Chess) An Introduction to the Basic Kills in Xiangqi (Chinese Chess) ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#beginner_principles#chunk-000",
+          "preview": "Introduction to Basic Kills in Xiangqi (Chinese Chess) An Introduction to the Basic Kills in Xiangqi (Chinese Chess) ..."
+        }
+      ]
+    },
+    {
+      "hash": "362c3e3990a9e71dd044a123132f6c80cc71d909ffe9225d32a4122d54df0c44",
+      "collections": [
+        "beginner_principles",
+        "endgames"
+      ],
+      "occurrences": [
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#endgames#chunk-001",
+          "preview": "What is a Basic Kill? Before we continue, a brief introduction to the basic kill is required. From the Webmaster's Le..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#beginner_principles#chunk-001",
+          "preview": "What is a Basic Kill? Before we continue, a brief introduction to the basic kill is required. From the Webmaster's Le..."
+        }
+      ]
+    },
+    {
+      "hash": "33729a6b7e09092b16154cc2f49057ff200e142ba0409d86098d30fc629fa063",
+      "collections": [
+        "beginner_principles",
+        "endgames"
+      ],
+      "occurrences": [
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#endgames#chunk-002",
+          "preview": "Basic Kills leave lasting impressions. Beginners would often get cremated in the beginning because they cannot unders..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#beginner_principles#chunk-002",
+          "preview": "Basic Kills leave lasting impressions. Beginners would often get cremated in the beginning because they cannot unders..."
+        }
+      ]
+    },
+    {
+      "hash": "1700d637f60907cd20fe065c066fec6bdb43ece945c25098398e80ac5ab65142",
+      "collections": [
+        "beginner_principles",
+        "endgames"
+      ],
+      "occurrences": [
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#endgames#chunk-003",
+          "preview": "Basic Kills are relatively simple with fixed patterns for recognition. Basic Kills in Xiangqi (Chinese Chess) have be..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#beginner_principles#chunk-003",
+          "preview": "Basic Kills are relatively simple with fixed patterns for recognition. Basic Kills in Xiangqi (Chinese Chess) have be..."
+        }
+      ]
+    },
+    {
+      "hash": "bb206949648eb99a5af67ef6c6402e9ee453ec9c732df3132eaca701f094f361",
+      "collections": [
+        "beginner_principles",
+        "endgames"
+      ],
+      "occurrences": [
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#endgames#chunk-004",
+          "preview": "Basic Kills are extremely good at demonstrating tactics. Basic Kills are perfect for introducing tactics. The relevan..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#beginner_principles#chunk-004",
+          "preview": "Basic Kills are extremely good at demonstrating tactics. Basic Kills are perfect for introducing tactics. The relevan..."
+        }
+      ]
+    },
+    {
+      "hash": "f536333f710629ef861f0952217a8bb194ebcb1c2abfa27fd01ec0c2edde3134",
+      "collections": [
+        "beginner_principles",
+        "endgames"
+      ],
+      "occurrences": [
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#endgames#chunk-005",
+          "preview": "Basic Kills allow for a more focused approach. Focusing on combinations of two or three pieces on what they can do wo..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#beginner_principles#chunk-005",
+          "preview": "Basic Kills allow for a more focused approach. Focusing on combinations of two or three pieces on what they can do wo..."
+        }
+      ]
+    },
+    {
+      "hash": "dba1551890047e354957cae5e5113aff41ba670024ab51701a8c30b472971670",
+      "collections": [
+        "beginner_principles",
+        "endgames"
+      ],
+      "occurrences": [
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#endgames#chunk-006",
+          "preview": "Basic Kills can act as platforms to learn harder aspects of the game. In an article on 木门斋's blog, there was an intro..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#beginner_principles#chunk-006",
+          "preview": "Basic Kills can act as platforms to learn harder aspects of the game. In an article on 木门斋's blog, there was an intro..."
+        }
+      ]
+    },
+    {
+      "hash": "3fcdf349da122714876968d41c6698b968eb6eaf724250ce28d04059e298b639",
+      "collections": [
+        "beginner_principles",
+        "endgames"
+      ],
+      "occurrences": [
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#endgames#chunk-007",
+          "preview": "Basic Kills allow for simple training in calculation and allows the newcomer a better understanding of the situation ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#beginner_principles#chunk-007",
+          "preview": "Basic Kills allow for simple training in calculation and allows the newcomer a better understanding of the situation ..."
+        }
+      ]
+    },
+    {
+      "hash": "83e5f7cb6d30d611272c00c27992bc55ae6bb25aa3714b1c0a77661d4e445aa5",
+      "collections": [
+        "beginner_principles",
+        "endgames"
+      ],
+      "occurrences": [
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#endgames#chunk-008",
+          "preview": "Poor Fundamentals in the Basic Kills = Missed Opportunities and LOSING Games when enjoying and advantage. What would ..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#beginner_principles#chunk-008",
+          "preview": "Poor Fundamentals in the Basic Kills = Missed Opportunities and LOSING Games when enjoying and advantage. What would ..."
+        }
+      ]
+    },
+    {
+      "hash": "6d1c705fe73dfb6f98713999e5c811a81287bb8006543c8b9f17ee49170f8d4f",
+      "collections": [
+        "beginner_principles",
+        "endgames"
+      ],
+      "occurrences": [
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#endgames#chunk-009",
+          "preview": "How many types of Basic Kills are there? It is estimated that there are about thirty different basic kills. To the We..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#beginner_principles#chunk-009",
+          "preview": "How many types of Basic Kills are there? It is estimated that there are about thirty different basic kills. To the We..."
+        }
+      ]
+    },
+    {
+      "hash": "8fb91f88c4d85a67f79b5eb392a743105e47de1763388aac45b9e3dccdb57d3d",
+      "collections": [
+        "beginner_principles",
+        "endgames"
+      ],
+      "occurrences": [
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#endgames#chunk-010",
+          "preview": "What to focus on when learning the Basic Kills The following are a few points that the Webmaster has culled from diff..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#beginner_principles#chunk-010",
+          "preview": "What to focus on when learning the Basic Kills The following are a few points that the Webmaster has culled from diff..."
+        }
+      ]
+    },
+    {
+      "hash": "12b083f974e9f1d6f4aeebfbba24460613832b4394b25ec5f57eeba2f69832f9",
+      "collections": [
+        "beginner_principles",
+        "endgames"
+      ],
+      "occurrences": [
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#endgames#chunk-011",
+          "preview": "Youtube Videos on the topic The Webmaster has also recorded a series of videos that are available on Youtube. Click o..."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#beginner_principles#chunk-011",
+          "preview": "Youtube Videos on the topic The Webmaster has also recorded a series of videos that are available on Youtube. Click o..."
+        }
+      ]
+    },
+    {
+      "hash": "014c9e96245a2126ec78209dd5d88bdfe66693ba0f0eb6d0e69e719d93889575",
+      "collections": [
+        "beginner_principles",
+        "endgames"
+      ],
+      "occurrences": [
+        {
+          "collection": "endgames",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#endgames#chunk-012",
+          "preview": "Reference Material: 1. 朱, 宝位. 棋牌入门丛书 象棋入门. 合肥 : s.n., 1994. 978-7-5337-0734-7. 2. 王, 国栋, 方, 士庆 and 李, 燕贵. 跟我学象棋 初级教程...."
+        },
+        {
+          "collection": "beginner_principles",
+          "id": "xqinenglish/general/xqinenglish_basic_checkmate_methods#beginner_principles#chunk-012",
+          "preview": "Reference Material: 1. 朱, 宝位. 棋牌入门丛书 象棋入门. 合肥 : s.n., 1994. 978-7-5337-0734-7. 2. 王, 国栋, 方, 士庆 and 李, 燕贵. 跟我学象棋 初级教程...."
+        }
+      ]
+    }
+  ]
+}
