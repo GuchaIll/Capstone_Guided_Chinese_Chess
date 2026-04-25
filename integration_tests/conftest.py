@@ -241,15 +241,28 @@ def core_stack() -> dict[str, bool]:
 
 @pytest.fixture()
 def reset_bridge_state(core_stack: dict[str, bool]) -> dict[str, Any]:
+    # First reset: clears the engine state and publishes GAME_RESET to SSE.
     status, body = http_request("POST", "http://127.0.0.1:5003/engine/reset", timeout=20.0)
     assert status == 200, body
 
-    status, body = post_json(
-        "http://127.0.0.1:5003/state/fen",
-        {"fen": STARTING_FEN, "source": "engine"},
-        timeout=20.0,
-    )
+    # The React client subscribes to SSE and automatically schedules an
+    # ai_move command 500 ms after receiving a move_made{source="player"}
+    # event from the previous test.  The full round-trip (SSE latency +
+    # 500 ms timer + engine depth-4 ~200 ms + response latency) takes
+    # roughly 850 ms.  Sleeping 1.2 s lets the ai_move COMPLETE and the
+    # React client reach "engine_done" phase before the second reset fires.
+    # This ensures the second reset's fen_update arrives while React is in
+    # "engine_done" (not "player_idle"), so no further ai_move is scheduled.
+    time.sleep(1.2)
+
+    # Second reset: engine is guaranteed to be at STARTING regardless of any
+    # ai_move that the React client injected after the first reset.
+    status, body = http_request("POST", "http://127.0.0.1:5003/engine/reset", timeout=20.0)
     assert status == 200, body
+
+    # Drain residual SSE events (ai_move broadcast, fen_update, etc.) so the
+    # next test's SSE subscriber starts with a clean event stream.
+    read_sse_events_for_duration("http://127.0.0.1:5003/state/events", 0.3)
 
     status, body = post_json(
         "http://127.0.0.1:5003/state/led-command",
@@ -258,6 +271,19 @@ def reset_bridge_state(core_stack: dict[str, bool]) -> dict[str, Any]:
     )
     assert status == 200, body
 
-    status, snapshot = get_json("http://127.0.0.1:5003/state", timeout=20.0)
-    assert status == 200, snapshot
+    # Poll until the bridge confirms the starting FEN so that in-flight
+    # observer events from the previous test have fully settled.
+    deadline = time.time() + 5.0
+    while time.time() < deadline:
+        s, snapshot = get_json("http://127.0.0.1:5003/state", timeout=5.0)
+        if s == 200 and snapshot.get("fen", "").startswith("rnbakabnr/9/1c5c1"):
+            return snapshot
+        time.sleep(0.1)
+
+    # Final check — fail with a useful message if not settled.
+    s, snapshot = get_json("http://127.0.0.1:5003/state", timeout=5.0)
+    assert s == 200, snapshot
+    assert snapshot.get("fen", "").startswith("rnbakabnr/9/1c5c1"), (
+        f"Bridge did not return to starting FEN after reset: {snapshot.get('fen')}"
+    )
     return snapshot
