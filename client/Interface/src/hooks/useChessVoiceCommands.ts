@@ -62,6 +62,18 @@ export function useChessVoiceCommands(
   const restartTimerRef = useRef<number | null>(null);
   const awakeTimerRef = useRef<number | null>(null);
   const activeRef = useRef(false);
+  const recognitionRunningRef = useRef(false);
+  // Mutex preventing concurrent starts (e.g. StrictMode mount → cleanup → mount
+  // firing two startWakeWordDetection() calls before either's getUserMedia
+  // resolves, which would create two recognition instances fighting for the mic).
+  const startInProgressRef = useRef(false);
+  // One-shot mic permission probe — after the first grant we trust the browser
+  // and let SpeechRecognition manage its own audio session. Re-probing on every
+  // restart causes the browser's "in use" indicator to flash on/off.
+  const permissionGrantedRef = useRef(false);
+  // Restart backoff: cap consecutive auto-restart attempts so a stuck mic or
+  // permanent error doesn't loop forever.
+  const consecutiveRestartFailuresRef = useRef(0);
   // Use a ref so onresult closure always reads the current state without stale capture
   const wakeWordStateRef = useRef<WakeWordState>('idle');
 
@@ -94,19 +106,54 @@ export function useChessVoiceCommands(
     return rec;
   }, []);
 
-  const startWakeWordDetection = useCallback(() => {
-    if (activeRef.current) return;
+  const startWakeWordDetection = useCallback(async () => {
+    // Already running? Done. Already starting? Bail — concurrent starts are
+    // the StrictMode double-mount foot-gun we are protecting against here.
+    if (activeRef.current && recognitionRunningRef.current) return;
+    if (startInProgressRef.current) return;
+    startInProgressRef.current = true;
 
-    const rec = createRecognition();
-    if (!rec) {
-      setError('Speech recognition not supported in this browser');
-      return;
-    }
-
+    // Mark active SYNCHRONOUSLY so a cleanup that fires while we are awaiting
+    // getUserMedia can flip activeRef back to false; we then abort below.
     activeRef.current = true;
-    recognitionRef.current = rec;
-    setWakeState('listening');
-    setError(null);
+
+    try {
+      // Probe permission once per session. After it is granted, skip the probe
+      // — SpeechRecognition.start() opens its own audio session and re-probing
+      // here just makes the browser's mic indicator blink on every restart.
+      if (!permissionGrantedRef.current && navigator.mediaDevices?.getUserMedia) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          stream.getTracks().forEach((track) => track.stop());
+          permissionGrantedRef.current = true;
+        } catch {
+          setError('Microphone permission denied or unavailable');
+          setWakeState('idle');
+          activeRef.current = false;
+          return;
+        }
+      }
+
+      // Cleanup may have run while we were awaiting permission — abort.
+      if (!activeRef.current) return;
+
+      // Dispose any leftover instance before creating a new one. Avoids the
+      // "two recognitions running at once" state that breaks transcription.
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch { /* already stopped */ }
+        recognitionRef.current = null;
+      }
+
+      const rec = createRecognition();
+      if (!rec) {
+        setError('Speech recognition not supported in this browser');
+        activeRef.current = false;
+        return;
+      }
+
+      recognitionRef.current = rec;
+      setWakeState('listening');
+      setError(null);
 
     rec.onresult = (event: SpeechRecognitionEvent) => {
       let interim = '';
@@ -186,12 +233,24 @@ export function useChessVoiceCommands(
     };
 
     rec.onend = () => {
+      recognitionRunningRef.current = false;
       // Auto-restart if still active.
       // IMPORTANT: use recognitionRef.current (not the captured `rec`) so the
       // restart always targets the live instance, even after fresh replacements.
       if (!activeRef.current) return;
+      // Bail out after repeated failures so a stuck mic doesn't loop forever.
+      if (consecutiveRestartFailuresRef.current >= 5) {
+        console.error('[VoiceCommands] Giving up after 5 consecutive restart failures');
+        setError('Recognition kept failing — click the mic to retry');
+        activeRef.current = false;
+        setWakeState('idle');
+        return;
+      }
       // Deduplicate: clear any existing restart timer before scheduling a new one
       if (restartTimerRef.current) clearTimeout(restartTimerRef.current);
+      // 300ms backoff (vs the previous 100ms) — shorter intervals just open
+      // the mic stream again and again, which is what was causing the
+      // browser's mic indicator to flash on/off.
       restartTimerRef.current = window.setTimeout(() => {
         restartTimerRef.current = null;
         if (!activeRef.current) return;
@@ -199,7 +258,10 @@ export function useChessVoiceCommands(
         if (!target) return;
         try {
           target.start();
+          recognitionRunningRef.current = true;
+          consecutiveRestartFailuresRef.current = 0;
         } catch {
+          consecutiveRestartFailuresRef.current += 1;
           // Instance is permanently dead — create a fresh replacement
           const fresh = createRecognition();
           if (fresh) {
@@ -209,37 +271,66 @@ export function useChessVoiceCommands(
             fresh.onend = target.onend;
             fresh.onerror = target.onerror;
             recognitionRef.current = fresh;
-            try { fresh.start(); } catch {
+            try {
+              fresh.start();
+              recognitionRunningRef.current = true;
+              consecutiveRestartFailuresRef.current = 0;
+            } catch {
               console.error('[VoiceCommands] Failed to restart fresh recognition');
               setWakeState('idle');
               activeRef.current = false;
             }
           }
         }
-      }, 100);
+      }, 300);
     };
 
     rec.onerror = (e: SpeechRecognitionErrorEvent) => {
-      if (e.error === 'no-speech' || e.error === 'aborted') return;
+      // `no-speech` is normal during silence; `aborted` happens when we call
+      // .stop() ourselves. Log at debug level only — surfacing them as errors
+      // would constantly flash the user-visible error overlay.
+      if (e.error === 'no-speech' || e.error === 'aborted') {
+        console.debug('[VoiceCommands] Benign recognition event:', e.error);
+        return;
+      }
+      // Permission-class errors are terminal — stop trying.
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed' || e.error === 'audio-capture') {
+        activeRef.current = false;
+        recognitionRunningRef.current = false;
+        permissionGrantedRef.current = false; // re-probe on next start
+        setWakeState('idle');
+      }
       console.error('[VoiceCommands] Recognition error:', e.error, e.message ?? '');
-      setError(e.error);
+      setError(e.message || e.error);
     };
 
-    try {
-      rec.start();
-      console.info('[VoiceCommands] Recognition started — say "Kibo" to activate');
-    } catch (e) {
-      console.error('[VoiceCommands] Failed to start recognition:', e);
-      setError('Failed to start speech recognition');
-      activeRef.current = false;
+      try {
+        rec.start();
+        recognitionRunningRef.current = true;
+        consecutiveRestartFailuresRef.current = 0;
+        console.info('[VoiceCommands] Recognition started — say "Kibo" to activate');
+      } catch (e) {
+        console.error('[VoiceCommands] Failed to start recognition:', e);
+        setError('Failed to start speech recognition');
+        activeRef.current = false;
+      }
+    } finally {
+      startInProgressRef.current = false;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [createRecognition, clearTimers, onChatMessage, setWakeState]);
 
   const stopWakeWordDetection = useCallback(() => {
     activeRef.current = false;
+    recognitionRunningRef.current = false;
+    // If a start() is mid-await (StrictMode cleanup case), the in-progress
+    // start will see activeRef === false and abort cleanly. The mutex itself
+    // is reset by the start's finally block — but in case we are stopping
+    // before a start ever fired, clear it here too.
+    startInProgressRef.current = false;
+    consecutiveRestartFailuresRef.current = 0;
     clearTimers();
-    recognitionRef.current?.stop();
+    try { recognitionRef.current?.stop(); } catch { /* already stopped */ }
     recognitionRef.current = null;
     setWakeState('idle');
     setTranscript('');
@@ -270,13 +361,14 @@ export function useChessVoiceCommands(
   useEffect(() => {
     return () => {
       activeRef.current = false;
+      recognitionRunningRef.current = false;
       clearTimers();
       recognitionRef.current?.stop();
     };
   }, [clearTimers]);
 
   return {
-    isListening: wakeWordState === 'listening' || wakeWordState === 'awake',
+    isListening: wakeWordState === 'listening' || wakeWordState === 'awake' || wakeWordState === 'processing',
     isSpeaking: speechService.isSpeaking,
     isAwake: wakeWordState === 'awake',
     wakeWordState,

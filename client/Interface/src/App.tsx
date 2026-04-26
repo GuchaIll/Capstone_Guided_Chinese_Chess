@@ -41,6 +41,15 @@ interface BridgeBusEvent {
   seq: number | null;
 }
 
+interface PendingCoachingEvent {
+  move: string;
+  fen: string;
+  side: 'red' | 'black';
+  result: string;
+  isCheck: boolean;
+  score: number;
+}
+
 function App() {
   const { gameState, resetGame, setGameStateFromFen, pushMoveRecord, setResult } = useGameState();
   const [legalTargets, setLegalTargets] = useState<string[]>([]);
@@ -65,6 +74,8 @@ function App() {
   const aiTurnTimeoutRef = useRef<number | null>(null);
   const aiThinkingRef = useRef(false);
   const endTurnInFlightRef = useRef(false);
+  const lastAppliedMoveSignatureRef = useRef<string | null>(null);
+  const pendingAcknowledgementCommentaryRef = useRef<PendingCoachingEvent | null>(null);
 
   // Speech service (singleton for component lifetime)
   const speechService = useMemo(() => new SpeechService(), []);
@@ -103,6 +114,20 @@ function App() {
       sendMessageRef.current(JSON.stringify({ type: 'ai_move', difficulty: 4 }));
       aiTurnTimeoutRef.current = null;
     }, 500);
+  }, []);
+
+  const flushAcknowledgementCommentary = useCallback(() => {
+    const pending = pendingAcknowledgementCommentaryRef.current;
+    if (!pending) return;
+    pendingAcknowledgementCommentaryRef.current = null;
+    chatPanelRef.current?.sendMoveEvent(
+      pending.move,
+      pending.fen,
+      pending.side,
+      pending.result,
+      pending.isCheck,
+      pending.score,
+    );
   }, []);
 
   const handleEngineMessage = useCallback((message: string) => {
@@ -203,15 +228,14 @@ function App() {
         // Engine's move is on the board; player must click End Turn to
         // acknowledge — this gives time to mirror the move on the physical board.
         setTurnPhase('engine_done');
-
-        chatPanelRef.current?.sendMoveEvent(
-          data.move || '',
-          data.fen || '',
-          sideToString(otherSide(playerSideRef.current)),
-          data.result || 'in_progress',
-          data.is_check || false,
-          data.score || 0,
-        );
+        pendingAcknowledgementCommentaryRef.current = {
+          move: data.move || '',
+          fen: data.fen || '',
+          side: sideToString(otherSide(playerSideRef.current)),
+          result: data.result || 'in_progress',
+          isCheck: data.is_check || false,
+          score: data.score || 0,
+        };
 
         if (data.result && data.result !== 'in_progress') {
           setResult(data.result);
@@ -232,6 +256,15 @@ function App() {
       console.log('[App] Received non-JSON message:', message);
     }
   }, [setGameStateFromFen, pushMoveRecord, triggerAiTurn, setResult]);
+
+  const shouldApplyBridgeMove = useCallback((source: string, moveStr: string, fen: string) => {
+    const signature = `${source}:${moveStr}:${fen}`;
+    if (lastAppliedMoveSignatureRef.current === signature) {
+      return false;
+    }
+    lastAppliedMoveSignatureRef.current = signature;
+    return true;
+  }, []);
 
   const handleBridgeCommandMessage = useCallback((message: string) => {
     try {
@@ -255,11 +288,83 @@ function App() {
           score: data.score,
         });
       } else if (data.type === 'move_result') {
-        if (!data.valid) {
+        if (data.valid) {
+          const moveStr = data.move || '';
+          const fen = data.fen || '';
+          if (shouldApplyBridgeMove('player', moveStr, fen)) {
+            endTurnInFlightRef.current = false;
+            setGameStateFromFen(fen);
+            setOpponentMove(null);
+            setPendingMove(null);
+            setTurnNotice(null);
+            setTurnActionPending(false);
+            if (moveStr) {
+              pushMoveRecord(moveStr.substring(0, 2), moveStr.substring(2, 4));
+            }
+
+            chatPanelRef.current?.sendMoveEvent(
+              moveStr,
+              fen,
+              sideToString(playerSideRef.current),
+              data.result || 'in_progress',
+              data.is_check || false,
+              data.score || 0,
+            );
+
+            if (data.result && data.result !== 'in_progress') {
+              setResult(data.result);
+            } else if (isConnectedRef.current) {
+              triggerAiTurn();
+            }
+          } else {
+            endTurnInFlightRef.current = false;
+            setTurnActionPending(false);
+          }
+        } else {
           endTurnInFlightRef.current = false;
           setPendingMove(null);
           setTurnPhase('player_idle');
           setTurnNotice(data.reason || 'Move was rejected by the engine.');
+          setTurnActionPending(false);
+        }
+      } else if (data.type === 'ai_move') {
+        const moveStr = data.move || '';
+        const fen = data.fen || '';
+        if (shouldApplyBridgeMove('ai', moveStr, fen)) {
+          endTurnInFlightRef.current = false;
+          setGameStateFromFen(fen);
+          if (moveStr) {
+            const from = moveStr.substring(0, 2);
+            const to = moveStr.substring(2, 4);
+            pushMoveRecord(from, to);
+            const fromPos = { file: from.charCodeAt(0) - 'a'.charCodeAt(0), rank: Number(from[1]) };
+            const toPos = { file: to.charCodeAt(0) - 'a'.charCodeAt(0), rank: Number(to[1]) };
+            if (Number.isInteger(fromPos.rank) && Number.isInteger(toPos.rank)) {
+              setOpponentMove({ from: fromPos, to: toPos });
+            }
+          }
+
+          aiThinkingRef.current = false;
+          setAiThinking(false);
+          setTurnNotice("Mirror the engine move on the physical board, then press End Engine's Turn.");
+          setTurnActionPending(false);
+          setTurnPhase('engine_done');
+          pendingAcknowledgementCommentaryRef.current = {
+            move: moveStr,
+            fen,
+            side: sideToString(otherSide(playerSideRef.current)),
+            result: data.result || 'in_progress',
+            isCheck: data.is_check || false,
+            score: data.score || 0,
+          };
+
+          if (data.result && data.result !== 'in_progress') {
+            setResult(data.result);
+          }
+        } else {
+          aiThinkingRef.current = false;
+          setAiThinking(false);
+          endTurnInFlightRef.current = false;
           setTurnActionPending(false);
         }
       } else if (data.type === 'error') {
@@ -277,7 +382,7 @@ function App() {
     } catch {
       console.log('[App] Received non-JSON bridge message:', message);
     }
-  }, [setGameStateFromFen, setResult]);
+  }, [setGameStateFromFen, setResult, pushMoveRecord, triggerAiTurn, shouldApplyBridgeMove]);
 
   const handleBridgeEvent = useCallback((event: BridgeBusEvent) => {
     const data = event.data ?? {};
@@ -330,9 +435,13 @@ function App() {
       const moveFrom = typeof data.from === 'string' ? data.from : '';
       const moveTo = typeof data.to === 'string' ? data.to : '';
       const source = typeof data.source === 'string' ? data.source : '';
+      const moveStr = `${moveFrom}${moveTo}`;
       const result = typeof data.result === 'string' ? data.result : 'in_progress';
       const isCheck = Boolean(data.is_check);
       const score = typeof data.score === 'number' ? data.score : 0;
+      if (!shouldApplyBridgeMove(source, moveStr, fen)) {
+        return;
+      }
 
       if (fen) {
         setGameStateFromFen(fen);
@@ -349,7 +458,7 @@ function App() {
         setTurnActionPending(false);
 
         chatPanelRef.current?.sendMoveEvent(
-          `${moveFrom}${moveTo}`,
+          moveStr,
           fen,
           sideToString(playerSideRef.current),
           result,
@@ -379,15 +488,14 @@ function App() {
         setTurnNotice("Mirror the engine move on the physical board, then press End Engine's Turn.");
         setTurnActionPending(false);
         setTurnPhase('engine_done');
-
-        chatPanelRef.current?.sendMoveEvent(
-          `${moveFrom}${moveTo}`,
+        pendingAcknowledgementCommentaryRef.current = {
+          move: moveStr,
           fen,
-          sideToString(otherSide(playerSideRef.current)),
+          side: sideToString(otherSide(playerSideRef.current)),
           result,
           isCheck,
           score,
-        );
+        };
 
         if (result !== 'in_progress') {
           setResult(result as GameResult);
@@ -407,9 +515,11 @@ function App() {
       setTurnActionPending(false);
       aiThinkingRef.current = false;
       setAiThinking(false);
+      lastAppliedMoveSignatureRef.current = null;
+      pendingAcknowledgementCommentaryRef.current = null;
       return;
     }
-  }, [pushMoveRecord, resetGame, setGameStateFromFen, setResult, triggerAiTurn]);
+  }, [pushMoveRecord, resetGame, setGameStateFromFen, setResult, triggerAiTurn, shouldApplyBridgeMove]);
 
   const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
   const defaultEngineWsUrl = `${wsProtocol}://${window.location.host}/ws`;
@@ -609,6 +719,7 @@ function App() {
             setTurnNotice(message);
             return;
           }
+          flushAcknowledgementCommentary();
           setTurnPhase('player_idle');
           setTurnNotice(message);
         })
@@ -617,7 +728,7 @@ function App() {
           setTurnActionPending(false);
         });
     }
-  }, [pendingMove, turnPhase, detectPhysicalMove, verifyPhysicalBoardSync]);
+  }, [pendingMove, turnPhase, detectPhysicalMove, verifyPhysicalBoardSync, flushAcknowledgementCommentary]);
 
   // Discard the staged move and return to player_idle so a fresh piece can be chosen.
   const handleTakeBack = useCallback(() => {
@@ -644,6 +755,8 @@ function App() {
     endTurnInFlightRef.current = false;
     aiThinkingRef.current = false;
     suggestionRequestedRef.current = false;
+    lastAppliedMoveSignatureRef.current = null;
+    pendingAcknowledgementCommentaryRef.current = null;
     if (aiTurnTimeoutRef.current) {
       clearTimeout(aiTurnTimeoutRef.current);
       aiTurnTimeoutRef.current = null;

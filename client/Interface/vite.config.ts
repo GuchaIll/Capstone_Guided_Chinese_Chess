@@ -24,6 +24,12 @@ export default defineConfig({
         target: 'http://localhost:5001',
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
+      '/dashboard': {
+        target: 'http://localhost:5002',
+      },
+      '/coach': {
+        target: 'http://localhost:5002',
+      },
     },
   },
 })
