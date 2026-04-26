@@ -120,6 +120,13 @@ func indexString(s, sub string) int {
 // evalCoachTrigger checks the two pre-analysis trigger conditions.
 // Condition 3 (tactical_pattern) is evaluated later by PositionAnalystAgent.
 func evalCoachTrigger(state map[string]interface{}) string {
+	question, _ := state["question"].(string)
+	questionOnly, _ := state["question_only"].(bool)
+	hasMove, _ := state["has_move"].(bool)
+
+	if shouldForceCoaching(question, questionOnly, hasMove) {
+		return "explicit"
+	}
 	if movesSince, _ := state["moves_since_last_coach"].(int); movesSince >= 3 {
 		return "move_count"
 	}
@@ -135,4 +142,37 @@ func evalCoachTrigger(state map[string]interface{}) string {
 		}
 	}
 	return "none"
+}
+
+func shouldForceCoaching(question string, questionOnly, hasMove bool) bool {
+	if questionOnly && stringsTrimSpace(question) != "" {
+		return true
+	}
+	if !hasMove {
+		return false
+	}
+	lower := toLower(question)
+	return containsAny(lower,
+		"why",
+		"explain",
+		"comment",
+		"coach",
+		"advice",
+		"plan",
+		"what should",
+		"how should",
+		"what is the idea",
+	)
+}
+
+func stringsTrimSpace(s string) string {
+	start := 0
+	for start < len(s) && (s[start] == ' ' || s[start] == '\n' || s[start] == '\t' || s[start] == '\r') {
+		start++
+	}
+	end := len(s)
+	for end > start && (s[end-1] == ' ' || s[end-1] == '\n' || s[end-1] == '\t' || s[end-1] == '\r') {
+		end--
+	}
+	return s[start:end]
 }

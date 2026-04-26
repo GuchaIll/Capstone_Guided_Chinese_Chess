@@ -22,7 +22,7 @@ type BridgeClient struct {
 func NewBridgeClient(baseURL string) *BridgeClient {
 	return &BridgeClient{
 		baseURL: baseURL,
-		http:    &http.Client{Timeout: 30 * time.Second},
+		http:    &http.Client{Timeout: 90 * time.Second},
 	}
 }
 

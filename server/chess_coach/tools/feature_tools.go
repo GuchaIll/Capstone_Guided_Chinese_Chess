@@ -143,7 +143,7 @@ func (t *GetTacticalPatternsTool) Execute(ctx context.Context, args json.RawMess
 		return "", fmt.Errorf("get_tactical_patterns: %w", err)
 	}
 
-	resp, err := t.Engine.AnalyzePositionFull(ctx, p.FEN, 10)
+	resp, err := t.Engine.AnalyzePositionFull(ctx, p.FEN, 5)
 	if err != nil {
 		return "", fmt.Errorf("get_tactical_patterns: %w", err)
 	}
@@ -189,7 +189,7 @@ func (t *SuggestBestMoveTool) Description() string {
 func (t *SuggestBestMoveTool) Parameters() []core.ToolParameter {
 	return []core.ToolParameter{
 		{Name: "fen", Type: "string", Description: "FEN position string", Required: true},
-		{Name: "depth", Type: "number", Description: "Search depth (default 15)", Required: false},
+		{Name: "depth", Type: "number", Description: "Search depth (default 5)", Required: false},
 	}
 }
 
@@ -202,7 +202,7 @@ func (t *SuggestBestMoveTool) Execute(ctx context.Context, args json.RawMessage)
 		return "", fmt.Errorf("suggest_best_move: %w", err)
 	}
 	if p.Depth <= 0 {
-		p.Depth = 15
+		p.Depth = 5
 	}
 
 	move, score, err := t.Engine.Suggest(ctx, p.FEN, p.Depth)

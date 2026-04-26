@@ -513,7 +513,7 @@ async def engine_reset(body: ResetPayload | None = None):
             },
             status_code=409,
         )
-    await relay.send_reset(command_id=command_id)
+    await relay.send_reset_and_wait(command_id=command_id)
     state.reset()
     await bus.publish(Event(type=EventType.GAME_RESET, data={}))
     return {"status": "Game reset", "command_id": command_id}

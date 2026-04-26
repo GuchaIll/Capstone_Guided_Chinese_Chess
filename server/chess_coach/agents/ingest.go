@@ -12,8 +12,11 @@ import (
 // followed by side-to-move. Works for both standard chess and xiangqi FEN.
 var fenPattern = regexp.MustCompile(`([A-Za-z0-9]+/){2,}[A-Za-z0-9]+\s+[wb][^\n]*`)
 
-// movePattern matches common chess move notations (UCI like e2e4 or algebraic like Nf3, O-O).
-var movePattern = regexp.MustCompile(`\b([a-h][1-8][a-h][1-8][qrbn]?|[KQRBN][a-h]?[1-8]?x?[a-h][1-8]|O-O(?:-O)?)\b`)
+// movePattern matches common move notations:
+// - Xiangqi coordinate moves like b0c2
+// - Standard chess UCI moves like e2e4
+// - Standard chess algebraic moves like Nf3 or O-O
+var movePattern = regexp.MustCompile(`\b([a-i][0-9][a-i][0-9]|[a-h][1-8][a-h][1-8][qrbn]?|[KQRBN][a-h]?[1-8]?x?[a-h][1-8]|O-O(?:-O)?)\b`)
 
 // IngestAgent reads the raw user input (FEN, move, question) from State
 // and normalises it for downstream agents. It handles both structured

@@ -162,12 +162,19 @@ func makeChatHandler(graph *core.Graph, store core.StateStore) observability.Cha
 			return
 		}
 
+		resetTransientChatState(session.State)
+
 		// Map chat message to chess_coach expected input.
-		// IngestAgent will extract FEN, move, and question from the raw message.
+		// Preserve prior FEN/move context for follow-up questions in the same
+		// session when the client omits those fields.
 		session.State["raw_input"] = body.Message
-		session.State["fen"] = body.FEN
 		session.State["question"] = body.Message
-		session.State["move"] = body.Move
+		if body.FEN != "" {
+			session.State["fen"] = body.FEN
+		}
+		if body.Move != "" {
+			session.State["move"] = body.Move
+		}
 
 		ctx := &core.Context{
 			SessionID:  sessionID,
@@ -197,6 +204,41 @@ func makeChatHandler(graph *core.Graph, store core.StateStore) observability.Cha
 			"response":   answer,
 			"state":      ctx.State,
 		})
+	}
+}
+
+func resetTransientChatState(state map[string]interface{}) {
+	for _, key := range []string{
+		"feedback",
+		"coaching_advice",
+		"strategy_advice",
+		"coach_advice_approved",
+		"rag_context",
+		"rag_queries",
+		"engine_metrics",
+		"principal_variation",
+		"blunder_analysis",
+		"blunder_abort",
+		"puzzle",
+		"puzzle_themes",
+		"puzzle_difficulty",
+		"tactical_pattern_detected",
+		"hanging_pieces",
+		"forks",
+		"pins",
+		"material_info",
+		"game_phase",
+		"coach_trigger",
+		"route_position_analysis",
+		"route_blunder_detection",
+		"route_puzzle",
+		"question_only",
+		"has_move",
+		"prev_score",
+		"current_score",
+		"moves_since_last_coach",
+	} {
+		delete(state, key)
 	}
 }
 

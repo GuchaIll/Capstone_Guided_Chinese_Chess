@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"go_agent_framework/core"
 	"chess_coach/engine"
+	"go_agent_framework/core"
 )
 
 // ValidateFENTool validates a FEN string using the chess engine.
@@ -15,8 +15,10 @@ type ValidateFENTool struct {
 	Engine engine.EngineClient
 }
 
-func (t *ValidateFENTool) Name() string        { return "validate_fen" }
-func (t *ValidateFENTool) Description() string { return "Validate a FEN position string using the chess engine." }
+func (t *ValidateFENTool) Name() string { return "validate_fen" }
+func (t *ValidateFENTool) Description() string {
+	return "Validate a FEN position string using the chess engine."
+}
 func (t *ValidateFENTool) Parameters() []core.ToolParameter {
 	return []core.ToolParameter{
 		{Name: "fen", Type: "string", Description: "FEN position string to validate", Required: true},
@@ -63,7 +65,7 @@ func (t *AnalyzePositionTool) Execute(ctx context.Context, args json.RawMessage)
 		return "", fmt.Errorf("analyze_position: %w", err)
 	}
 	if p.Depth <= 0 {
-		p.Depth = 20
+		p.Depth = 5
 	}
 	resp, err := t.Engine.AnalyzePositionFull(ctx, p.FEN, p.Depth)
 	if err != nil {
@@ -84,8 +86,10 @@ type CheckMoveTool struct {
 	Engine engine.EngineClient
 }
 
-func (t *CheckMoveTool) Name() string        { return "is_move_legal" }
-func (t *CheckMoveTool) Description() string { return "Check whether a proposed move is legal in the given FEN position." }
+func (t *CheckMoveTool) Name() string { return "is_move_legal" }
+func (t *CheckMoveTool) Description() string {
+	return "Check whether a proposed move is legal in the given FEN position."
+}
 func (t *CheckMoveTool) Parameters() []core.ToolParameter {
 	return []core.ToolParameter{
 		{Name: "fen", Type: "string", Description: "FEN position string", Required: true},
@@ -168,8 +172,10 @@ type GetLegalMovesTool struct {
 	Engine engine.EngineClient
 }
 
-func (t *GetLegalMovesTool) Name() string        { return "get_legal_moves" }
-func (t *GetLegalMovesTool) Description() string { return "Return all legal moves for the given FEN position." }
+func (t *GetLegalMovesTool) Name() string { return "get_legal_moves" }
+func (t *GetLegalMovesTool) Description() string {
+	return "Return all legal moves for the given FEN position."
+}
 func (t *GetLegalMovesTool) Parameters() []core.ToolParameter {
 	return []core.ToolParameter{
 		{Name: "fen", Type: "string", Description: "FEN position string", Required: true},
@@ -216,7 +222,7 @@ func (t *GetPrincipalVariationTool) Execute(ctx context.Context, args json.RawMe
 		return "", fmt.Errorf("get_principal_variation: %w", err)
 	}
 	if p.Depth <= 0 {
-		p.Depth = 20
+		p.Depth = 5
 	}
 	resp, err := t.Engine.AnalyzePositionFull(ctx, p.FEN, p.Depth)
 	if err != nil {
@@ -267,7 +273,7 @@ func (t *GetMoveRankingsTool) Execute(ctx context.Context, args json.RawMessage)
 		return "", fmt.Errorf("get_move_rankings: %w", err)
 	}
 	if p.Depth <= 0 {
-		p.Depth = 15
+		p.Depth = 5
 	}
 
 	// Get legal moves.
@@ -289,12 +295,12 @@ func (t *GetMoveRankingsTool) Execute(ctx context.Context, args json.RawMessage)
 	}
 
 	type ranked struct {
-		Move           string `json:"move"`
-		Score          int    `json:"score"`
-		Category       string `json:"category"`
-		PieceType      string `json:"piece_type"`
-		IsCapture      bool   `json:"is_capture"`
-		CentipawnLoss  int    `json:"centipawn_loss"`
+		Move          string `json:"move"`
+		Score         int    `json:"score"`
+		Category      string `json:"category"`
+		PieceType     string `json:"piece_type"`
+		IsCapture     bool   `json:"is_capture"`
+		CentipawnLoss int    `json:"centipawn_loss"`
 	}
 	rankings := make([]ranked, 0, len(results))
 	for _, fv := range results {
@@ -405,8 +411,8 @@ type GetGameStateTool struct {
 	Engine engine.EngineClient
 }
 
-func (t *GetGameStateTool) Name() string        { return "get_game_state" }
-func (t *GetGameStateTool) Description() string { return "Get the current game state from the engine." }
+func (t *GetGameStateTool) Name() string                     { return "get_game_state" }
+func (t *GetGameStateTool) Description() string              { return "Get the current game state from the engine." }
 func (t *GetGameStateTool) Parameters() []core.ToolParameter { return nil }
 
 func (t *GetGameStateTool) Execute(ctx context.Context, _ json.RawMessage) (string, error) {

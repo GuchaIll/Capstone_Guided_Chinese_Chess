@@ -309,6 +309,11 @@ def test_bridge_websocket_supports_state_and_helper_commands(client, bridge_test
     relay.legal_moves_by_square["e3"] = ["e4", "e5"]
 
     with client.websocket_connect("/ws") as ws:
+        # Bridge sends initial state snapshot on connect
+        initial = ws.receive_json()
+        assert initial["type"] == "state"
+        assert initial["fen"] == STARTING_FEN
+
         ws.send_json({"type": "get_state"})
         state_message = ws.receive_json()
         assert state_message["type"] == "state"
@@ -340,6 +345,10 @@ def test_bridge_websocket_forwards_gameplay_and_rejects_duplicate_command_id(cli
     _, state, _, relay = bridge_testbed
 
     with client.websocket_connect("/ws") as ws:
+        # Consume initial state snapshot sent on connect
+        initial = ws.receive_json()
+        assert initial["type"] == "state"
+
         ws.send_json({"type": "move", "move": "a0a1", "command_id": "ws-dup"})
         move_result = ws.receive_json()
         assert move_result == {

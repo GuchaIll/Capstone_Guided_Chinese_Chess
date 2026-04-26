@@ -15,6 +15,7 @@ import (
 type CoachAgent struct {
 	LLM    llm.LLMClient
 	Skills *core.SkillRegistry
+	Tools  *core.ToolRegistry
 }
 
 func (a *CoachAgent) Name() string { return "coach" }
@@ -42,15 +43,42 @@ func (a *CoachAgent) Run(ctx *core.Context) error {
 	observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID,
 		fmt.Sprintf("Coach triggered by: %s — building prompt.", coachTrigger))
 
+	ctx.AgentName = a.Name()
+	question, _ := ctx.State["question"].(string)
+	move, _ := ctx.State["move"].(string)
+	questionOnly, _ := ctx.State["question_only"].(bool)
+
+	if questionOnly || question != "" {
+		retrieveRAGSection(ctx, a.Tools, "general", "get_general_advice", map[string]interface{}{
+			"user_question": question,
+			"top_k":         3,
+		})
+	}
+	if move != "" {
+		retrieveRAGSection(ctx, a.Tools, "tactic", "explain_tactic", map[string]interface{}{
+			"user_question": firstNonEmptyString(question, "Explain this move."),
+			"move":          move,
+			"top_k":         3,
+		})
+	}
+
 	prompt := buildCoachPrompt(ctx.State, coachTrigger)
 	prompt += a.skillInstructions(ctx)
 	prompt += "\n\nProvide clear, concise coaching advice based on the above analysis."
+	prompt += " Keep the response under 320 words. Do not quote large knowledge blocks."
 
-	observability.PublishSkillUse(ctx.GraphName, a.Name(), ctx.SessionID, "llm:generate", "Generating coaching advice.")
+	var advice string
+	if isMockLLM(a.LLM) {
+		observability.PublishSkillUse(ctx.GraphName, a.Name(), ctx.SessionID, "mock:coach_fallback", "Using deterministic coaching fallback because the mock LLM is active.")
+		advice = buildFallbackCoachAdvice(ctx.State, coachTrigger)
+	} else {
+		observability.PublishSkillUse(ctx.GraphName, a.Name(), ctx.SessionID, "llm:generate", "Generating coaching advice.")
 
-	advice, err := a.LLM.Generate(ctx.ToContext(), prompt)
-	if err != nil {
-		return fmt.Errorf("coach: llm error: %w", err)
+		var err error
+		advice, err = a.LLM.Generate(ctx.ToContext(), prompt)
+		if err != nil {
+			return fmt.Errorf("coach: llm error: %w", err)
+		}
 	}
 
 	ctx.State["coaching_advice"] = advice
@@ -89,6 +117,7 @@ func buildCoachPrompt(state map[string]interface{}, trigger string) string {
 	appendEngineSection(&sb, state)
 	appendBlunderSection(&sb, state)
 	appendPuzzleSection(&sb, state)
+	appendRAGPromptSection(&sb, state)
 	return sb.String()
 }
 
@@ -172,4 +201,133 @@ func appendPuzzleSection(sb *strings.Builder, state map[string]interface{}) {
 	if diff, ok := state["puzzle_difficulty"].(map[string]interface{}); ok {
 		sb.WriteString(fmt.Sprintf("  Difficulty: %v (rating: %v)\n", diff["difficulty"], diff["rating"]))
 	}
+}
+
+func appendRAGPromptSection(sb *strings.Builder, state map[string]interface{}) {
+	ragContext, ok := state["rag_context"].(map[string]interface{})
+	if !ok || len(ragContext) == 0 {
+		return
+	}
+
+	orderedKeys := []string{"general", "opening", "middlegame", "endgame", "tactic", "puzzle"}
+	var added bool
+	for _, key := range orderedKeys {
+		raw, ok := ragContext[key].(map[string]interface{})
+		if !ok {
+			continue
+		}
+		text, _ := raw["text"].(string)
+		if strings.TrimSpace(text) == "" {
+			continue
+		}
+		if !added {
+			sb.WriteString("\nRelevant knowledge from the library:\n")
+			added = true
+		}
+		sb.WriteString(fmt.Sprintf("## %s guidance:\n%s\n", key, text))
+	}
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
+}
+
+func isMockLLM(client llm.LLMClient) bool {
+	describer, ok := client.(llm.Describer)
+	if !ok {
+		return false
+	}
+	return describer.Provider() == "mock"
+}
+
+func buildFallbackCoachAdvice(state map[string]interface{}, trigger string) string {
+	var parts []string
+	if score := coachScoreText(state); score != "" {
+		parts = append(parts, score)
+	}
+	if bestMove := coachBestMoveText(state); bestMove != "" {
+		parts = append(parts, bestMove)
+	}
+	if tactical := coachTacticalText(state); tactical != "" {
+		parts = append(parts, tactical)
+	}
+	if knowledge := coachKnowledgeText(state); knowledge != "" {
+		parts = append(parts, knowledge)
+	}
+	if trigger != "" && trigger != "none" {
+		parts = append(parts, fmt.Sprintf("This longer explanation was triggered by %s.", trigger))
+	}
+	return strings.Join(parts, " ")
+}
+
+func coachScoreText(state map[string]interface{}) string {
+	metrics, ok := state["engine_metrics"].(map[string]interface{})
+	if !ok {
+		return ""
+	}
+	if score, ok := metrics["search_score"]; ok {
+		return fmt.Sprintf("Engine evaluation is %v centipawns, so this position still has concrete tactical consequences.", score)
+	}
+	if eval, ok := metrics["eval"]; ok {
+		return fmt.Sprintf("Engine evaluation is %v.", eval)
+	}
+	return ""
+}
+
+func coachBestMoveText(state map[string]interface{}) string {
+	metrics, ok := state["engine_metrics"].(map[string]interface{})
+	if !ok {
+		return ""
+	}
+	bestMove := ""
+	if mf, ok := metrics["move_features"].(map[string]interface{}); ok {
+		if mm, ok := mf["move_metadata"].(map[string]interface{}); ok {
+			bestMove = fmt.Sprint(mm["move_str"])
+		}
+	} else if bm, ok := metrics["best_move"]; ok {
+		bestMove = fmt.Sprint(bm)
+	}
+	bestMove = strings.TrimSpace(bestMove)
+	if bestMove == "" || bestMove == "<nil>" {
+		return ""
+	}
+	return fmt.Sprintf("The engine prefers %s as the cleanest move.", bestMove)
+}
+
+func coachTacticalText(state map[string]interface{}) string {
+	if hp, ok := state["hanging_pieces"].([]interface{}); ok && len(hp) > 0 {
+		return fmt.Sprintf("There are %d hanging piece threats in the position, so piece safety should come before general opening goals.", len(hp))
+	}
+	if forks, ok := state["forks"].([]interface{}); ok && len(forks) > 0 {
+		return "A fork is available or must be prevented, so calculate forcing moves before making a quiet improving move."
+	}
+	if pins, ok := state["pins"].([]interface{}); ok && len(pins) > 0 {
+		return "A pin is shaping the position, so be careful not to rely on a piece that cannot safely move."
+	}
+	return ""
+}
+
+func coachKnowledgeText(state map[string]interface{}) string {
+	ragContext, ok := state["rag_context"].(map[string]interface{})
+	if !ok {
+		return ""
+	}
+	for _, key := range []string{"tactic", "opening", "middlegame", "endgame", "general", "puzzle"} {
+		raw, ok := ragContext[key].(map[string]interface{})
+		if !ok {
+			continue
+		}
+		text, _ := raw["text"].(string)
+		summary := summarizeRAGText(text)
+		if summary == "" {
+			continue
+		}
+		return fmt.Sprintf("%s guidance: %s", key, summary)
+	}
+	return ""
 }

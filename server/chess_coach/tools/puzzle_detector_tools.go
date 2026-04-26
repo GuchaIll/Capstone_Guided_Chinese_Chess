@@ -36,7 +36,7 @@ func (t *PDFindTacticalMotifTool) Description() string {
 func (t *PDFindTacticalMotifTool) Parameters() []core.ToolParameter {
 	return []core.ToolParameter{
 		{Name: "fen", Type: "string", Description: "FEN position string", Required: true},
-		{Name: "depth", Type: "number", Description: "Search depth for best-move hint (default 15)", Required: false},
+		{Name: "depth", Type: "number", Description: "Search depth for best-move hint (default 5)", Required: false},
 	}
 }
 
@@ -49,7 +49,7 @@ func (t *PDFindTacticalMotifTool) Execute(ctx context.Context, args json.RawMess
 		return "", fmt.Errorf("find_tactical_motif: %w", err)
 	}
 	if p.Depth <= 0 {
-		p.Depth = 15
+		p.Depth = 5
 	}
 
 	det, err := t.Engine.DetectPuzzle(ctx, p.FEN, p.Depth)
@@ -128,7 +128,7 @@ func (t *PDGeneratePuzzleTool) Execute(ctx context.Context, args json.RawMessage
 	var solution []solutionStep
 
 	for i := 0; i < p.SolutionDepth; i++ {
-		bestMove, score, err := t.Engine.Suggest(ctx, currentFEN, 20)
+		bestMove, score, err := t.Engine.Suggest(ctx, currentFEN, 5)
 		if err != nil || bestMove == "" {
 			break
 		}
@@ -453,13 +453,13 @@ func RegisterPuzzleDetectorTools(reg *core.ToolRegistry, eng engine.EngineClient
 // Helpers
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// clampDepth keeps depth within the engine's accepted range [1, 10].
+// clampDepth keeps depth within the coaching service's performance target [1, 5].
 func clampDepth(d int) int {
 	if d < 1 {
 		return 1
 	}
-	if d > 10 {
-		return 10
+	if d > 5 {
+		return 5
 	}
 	return d
 }

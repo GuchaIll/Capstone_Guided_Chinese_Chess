@@ -3,6 +3,7 @@ package agents
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"go_agent_framework/core"
 	"go_agent_framework/observability"
@@ -27,13 +28,12 @@ func (a *PuzzleCuratorAgent) Capabilities() core.AgentCapabilities {
 }
 
 func (a *PuzzleCuratorAgent) Run(ctx *core.Context) error {
-	if abort, _ := ctx.State["blunder_abort"].(bool); abort {
-		observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID, "Blunder abort active, skipping puzzle curator.")
-		return nil
-	}
 	if skip, _ := ctx.State["route_puzzle"].(bool); !skip {
 		observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID, "Puzzle generation not requested, skipping.")
 		return nil
+	}
+	if abort, _ := ctx.State["blunder_abort"].(bool); abort {
+		observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID, "Blunder abort active, generating follow-up puzzle from the current position.")
 	}
 
 	fen, _ := ctx.State["fen"].(string)
@@ -54,7 +54,9 @@ func (a *PuzzleCuratorAgent) Run(ctx *core.Context) error {
 	}
 
 	// Step 1: Find tactical motifs.
-	motifArgs, _ := json.Marshal(map[string]interface{}{"fen": fen, "depth": 15})
+	// Keep motif detection shallow so puzzle generation doesn't stall the live
+	// coaching path on complex positions.
+	motifArgs, _ := json.Marshal(map[string]interface{}{"fen": fen, "depth": 5})
 	motifCall := core.ToolCall{ID: "pc_motif_1", Name: "find_tactical_motif", Args: motifArgs}
 	observability.PublishToolCall(ctx.GraphName, a.Name(), ctx.SessionID, motifCall.Name, map[string]interface{}{"fen": fen})
 
@@ -131,6 +133,20 @@ func (a *PuzzleCuratorAgent) Run(ctx *core.Context) error {
 		ctx.State["puzzle_themes"] = tagData
 	}
 
+	ctx.AgentName = a.Name()
+	puzzleContext := strings.TrimSpace(joinStrings(nonEmpty(
+		"puzzle objective",
+		solution,
+		stringValue(motifData["description"]),
+		stringValue(tagResult.Output),
+	), " "))
+	if puzzleContext != "" {
+		retrieveRAGSection(ctx, a.Tools, "puzzle", "explain_puzzle_objective", map[string]interface{}{
+			"puzzle_context": puzzleContext,
+			"top_k":          3,
+		})
+	}
+
 	observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID, "Puzzle generated and tagged.")
 	ctx.Logger.Info("puzzle_curator complete", "puzzle", puzzleData)
 	return nil
@@ -145,4 +161,11 @@ func joinStrings(parts []string, sep string) string {
 		result += sep + p
 	}
 	return result
+}
+
+func stringValue(value interface{}) string {
+	if s, ok := value.(string); ok {
+		return s
+	}
+	return ""
 }

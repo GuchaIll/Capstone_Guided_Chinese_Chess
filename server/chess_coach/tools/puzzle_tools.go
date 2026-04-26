@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"go_agent_framework/core"
 	"chess_coach/engine"
+	"go_agent_framework/core"
 )
 
 // FindTacticalMotifTool detects tactical patterns in a position using engine analysis.
@@ -15,12 +15,14 @@ type FindTacticalMotifTool struct {
 	Engine engine.EngineClient
 }
 
-func (t *FindTacticalMotifTool) Name() string        { return "find_tactical_motif" }
-func (t *FindTacticalMotifTool) Description() string { return "Detect tactical motifs (fork, pin, skewer, etc.) in a position via engine analysis." }
+func (t *FindTacticalMotifTool) Name() string { return "find_tactical_motif" }
+func (t *FindTacticalMotifTool) Description() string {
+	return "Detect tactical motifs (fork, pin, skewer, etc.) in a position via engine analysis."
+}
 func (t *FindTacticalMotifTool) Parameters() []core.ToolParameter {
 	return []core.ToolParameter{
 		{Name: "fen", Type: "string", Description: "FEN position string", Required: true},
-		{Name: "depth", Type: "number", Description: "Search depth (default 15)", Required: false},
+		{Name: "depth", Type: "number", Description: "Search depth (default 5)", Required: false},
 	}
 }
 
@@ -33,7 +35,7 @@ func (t *FindTacticalMotifTool) Execute(ctx context.Context, args json.RawMessag
 		return "", fmt.Errorf("find_tactical_motif: %w", err)
 	}
 	if p.Depth <= 0 {
-		p.Depth = 15
+		p.Depth = 5
 	}
 
 	// Try full analysis first for real tactical data.
@@ -165,10 +167,10 @@ func (t *GeneratePuzzleTool) Execute(ctx context.Context, args json.RawMessage) 
 	var solution []solutionStep
 
 	for i := 0; i < p.SolutionDepth; i++ {
-		bestMove, score, err := t.Engine.Suggest(ctx, currentFEN, 20)
+		bestMove, score, err := t.Engine.Suggest(ctx, currentFEN, 5)
 		if err != nil || bestMove == "" {
 			// Fallback to legacy analysis.
-			metrics, err2 := t.Engine.Analyze(ctx, currentFEN, 20)
+			metrics, err2 := t.Engine.Analyze(ctx, currentFEN, 5)
 			if err2 != nil {
 				break
 			}
@@ -291,7 +293,7 @@ func (t *ValidatePuzzleSolutionTool) validateSequential(ctx context.Context, fen
 	var wrongAt = -1
 
 	for i, mv := range userMoves {
-		metrics, err := t.Engine.Analyze(ctx, currentFEN, 20)
+		metrics, err := t.Engine.Analyze(ctx, currentFEN, 5)
 		if err != nil {
 			return "", fmt.Errorf("validate_puzzle_solution: %w", err)
 		}
@@ -446,8 +448,10 @@ type GenerateHintTool struct {
 	Engine engine.EngineClient
 }
 
-func (t *GenerateHintTool) Name() string        { return "generate_hint" }
-func (t *GenerateHintTool) Description() string { return "Generate a hint for a puzzle position using a shallow engine search." }
+func (t *GenerateHintTool) Name() string { return "generate_hint" }
+func (t *GenerateHintTool) Description() string {
+	return "Generate a hint for a puzzle position using a shallow engine search."
+}
 func (t *GenerateHintTool) Parameters() []core.ToolParameter {
 	return []core.ToolParameter{
 		{Name: "fen", Type: "string", Description: "Current puzzle FEN", Required: true},

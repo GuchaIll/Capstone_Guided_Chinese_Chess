@@ -69,6 +69,7 @@ func writeBlunderPath(sb *strings.Builder, state map[string]interface{}) {
 func writeAnalysisPath(sb *strings.Builder, state map[string]interface{}) {
 	writeEngineSection(sb, state)
 	writePuzzleSection(sb, state)
+	writeRAGSection(sb, state)
 	writeCoachSection(sb, state)
 }
 
@@ -81,16 +82,27 @@ func writeEngineSection(sb *strings.Builder, state map[string]interface{}) {
 	if score, ok := metrics["search_score"]; ok {
 		eval = score
 	}
-	bestMove := metrics["best_move"]
+	bestMove := ""
 	if mf, ok := metrics["move_features"].(map[string]interface{}); ok {
 		if mm, ok := mf["move_metadata"].(map[string]interface{}); ok {
-			bestMove = mm["move_str"]
+			bestMove = fmt.Sprint(mm["move_str"])
 		}
+	} else if bm, ok := metrics["best_move"]; ok {
+		bestMove = fmt.Sprint(bm)
 	}
-	sb.WriteString(fmt.Sprintf("Evaluation: %v  |  Best move: %v\n", eval, bestMove))
+	if bestMove == "<nil>" {
+		bestMove = ""
+	}
+	if bestMove != "" {
+		sb.WriteString(fmt.Sprintf("Evaluation: %v  |  Best move: %s\n", eval, bestMove))
+	} else {
+		sb.WriteString(fmt.Sprintf("Evaluation: %v\n", eval))
+	}
 
 	if pv, ok := state["principal_variation"].(map[string]interface{}); ok {
-		sb.WriteString(fmt.Sprintf("Best line: %v\n", pv["pv"]))
+		if bestLine := fmt.Sprint(pv["pv"]); bestLine != "" && bestLine != "<nil>" {
+			sb.WriteString(fmt.Sprintf("Best line: %s\n", bestLine))
+		}
 	}
 }
 
@@ -120,5 +132,61 @@ func writeCoachSection(sb *strings.Builder, state map[string]interface{}) {
 		return
 	}
 	trigger, _ := state["coach_trigger"].(string)
-	sb.WriteString(fmt.Sprintf("\nCoaching advice [%s]:\n%s\n", trigger, advice))
+	sb.WriteString(fmt.Sprintf("\nCoaching advice [%s]:\n%s\n", trigger, truncateWords(advice, 320)))
+}
+
+func writeRAGSection(sb *strings.Builder, state map[string]interface{}) {
+	advice, _ := state["coaching_advice"].(string)
+	approved, _ := state["coach_advice_approved"].(bool)
+	if advice != "" && approved {
+		return
+	}
+
+	ragContext, ok := state["rag_context"].(map[string]interface{})
+	if !ok || len(ragContext) == 0 {
+		return
+	}
+
+	orderedKeys := []string{"general", "opening", "middlegame", "endgame", "tactic", "puzzle"}
+	for _, key := range orderedKeys {
+		raw, ok := ragContext[key].(map[string]interface{})
+		if !ok {
+			continue
+		}
+		text, _ := raw["text"].(string)
+		if strings.TrimSpace(text) == "" {
+			continue
+		}
+		snippet := summarizeRAGText(text)
+		if snippet == "" {
+			continue
+		}
+		sb.WriteString(fmt.Sprintf("\nGuidance [%s]: %s\n", key, snippet))
+		break
+	}
+}
+
+func summarizeRAGText(text string) string {
+	text = strings.Join(strings.Fields(strings.TrimSpace(text)), " ")
+	if text == "" {
+		return ""
+	}
+	if idx := strings.IndexAny(text, ".!?"); idx > 0 {
+		text = text[:idx+1]
+	}
+	if len(text) > 180 {
+		text = strings.TrimSpace(text[:180]) + "..."
+	}
+	return truncateWords(text, 28)
+}
+
+func truncateWords(text string, maxWords int) string {
+	if maxWords <= 0 {
+		return ""
+	}
+	words := strings.Fields(strings.TrimSpace(text))
+	if len(words) <= maxWords {
+		return strings.Join(words, " ")
+	}
+	return strings.Join(words[:maxWords], " ") + "..."
 }

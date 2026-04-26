@@ -116,9 +116,35 @@ func (a *PositionAnalystAgent) Run(ctx *core.Context) error {
 	if p, ok := ctx.State["game_phase"].(string); ok {
 		phaseDisplay = p
 	}
+	bestMoveText := ""
+	if bestMoveDisplay != nil {
+		bestMoveText = fmt.Sprint(bestMoveDisplay)
+		if bestMoveText == "<nil>" {
+			bestMoveText = ""
+		}
+	}
+
+	ctx.AgentName = a.Name()
+	switch phaseDisplay {
+	case "opening":
+		retrieveRAGSection(ctx, a.Tools, "opening", "get_opening_plan", map[string]interface{}{
+			"position_description": buildOpeningRAGQuery(ctx.State, bestMoveText),
+			"top_k":                3,
+		})
+	case "middlegame":
+		retrieveRAGSection(ctx, a.Tools, "middlegame", "get_middlegame_theme", map[string]interface{}{
+			"position_features": buildMiddlegameRAGQuery(ctx.State, bestMoveText),
+			"top_k":             3,
+		})
+	case "endgame":
+		retrieveRAGSection(ctx, a.Tools, "endgame", "get_endgame_principle", map[string]interface{}{
+			"position_features": buildEndgameRAGQuery(ctx.State),
+			"top_k":             3,
+		})
+	}
 
 	// Detect tactical patterns and optionally upgrade the coach trigger.
-	tacticalFound := hasPatterns(ctx.State)
+	tacticalFound := hasCriticalPatterns(ctx.State)
 	ctx.State["tactical_pattern_detected"] = tacticalFound
 	if tacticalFound {
 		if trigger, _ := ctx.State["coach_trigger"].(string); trigger == "none" {
@@ -132,7 +158,7 @@ func (a *PositionAnalystAgent) Run(ctx *core.Context) error {
 	return nil
 }
 
-func hasPatterns(state map[string]interface{}) bool {
+func hasCriticalPatterns(state map[string]interface{}) bool {
 	if hp, ok := state["hanging_pieces"].([]interface{}); ok && len(hp) > 0 {
 		return true
 	}

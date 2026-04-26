@@ -1,9 +1,9 @@
 package chess
 
 import (
+	"chess_coach/agents"
 	"go_agent_framework/contrib/llm"
 	"go_agent_framework/core"
-	"chess_coach/agents"
 )
 
 // BuildGraph wires the chess-coach pipeline:
@@ -30,6 +30,7 @@ func BuildGraph(tools *core.ToolRegistry, skills *core.SkillRegistry, models llm
 		AddSerial(&agents.CoachAgent{
 			LLM:    models.For(llm.RoleAnalysis),
 			Skills: skills,
+			Tools:  tools,
 		}).
 		AddSerial(&agents.GuardAgent{Tools: tools}).
 		AddSerial(&agents.FeedbackAgent{})

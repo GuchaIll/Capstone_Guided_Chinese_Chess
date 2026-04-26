@@ -124,7 +124,15 @@ class EngineRelay:
         msg: dict[str, str] = {"type": "reset"}
         if command_id:
             msg["command_id"] = command_id
-        return await self._send_and_wait(msg, expect_type="state", timeout=timeout)
+        result = await self._send_and_wait(msg, expect_type="state", timeout=timeout)
+        # Sync last_engine_seq with the engine's post-reset seq so that
+        # subsequent observer events are not discarded as stale.
+        new_seq = result.get("seq")
+        if isinstance(new_seq, int):
+            self.last_engine_seq = new_seq
+        else:
+            self.last_engine_seq = 0
+        return result
 
     # ── Request-response methods (wait for engine reply) ─────────────
 
@@ -184,7 +192,7 @@ class EngineRelay:
         return await self._send_and_wait(
             {"type": "detect_puzzle", "fen": fen, "depth": depth},
             expect_type="puzzle_detection",
-            timeout=60.0,
+            timeout=90.0,
         )
 
     async def send_validate_fen(self, fen: str) -> dict:
@@ -225,10 +233,20 @@ class EngineRelay:
             command_writer: asyncio.Task[None] | None = None
             try:
                 logger.info("Connecting to engine at %s", ENGINE_WS_URL)
-                async with websockets.connect(ENGINE_WS_URL) as observer_ws:
+                async with websockets.connect(
+                    ENGINE_WS_URL,
+                    ping_interval=30,
+                    ping_timeout=120,
+                    close_timeout=5,
+                ) as observer_ws:
                     self._observer_ws = observer_ws
                     self.observer_connected = True
-                    async with websockets.connect(ENGINE_WS_URL) as command_ws:
+                    async with websockets.connect(
+                        ENGINE_WS_URL,
+                        ping_interval=30,
+                        ping_timeout=120,
+                        close_timeout=5,
+                    ) as command_ws:
                         self._command_ws = command_ws
                         self.command_connected = True
                         self.connected = True
