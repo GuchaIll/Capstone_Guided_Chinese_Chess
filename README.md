@@ -594,6 +594,7 @@ npm run dev
 | [bridge_server_flow.md](bridge_server_flow.md) | Complete state bridge sequence diagrams: End Turn → CV → validation → LED sync, SSE event reference, engine relay patterns |
 | [agents_flow.md](agents_flow.md) | Full 9-agent coaching pipeline: per-agent state reads/writes, bridge endpoint calls, tool registry, coach trigger logic |
 | [led_controller_manual.md](led_controller_manual.md) | LED board hardware reference, color guide, step-by-step game sequences, troubleshooting |
+| [hardware_setup.md](docs/hardware_setup.md) | Step-by-step setup for the main computer, CV computer, and Raspberry Pi LED controller |
 
 ---
 
