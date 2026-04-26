@@ -225,7 +225,7 @@ Reports are written to `manifests/chromadb_validation_latest.json` and `manifest
 Run the entire system locally without an API key:
 
 ```bash
-git clone <repo-url>
+git clone --recurse-submodules <repo-url>
 cd Capstone_Guided_Chinese_Chess
 cp .env.example .env
 docker compose up --build
@@ -358,6 +358,13 @@ Capstone_Guided_Chinese_Chess/
 │   │   ├── tools/                # Engine tools, RAG tools, puzzle tools
 │   │   └── skills/               # Coaching skill definitions (JSON)
 │   │
+│   ├── go_agent_framework/       # Git submodule — reusable Go agent runtime
+│   │   ├── core/                 # Agent graph engine, node lifecycle, SSE bus
+│   │   ├── contrib/              # Optional integrations (LLM adapters, RAG helpers)
+│   │   ├── dashboard/            # Embedded web dashboard (agent graph visualizer)
+│   │   ├── observability/        # Prometheus metrics and tracing helpers
+│   │   └── examples/             # Standalone usage examples
+│   │
 │   ├── agent_orchestration/      # Python — LLM orchestration, session memory
 │   │   ├── agents/               # Specialist agent implementations
 │   │   └── tools/                # Engine client, RAG retriever, LLM client
@@ -435,6 +442,22 @@ Capstone_Guided_Chinese_Chess/
 ```bash
 git clone <repo-url>
 cd Capstone_Guided_Chinese_Chess
+```
+
+### 1a. Initialize Submodules
+
+This repository includes `server/go_agent_framework` as a Git submodule. After cloning, initialize it:
+
+```bash
+git submodule update --init --recursive
+```
+
+If you cloned with `--recurse-submodules` the submodule is already populated and you can skip this step.
+
+To update the submodule to its latest commit in the future:
+
+```bash
+git submodule update --remote server/go_agent_framework
 ```
 
 ### 2. Configure Environment
