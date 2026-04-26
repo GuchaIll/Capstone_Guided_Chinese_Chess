@@ -62,6 +62,7 @@ You will need:
 - A camera aimed at the board
 - A NeoPixel GRBW strip wired to Raspberry Pi GPIO `D18`
 - This repository checked out on every machine that needs to run code
+- Download trained YOLOv8 weights (https://drive.google.com/uc?export=download&id=105-iI2_ArfrD1dKi1qAU0owMpz2jPXdq)
 
 One repo detail is important before setup:
 
