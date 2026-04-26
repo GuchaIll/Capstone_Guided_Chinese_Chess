@@ -238,6 +238,15 @@ That means the normal physical move flow today is:
 
 This machine runs the LED hardware layer and subscribes to the bridge SSE stream.
 
+Notes:
+The Raspberry Pi must be on a stable network before adding CMU-DEVICE.
+It is strongly recommended to:
+first connect the Pi to a personal hotspot
+verify SSH access works only then add additional networks (e.g. CMU-DEVICE)
+Switching networks can change the Pi’s IP address, which will break SSH unless rediscovered.
+CMU-DEVICE may:
+require MAC address registration isolate devices (SSH from laptop may not work even if connected)
+
 ### Step 1. Prepare the Pi
 
 On the Raspberry Pi:
@@ -324,10 +333,89 @@ On the main computer hardware dashboard, LED activity should start appearing onc
 
 ---
 
-## 6. Recommended Startup Order
+## 6. Configure WiFi fallback
+To avoid losing SSH access when switching networks:
+
+nmcli connection modify "<hotspot-name>" connection.autoconnect yes
+nmcli connection modify "<hotspot-name>" connection.autoconnect-priority 10
+
+nmcli connection modify CMU-DEVICE connection.autoconnect yes
+nmcli connection modify CMU-DEVICE connection.autoconnect-priority 5
+
+This ensures:
+the Pi prefers your hotspot
+CMU-DEVICE is used only when the hotspot is unavailable
+
+## 7. Finding the Raspberry Pi IP
+
+When connected to a hotspot, you can find the Pi’s IP from your laptop: arp -a
+
+Look for the Pi’s MAC address: d8:3a:dd:10:74:a1
+
+Then connect: ssh pi@<ip-address>
+
+## 8. SSH Warning After Reflashing
+If you see: WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED
+Run on your laptop: ssh-keygen -R <pi-ip>
+Then reconnect: ssh pi@<pi-ip>
+
+## 9. LED Layout Notes
+The LED board uses a custom mapping, not a simple grid.
+Only specific LED indices correspond to valid board positions.
+Example indices:[1, 4, 7, 10, 13, 16, 19, 22, 25, ... , 78]
+Some rows contain different LED counts (e.g., 27 or 28 LEDs) due to spacing.
+If modifying layout or addressing, update: ledsystem/led_board.py
+
+## 10. LED Layout Notes
+The LED system uses specific colors to represent board state, move suggestions, and system feedback. These colors are defined in the LED controller and are used consistently across display modes.
+
+Move Visualization: 
+When a piece is selected (show_moves):
+Selected square → Red
+Legal empty moves → White
+Capture moves → Orange
+Best move → Green
+
+This creates a layered meaning:
+White = safe move
+Orange = attack
+Green = suggested action
+
+Opponent Move Display:
+When showing an opponent move (show_opponent_move):
+From square → Blue
+To square → Purple
+This visually distinguishes opponent actions from player guidance.
+
+Board Zone Visualization: 
+When showing starting zones (show_start_zones):
+Top half of board → Blue
+Bottom half → Green
+Middle rows (river) → Cyan
+Palace areas → Red
+
+This mode is primarily used for:
+debugging board orientation
+validating LED mapping
+
+Win Animation:
+When a win is detected (celebrate_win):
+A randomized color pattern is displayed over:
+top half (black win), or
+bottom half (red win)
+Colors are randomly selected from:
+RED, GREEN, BLUE, YELLOW, PURPLE, CYAN, PINK, ORANGE
+
+## 11. Quick LED Test
+To verify LED hardware independently of the full system: sudo .venv/bin/python ledsystem/run_led.py
+
+This test runs:
+piece highlighting
+move visualization
+board zones
+win animations
 
 Bring the system up in this order:
-
 1. Start the Docker stack on the main computer.
 2. Confirm `http://<main-ip>:5003/health` is healthy.
 3. Start `ledsystem/led_server.py` on the Raspberry Pi.
@@ -339,7 +427,7 @@ This order makes debugging much easier because each downstream machine can immed
 
 ---
 
-## 7. First End-to-End Test
+## 8. First End-to-End Test
 
 Use this sequence for the first bring-up test.
 
