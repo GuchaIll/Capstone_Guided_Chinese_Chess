@@ -47,6 +47,7 @@ class LEDBoard:
         self.PINK = (255,0,120,0)
 
         self.board_state = [["." for _ in range(9)] for _ in range(10)]
+        self._pending_display = None
 
     # ===================== BASIC =====================
     def clear(self):
@@ -66,9 +67,32 @@ class LEDBoard:
         Re-enable LED updates after CV is done.
         """
         self.cv_mode = False
+        if self._pending_display is not None:
+            action, payload = self._pending_display
+            self._pending_display = None
+            if action == "render_board":
+                self.render_board()
+            elif action == "show_moves":
+                self.show_moves("", payload["row"], payload["col"])
+            elif action == "show_opponent_move":
+                self.show_opponent_move(
+                    payload["from_r"],
+                    payload["from_c"],
+                    payload["to_r"],
+                    payload["to_c"],
+                )
+            elif action == "show_start_zones":
+                self.show_start_zones()
+            elif action == "celebrate_win":
+                self.celebrate_win(payload["side"])
+        else:
+            self.render_board()
 
     def set_square(self, r, c, color):
         self.pixels[self.BOARD_LED_MAP[r][c]] = color
+
+    def _queue_display(self, action, payload=None):
+        self._pending_display = (action, payload or {})
 
     def in_bounds(self, r, c):
         return 0 <= r < self.ROWS and 0 <= c < self.COLS
@@ -92,6 +116,19 @@ class LEDBoard:
         return 0 <= r <= 2 and 3 <= c <= 5
 
     # ===================== FEN =====================
+    def normalize_piece(self, piece):
+        translation = {
+            "n": "h",
+            "N": "H",
+            "b": "e",
+            "B": "E",
+            "g": "k",
+            "G": "K",
+            "s": "p",
+            "S": "P",
+        }
+        return translation.get(piece, piece)
+
     def set_fen(self, fen):
         rows = fen.split()[0].split("/")
         board = []
@@ -101,9 +138,27 @@ class LEDBoard:
                 if ch.isdigit():
                     expanded.extend(["."] * int(ch))
                 else:
-                    expanded.append(ch)
+                    expanded.append(self.normalize_piece(ch))
             board.append(expanded)
         self.board_state = board
+        if self.cv_mode:
+            self._queue_display("render_board")
+        else:
+            self.render_board()
+
+    def render_board(self):
+        if self.cv_mode:
+            self._queue_display("render_board")
+            return
+
+        self.clear()
+        for r in range(self.ROWS):
+            for c in range(self.COLS):
+                piece = self.board_state[r][c]
+                if piece == ".":
+                    continue
+                self.set_square(r, c, self.RED if self.piece_side(piece) == "red" else self.BLUE)
+        self.pixels.show()
 
     # ===================== MOVES =====================
     def chariot_moves(self, r, c):
@@ -234,6 +289,7 @@ class LEDBoard:
     # ===================== DISPLAY =====================
     def show_moves(self, piece_name, r, c):
         if self.cv_mode:
+            self._queue_display("show_moves", {"row": r, "col": c})
             return
 
         if self.board_state[r][c]==".":
@@ -259,6 +315,10 @@ class LEDBoard:
 
     def show_opponent_move(self, fr, fc, tr, tc):
         if self.cv_mode:
+            self._queue_display(
+                "show_opponent_move",
+                {"from_r": fr, "from_c": fc, "to_r": tr, "to_c": tc},
+            )
             return
         self.clear()
         self.set_square(fr,fc,self.BLUE)
@@ -268,6 +328,7 @@ class LEDBoard:
     # ===================== ZONES =====================
     def show_start_zones(self):
         if self.cv_mode:
+            self._queue_display("show_start_zones")
             return
 
         self.clear()
@@ -297,6 +358,7 @@ class LEDBoard:
     # ===================== WIN =====================
     def celebrate_win(self, side):
         if self.cv_mode:
+            self._queue_display("celebrate_win", {"side": side})
             return
 
         start = time.time()

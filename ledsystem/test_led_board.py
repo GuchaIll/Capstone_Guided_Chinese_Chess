@@ -1,0 +1,58 @@
+from __future__ import annotations
+
+import importlib
+import sys
+import types
+
+
+class FakePixels:
+    def __init__(self, _pin, count, **_kwargs):
+        self.values = [(0, 0, 0, 0)] * count
+        self.show_calls = 0
+
+    def __setitem__(self, index, value):
+        self.values[index] = value
+
+    def fill(self, value):
+        self.values = [value] * len(self.values)
+
+    def show(self):
+        self.show_calls += 1
+
+
+def load_led_board_module():
+    fake_board = types.SimpleNamespace(D18="D18")
+    fake_neopixel = types.SimpleNamespace(GRBW="GRBW", NeoPixel=FakePixels)
+    sys.modules["board"] = fake_board
+    sys.modules["neopixel"] = fake_neopixel
+    sys.modules.pop("led_board", None)
+    return importlib.import_module("led_board")
+
+
+def test_set_fen_normalizes_engine_notation_and_renders_board():
+    led_board = load_led_board_module()
+    board = led_board.LEDBoard()
+
+    board.set_fen("4n4/9/9/9/9/9/9/9/9/4B4 w - - 0 1")
+
+    assert board.board_state[0][4] == "h"
+    assert board.board_state[9][4] == "E"
+    assert board.pixels.show_calls >= 1
+    assert board.pixels.values[board.BOARD_LED_MAP[0][4]] == board.BLUE
+    assert board.pixels.values[board.BOARD_LED_MAP[9][4]] == board.RED
+
+
+def test_cv_resume_replays_pending_move_highlight():
+    led_board = load_led_board_module()
+    board = led_board.LEDBoard()
+    board.set_fen("9/9/9/9/9/9/9/9/9/R8 w - - 0 1")
+
+    board.cv_pause()
+    board.show_moves("", 9, 0)
+
+    assert board._pending_display == ("show_moves", {"row": 9, "col": 0})
+
+    board.cv_resume()
+
+    assert board._pending_display is None
+    assert board.pixels.values[board.BOARD_LED_MAP[9][0]] == board.RED
