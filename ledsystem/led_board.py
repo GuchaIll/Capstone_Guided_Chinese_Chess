@@ -117,15 +117,15 @@ class LEDBoard:
 
     # ===================== FEN =====================
     def normalize_piece(self, piece):
+        # The repo's engine/bridge FEN uses chess-style letters for two
+        # Xiangqi pieces: N/n for horse and B/b for elephant. The LED move
+        # generator below uses H/h and E/e internally, so translate only
+        # those incoming engine variants here.
         translation = {
             "n": "h",
             "N": "H",
             "b": "e",
             "B": "E",
-            "g": "k",
-            "G": "K",
-            "s": "p",
-            "S": "P",
         }
         return translation.get(piece, piece)
 
