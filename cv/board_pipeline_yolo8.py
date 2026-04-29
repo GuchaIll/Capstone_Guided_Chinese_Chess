@@ -23,10 +23,14 @@ REQUIRED_IDS = [0, 1, 2, 3]
 WARP_W = 900
 WARP_H = 1000
 
+# These control how much source area is used for perspective warp.
+# Bigger pad = zoom out, more area visible.
+# Smaller or negative pad = zoom in, less area visible.
 LEFT_PAD = -20
 RIGHT_PAD = -20
 TOP_PAD = -110
 BOTTOM_PAD = -110
+PAD_STEP = 10
 
 BOARD_LEFT = 75
 BOARD_RIGHT = 825
@@ -45,7 +49,7 @@ SHOW_WARPED_WINDOW = True
 SHOW_DETECTIONS_WINDOW = True
 
 MODEL_PATH = "cv/models/best.pt"
-YOLO_IMGSZ = 960
+YOLO_IMGSZ = 640
 YOLO_CONF = 0.25
 YOLO_DEVICE = "cpu"
 
@@ -59,7 +63,7 @@ USE_MANUAL_GRID_CALIBRATION = True
 GRID_CALIBRATION_FILE = "cv/calibration/grid_calibration.npy"
 GRID_OUTER_OFFSET = 50
 
-LED_HANDSHAKE_ENABLED = True
+LED_HANDSHAKE_ENABLED = False
 LED_OFF_BEFORE_CAPTURE_SEC = 0.10
 LED_RESTORE_AFTER_CAPTURE = True
 
@@ -824,6 +828,37 @@ def process_capture(model, warped, grid, current_board_corners, last_valid_state
 
 
 # =========================
+# keyboard pad control
+# =========================
+
+def adjust_all_pads(delta):
+    global LEFT_PAD, RIGHT_PAD, TOP_PAD, BOTTOM_PAD
+
+    LEFT_PAD += delta
+    RIGHT_PAD += delta
+    TOP_PAD += delta
+    BOTTOM_PAD += delta
+
+    if delta > 0:
+        action = "zoom out / expand warp"
+    else:
+        action = "zoom in / shrink warp"
+
+    #print(f"{action}: L={LEFT_PAD}, R={RIGHT_PAD}, T={TOP_PAD}, B={BOTTOM_PAD}")
+
+
+def reset_pads_to_zero():
+    global LEFT_PAD, RIGHT_PAD, TOP_PAD, BOTTOM_PAD
+
+    LEFT_PAD = 0
+    RIGHT_PAD = 0
+    TOP_PAD = 0
+    BOTTOM_PAD = 0
+
+    #print("Reset warp pads to zero")
+
+
+# =========================
 # main
 # =========================
 
@@ -859,13 +894,20 @@ def main():
     }
 
     if SHOW_WARPED_WINDOW:
-        cv2.namedWindow("warped board with grid")
+        cv2.namedWindow("warped board with grid", cv2.WINDOW_NORMAL)
+        cv2.resizeWindow("warped board with grid", 900, 1000)
         if USE_MANUAL_GRID_CALIBRATION:
             cv2.setMouseCallback("warped board with grid", warped_mouse_callback)
 
     print(f"CV Flask server running at http://{CV_SERVER_HOST}:{CV_SERVER_PORT}")
     print("POST /capture to trigger one board capture")
     print("GET /last_result to see the latest FEN result")
+    print("Keyboard controls:")
+    print("  + or = : zoom out / expand warp")
+    print("  - or _ : zoom in / shrink warp")
+    print("  0      : reset pads to 0")
+    print("  r      : reset manual grid calibration")
+    print("  q/ESC  : quit")
 
     while True:
         ret, frame = cap.read()
@@ -885,6 +927,7 @@ def main():
             f'markers: {pipeline["marker_count"]}',
             f'full board: {"YES" if pipeline["have_full_board"] else "NO"}',
             "HTTP trigger: POST /capture",
+            "+/= zoom out, -/_ zoom in, 0 reset pad",
             "press q or ESC to quit",
         ]
 
@@ -912,11 +955,25 @@ def main():
             reset_grid_calibration()
             continue
 
+        if key == ord("=") or key == ord("+"):
+            adjust_all_pads(PAD_STEP)
+            continue
+
+        if key == ord("-") or key == ord("_"):
+            adjust_all_pads(-PAD_STEP)
+            continue
+
+        if key == ord("0"):
+            reset_pads_to_zero()
+            continue
+
         if warped is None:
             if SHOW_WARPED_WINDOW:
                 blank = np.zeros((WARP_H, WARP_W, 3), dtype=np.uint8)
                 blank = put_status_text(blank, ["Waiting for 4 ArUco markers"], color=(0, 0, 255))
                 cv2.imshow("warped board with grid", blank)
+                if USE_MANUAL_GRID_CALIBRATION:
+                    cv2.setMouseCallback("warped board with grid", warped_mouse_callback)
 
             with state_lock:
                 if capture_requested:
@@ -965,6 +1022,8 @@ def main():
 
         warped_status = [
             "HTTP capture: PENDING" if request_pending else "HTTP capture: waiting",
+            f"pad L/R/T/B: {LEFT_PAD}, {RIGHT_PAD}, {TOP_PAD}, {BOTTOM_PAD}",
+            "+/= zoom out, -/_ zoom in, 0 reset",
             f'grid calib mode: {"ON" if USE_MANUAL_GRID_CALIBRATION else "OFF"}',
             f'crop offset: {GRID_OUTER_OFFSET}',
             f'LED handshake: {"ON" if LED_HANDSHAKE_ENABLED else "OFF"}',
@@ -974,6 +1033,8 @@ def main():
 
         if SHOW_WARPED_WINDOW:
             cv2.imshow("warped board with grid", warped_disp)
+            if USE_MANUAL_GRID_CALIBRATION:
+                cv2.setMouseCallback("warped board with grid", warped_mouse_callback)
 
         with state_lock:
             should_capture = capture_requested
