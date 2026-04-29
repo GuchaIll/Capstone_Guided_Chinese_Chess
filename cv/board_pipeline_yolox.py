@@ -107,8 +107,6 @@ CLASS_TO_FEN = {
 }
 
 VALID_FEN_PIECES = set("RHEAGCSrheagcs")
-DEFAULT_SIDE_TO_MOVE = "w"
-DEFAULT_EXTRA_FEN = "- - 0 1"
 
 
 # =========================
@@ -657,10 +655,10 @@ def board_to_fen_rows(board):
     return rows_out
 
 
-def board_to_fen(board, side_to_move=DEFAULT_SIDE_TO_MOVE, extra_fen=DEFAULT_EXTRA_FEN):
+def board_to_fen(board):
     rows_out = board_to_fen_rows(board)
     board_part = "/".join(rows_out)
-    return f"{board_part} {side_to_move} {extra_fen}"
+    return board_part
 
 
 def count_pieces(board):
