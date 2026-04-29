@@ -1,11 +1,15 @@
 import os
 import cv2
-import numpy as np
-import time
 import math
 import json
+import time
+import threading
 import urllib.request
+import urllib.error
 from collections import Counter
+
+import numpy as np
+from flask import Flask, jsonify
 from ultralytics import YOLO
 
 
@@ -32,20 +36,15 @@ BOARD_BOTTOM = 945
 GRID_COLS = 9
 GRID_ROWS = 10
 
-STABLE_TIME_SEC = 0.20
-DIFF_THRESHOLD = 2.5
-BLUR_KSIZE = 5
-
-AUTO_CAPTURE_ENABLED = False
-MANUAL_CAPTURE_KEY = ord("c")
 SAVE_CAPTURE_IMAGE = True
-CAPTURE_PATH = "output/stable_capture.jpg"
+CAPTURE_PATH = "cv/output/http_capture.jpg"
+DEBUG_CROP_PATH = "cv/output/board_crop_debug.jpg"
 
 SHOW_RAW_WINDOW = True
 SHOW_WARPED_WINDOW = True
 SHOW_DETECTIONS_WINDOW = True
 
-MODEL_PATH = "models/best.pt"
+MODEL_PATH = "cv/models/best.pt"
 YOLO_IMGSZ = 960
 YOLO_CONF = 0.25
 YOLO_DEVICE = "cpu"
@@ -56,8 +55,8 @@ DISTANCE_THRESHOLD_RATIO = 0.45
 REQUIRE_FULL_BOARD_FOR_CAPTURE = True
 KEEP_LAST_VALID_BOARD = True
 
-USE_MANUAL_GRID_CALIBRATION = False
-GRID_CALIBRATION_FILE = "calibration/grid_calibration.npy"
+USE_MANUAL_GRID_CALIBRATION = True
+GRID_CALIBRATION_FILE = "cv/calibration/grid_calibration.npy"
 GRID_OUTER_OFFSET = 50
 
 LED_HANDSHAKE_ENABLED = True
@@ -65,6 +64,8 @@ LED_OFF_BEFORE_CAPTURE_SEC = 0.10
 LED_RESTORE_AFTER_CAPTURE = True
 
 BRIDGE_URL = os.getenv("BRIDGE_URL", "http://localhost:5003")
+CV_SERVER_HOST = os.getenv("CV_SERVER_HOST", "0.0.0.0")
+CV_SERVER_PORT = int(os.getenv("CV_SERVER_PORT", "5005"))
 
 # Uppercase = red, lowercase = black
 CLASS_TO_FEN = {
@@ -90,12 +91,49 @@ DEFAULT_EXTRA_FEN = "- - 0 1"
 
 
 # =========================
-# global calibration state
+# shared state
 # =========================
+
+app = Flask(__name__)
+state_lock = threading.Lock()
+
+capture_requested = False
+last_result = {
+    "status": "not_ready",
+    "fen": None,
+    "issues": [],
+    "detections": 0,
+    "assigned": 0,
+}
 
 calib_points = []
 calib_ready = False
 saved_board_corners = None
+
+
+# =========================
+# Flask endpoints
+# =========================
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok", "service": "cv"})
+
+
+@app.route("/capture", methods=["POST"])
+def request_capture():
+    global capture_requested
+
+    with state_lock:
+        capture_requested = True
+
+    return jsonify({"status": "capture_requested"})
+
+
+@app.route("/last_result", methods=["GET"])
+def get_last_result():
+    with state_lock:
+        return jsonify(last_result.copy())
 
 
 # =========================
@@ -117,16 +155,20 @@ def warped_mouse_callback(event, x, y, flags, param):
 
 def reset_grid_calibration():
     global calib_points, calib_ready, saved_board_corners
+
     calib_points = []
     calib_ready = False
     saved_board_corners = None
+
     if os.path.exists(GRID_CALIBRATION_FILE):
         os.remove(GRID_CALIBRATION_FILE)
         print(f"Deleted {GRID_CALIBRATION_FILE}")
+
     print("Grid calibration reset")
 
 
 def save_grid_calibration(points, path=GRID_CALIBRATION_FILE):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     arr = np.array(points, dtype=np.float32)
     np.save(path, arr)
     print(f"Saved grid calibration to {path}")
@@ -134,6 +176,7 @@ def save_grid_calibration(points, path=GRID_CALIBRATION_FILE):
 
 def load_grid_calibration(path=GRID_CALIBRATION_FILE):
     global saved_board_corners
+
     if os.path.exists(path):
         saved_board_corners = np.load(path).astype(np.float32)
         print(f"Loaded grid calibration from {path}")
@@ -143,6 +186,7 @@ def load_grid_calibration(path=GRID_CALIBRATION_FILE):
 
 def draw_points(img, points, color=(0, 0, 255), label_prefix=""):
     vis = img.copy()
+
     for i, p in enumerate(points):
         x, y = int(p[0]), int(p[1])
         cv2.circle(vis, (x, y), 6, color, -1)
@@ -153,18 +197,21 @@ def draw_points(img, points, color=(0, 0, 255), label_prefix=""):
             cv2.FONT_HERSHEY_SIMPLEX,
             0.6,
             color,
-            2
+            2,
         )
+
     return vis
 
 
 def board_corners_to_bounds(board_corners):
     xs = board_corners[:, 0]
     ys = board_corners[:, 1]
+
     board_left = float(np.min(xs))
     board_right = float(np.max(xs))
     board_top = float(np.min(ys))
     board_bottom = float(np.max(ys))
+
     return board_left, board_right, board_top, board_bottom
 
 
@@ -174,12 +221,15 @@ def get_board_corners_for_grid():
     if saved_board_corners is not None:
         return saved_board_corners.copy()
 
-    return np.array([
-        [BOARD_LEFT, BOARD_TOP],
-        [BOARD_RIGHT, BOARD_TOP],
-        [BOARD_RIGHT, BOARD_BOTTOM],
-        [BOARD_LEFT, BOARD_BOTTOM]
-    ], dtype=np.float32)
+    return np.array(
+        [
+            [BOARD_LEFT, BOARD_TOP],
+            [BOARD_RIGHT, BOARD_TOP],
+            [BOARD_RIGHT, BOARD_BOTTOM],
+            [BOARD_LEFT, BOARD_BOTTOM],
+        ],
+        dtype=np.float32,
+    )
 
 
 def crop_with_offset(img, board_corners, offset=50):
@@ -200,11 +250,7 @@ def order_board_corners(marker_dict):
     bottom_right = marker_dict[2][0]
     bottom_left = marker_dict[3][1]
 
-    src = np.array(
-        [top_left, top_right, bottom_right, bottom_left],
-        dtype=np.float32
-    )
-    return src
+    return np.array([top_left, top_right, bottom_right, bottom_left], dtype=np.float32)
 
 
 def draw_corner_points(img, pts, color=(255, 0, 0)):
@@ -218,7 +264,7 @@ def draw_corner_points(img, pts, color=(255, 0, 0)):
             cv2.FONT_HERSHEY_SIMPLEX,
             0.6,
             color,
-            2
+            2,
         )
 
 
@@ -270,7 +316,7 @@ def draw_grid_points(img, grid, radius=5):
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.35,
                 (0, 0, 255),
-                1
+                1,
             )
 
     return vis
@@ -340,7 +386,7 @@ def detect_and_warp_aruco(frame, detector, dst):
         left_pad=LEFT_PAD,
         right_pad=RIGHT_PAD,
         top_pad=TOP_PAD,
-        bottom_pad=BOTTOM_PAD
+        bottom_pad=BOTTOM_PAD,
     )
 
     result["aruco_src"] = src
@@ -354,45 +400,7 @@ def detect_and_warp_aruco(frame, detector, dst):
 
 
 # =========================
-# stability trigger
-# =========================
-
-def preprocess_for_stability(warped):
-    gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
-    gray = cv2.GaussianBlur(gray, (BLUR_KSIZE, BLUR_KSIZE), 0)
-    return gray
-
-
-def compute_frame_diff_score(prev_gray, curr_gray):
-    diff = cv2.absdiff(prev_gray, curr_gray)
-    score = float(np.mean(diff))
-    return score
-
-
-def update_stability_state(prev_gray, curr_gray, stable_since, diff_threshold):
-    score = compute_frame_diff_score(prev_gray, curr_gray)
-
-    if score < diff_threshold:
-        if stable_since is None:
-            stable_since = time.time()
-    else:
-        stable_since = None
-
-    return score, stable_since
-
-
-def is_stable_long_enough(stable_since, stable_time_sec):
-    if stable_since is None:
-        return False
-    return (time.time() - stable_since) >= stable_time_sec
-
-
-def reset_stability_state():
-    return None, None, False
-
-
-# =========================
-# yolo
+# YOLO
 # =========================
 
 def load_model(model_path):
@@ -405,7 +413,7 @@ def run_yolo_on_warped(model, warped):
         imgsz=YOLO_IMGSZ,
         conf=YOLO_CONF,
         verbose=False,
-        device=YOLO_DEVICE
+        device=YOLO_DEVICE,
     )
 
     result = results[0]
@@ -422,11 +430,14 @@ def run_yolo_on_warped(model, warped):
     for box, conf, cls_idx in zip(boxes_xyxy, confs, clss):
         x1, y1, x2, y2 = box.tolist()
         class_name = names[int(cls_idx)]
-        detections.append({
-            "bbox": [float(x1), float(y1), float(x2), float(y2)],
-            "conf": float(conf),
-            "class_name": class_name,
-        })
+
+        detections.append(
+            {
+                "bbox": [float(x1), float(y1), float(x2), float(y2)],
+                "conf": float(conf),
+                "class_name": class_name,
+            }
+        )
 
     return detections
 
@@ -464,13 +475,15 @@ def map_detections_to_grid(detections, grid):
         if dist > max_dist:
             continue
 
-        mapped.append({
-            **det,
-            "anchor": [float(cx), float(cy)],
-            "grid_rc": rc,
-            "grid_xy": [float(xy[0]), float(xy[1])],
-            "grid_dist": float(dist),
-        })
+        mapped.append(
+            {
+                **det,
+                "anchor": [float(cx), float(cy)],
+                "grid_rc": rc,
+                "grid_xy": [float(xy[0]), float(xy[1])],
+                "grid_dist": float(dist),
+            }
+        )
 
     return mapped
 
@@ -480,6 +493,7 @@ def resolve_grid_conflicts(mapped_detections):
 
     for det in mapped_detections:
         rc = det["grid_rc"]
+
         if rc not in best_per_cell:
             best_per_cell[rc] = det
             continue
@@ -520,7 +534,7 @@ def draw_assignments(img, assigned):
             cv2.FONT_HERSHEY_SIMPLEX,
             0.5,
             (255, 0, 255),
-            2
+            2,
         )
 
     return vis
@@ -584,16 +598,17 @@ def board_to_fen(board, side_to_move=DEFAULT_SIDE_TO_MOVE, extra_fen=DEFAULT_EXT
 
 def count_pieces(board):
     counter = Counter()
+
     for row in board:
         for cell in row:
             if cell != ".":
                 counter[cell] += 1
+
     return counter
 
 
 def sanity_check_board(board):
     issues = []
-
     counter = count_pieces(board)
     total_pieces = sum(counter.values())
 
@@ -662,7 +677,7 @@ def put_status_text(img, lines, x=20, y=30, dy=30, color=(0, 255, 255)):
             cv2.FONT_HERSHEY_SIMPLEX,
             0.75,
             color,
-            2
+            2,
         )
         yy += dy
 
@@ -670,31 +685,33 @@ def put_status_text(img, lines, x=20, y=30, dy=30, color=(0, 255, 255)):
 
 
 # =========================
-# LED handshake
+# bridge / LED
 # =========================
 
 def _bridge_post(path, payload):
-    """POST JSON to the state bridge. Fails silently if bridge is down."""
     try:
         data = json.dumps(payload).encode()
         req = urllib.request.Request(
             f"{BRIDGE_URL}{path}",
             data=data,
             headers={"Content-Type": "application/json"},
-            method="POST"
+            method="POST",
         )
+
         with urllib.request.urlopen(req, timeout=2) as res:
             status = res.getcode()
             if status >= 400:
                 print(f"[bridge] {path} failed: {status}")
                 return False
             return True
+
     except urllib.error.HTTPError as e:
         print(f"[bridge] {path} HTTP error: {e.code}")
     except urllib.error.URLError as e:
         print(f"[bridge] {path} connection failed: {e.reason}")
     except Exception as exc:
         print(f"[bridge] {path} unexpected error: {exc}")
+
     return False
 
 
@@ -726,11 +743,92 @@ def prepare_frame_for_capture(warped):
 
 
 # =========================
+# capture pipeline
+# =========================
+
+def process_capture(model, warped, grid, current_board_corners, last_valid_state):
+    last_valid_board = last_valid_state["board"]
+    last_valid_fen = last_valid_state["fen"]
+    last_assigned = last_valid_state["assigned"]
+
+    capture_frame = prepare_frame_for_capture(warped)
+
+    if SAVE_CAPTURE_IMAGE:
+        os.makedirs(os.path.dirname(CAPTURE_PATH), exist_ok=True)
+        cv2.imwrite(CAPTURE_PATH, capture_frame)
+        print(f"Saved capture to {CAPTURE_PATH}")
+
+    if DEBUG_CROP_PATH:
+        os.makedirs(os.path.dirname(DEBUG_CROP_PATH), exist_ok=True)
+        crop_debug = crop_with_offset(capture_frame, current_board_corners, GRID_OUTER_OFFSET)
+        cv2.imwrite(DEBUG_CROP_PATH, crop_debug)
+
+    detections = run_yolo_on_warped(model, capture_frame)
+    mapped = map_detections_to_grid(detections, grid)
+    assigned = resolve_grid_conflicts(mapped)
+    board, unknown_classes = assigned_to_board(assigned)
+    issues = sanity_check_board(board)
+    fen = board_to_fen(board)
+
+    use_this_board = True
+
+    if unknown_classes:
+        issues.append("unknown classes: " + ", ".join(sorted(set(unknown_classes))))
+
+    if issues and KEEP_LAST_VALID_BOARD and last_valid_board is not None:
+        use_this_board = False
+
+    if use_this_board:
+        if not issues:
+            last_valid_state["board"] = [row[:] for row in board]
+            last_valid_state["fen"] = fen
+            last_valid_state["assigned"] = assigned[:]
+    else:
+        board = [row[:] for row in last_valid_board]
+        fen = last_valid_fen
+        assigned = last_assigned[:]
+        issues = ["rejected current frame, using last valid board"] + issues
+
+    print()
+    print("=" * 60)
+    print("HTTP CAPTURE TRIGGERED")
+    print("detections:", len(detections))
+    print("mapped:", len(mapped))
+    print("assigned:", len(assigned))
+    print("board:")
+    print(board_to_text(board))
+    print("fen:")
+    print(fen)
+
+    publish_fen(fen)
+
+    if issues:
+        print("issues:")
+        for item in issues:
+            print("-", item)
+
+    result_payload = {
+        "status": "ok" if not issues else "ok_with_issues",
+        "fen": fen,
+        "issues": issues,
+        "detections": len(detections),
+        "mapped": len(mapped),
+        "assigned": len(assigned),
+    }
+
+    with state_lock:
+        last_result.clear()
+        last_result.update(result_payload)
+
+    return capture_frame, assigned, fen, issues
+
+
+# =========================
 # main
 # =========================
 
 def main():
-    global calib_points, calib_ready, saved_board_corners
+    global calib_points, calib_ready, saved_board_corners, capture_requested
 
     load_grid_calibration()
 
@@ -744,18 +842,30 @@ def main():
     params = cv2.aruco.DetectorParameters()
     detector = cv2.aruco.ArucoDetector(aruco_dict, params)
 
-    dst = np.array([
-        [0, 0],
-        [WARP_W - 1, 0],
-        [WARP_W - 1, WARP_H - 1],
-        [0, WARP_H - 1]
-    ], dtype=np.float32)
+    dst = np.array(
+        [
+            [0, 0],
+            [WARP_W - 1, 0],
+            [WARP_W - 1, WARP_H - 1],
+            [0, WARP_H - 1],
+        ],
+        dtype=np.float32,
+    )
 
-    prev_warped_gray, stable_since, captured_once = reset_stability_state()
+    last_valid_state = {
+        "board": None,
+        "fen": None,
+        "assigned": [],
+    }
 
-    last_valid_board = None
-    last_valid_fen = None
-    last_assigned = []
+    if SHOW_WARPED_WINDOW:
+        cv2.namedWindow("warped board with grid")
+        if USE_MANUAL_GRID_CALIBRATION:
+            cv2.setMouseCallback("warped board with grid", warped_mouse_callback)
+
+    print(f"CV Flask server running at http://{CV_SERVER_HOST}:{CV_SERVER_PORT}")
+    print("POST /capture to trigger one board capture")
+    print("GET /last_result to see the latest FEN result")
 
     while True:
         ret, frame = cap.read()
@@ -769,35 +879,29 @@ def main():
 
         pipeline = detect_and_warp_aruco(frame, detector, dst)
         raw_vis = pipeline["raw_vis"]
+        warped = pipeline["warped"]
 
         raw_lines = [
             f'markers: {pipeline["marker_count"]}',
             f'full board: {"YES" if pipeline["have_full_board"] else "NO"}',
-            'press c to capture',
-            'press q or ESC to quit',
+            "HTTP trigger: POST /capture",
+            "press q or ESC to quit",
         ]
 
         if saved_board_corners is not None:
-            raw_lines.append('grid calibration: loaded')
+            raw_lines.append("grid calibration: loaded")
 
         if USE_MANUAL_GRID_CALIBRATION:
-            raw_lines.append('calibration mode: ON')
-            raw_lines.append('click 4 board corners on warped view')
-            raw_lines.append('press r to reset calibration')
+            raw_lines.append("calibration mode: ON")
+            raw_lines.append("click 4 board corners on warped view")
+            raw_lines.append("press r to reset calibration")
 
         if LED_HANDSHAKE_ENABLED:
-            raw_lines.append('LED handshake: ON')
+            raw_lines.append("LED handshake: ON")
 
         if SHOW_RAW_WINDOW:
             raw_vis_disp = put_status_text(raw_vis, raw_lines, color=(0, 255, 255))
             cv2.imshow("camera", raw_vis_disp)
-
-        warped = pipeline["warped"]
-
-        auto_trigger = False
-        manual_trigger = False
-        diff_score = None
-        stable_text = "NOT READY"
 
         key = cv2.waitKey(1) & 0xFF
 
@@ -806,25 +910,31 @@ def main():
 
         if key == ord("r"):
             reset_grid_calibration()
-            prev_warped_gray, stable_since, captured_once = reset_stability_state()
             continue
 
         if warped is None:
-            prev_warped_gray, stable_since, captured_once = reset_stability_state()
-
             if SHOW_WARPED_WINDOW:
                 blank = np.zeros((WARP_H, WARP_W, 3), dtype=np.uint8)
-                blank = put_status_text(
-                    blank,
-                    ["Waiting for 4 ArUco markers"],
-                    color=(0, 0, 255)
-                )
+                blank = put_status_text(blank, ["Waiting for 4 ArUco markers"], color=(0, 0, 255))
                 cv2.imshow("warped board with grid", blank)
 
-            continue
+            with state_lock:
+                if capture_requested:
+                    capture_requested = False
+                    last_result.clear()
+                    last_result.update(
+                        {
+                            "status": "failed",
+                            "fen": None,
+                            "issues": ["capture requested, but full ArUco board was not visible"],
+                            "detections": 0,
+                            "mapped": 0,
+                            "assigned": 0,
+                        }
+                    )
+                    print("Capture requested, but warped board is not available")
 
-        if USE_MANUAL_GRID_CALIBRATION:
-            cv2.setMouseCallback("warped board with grid", warped_mouse_callback)
+            continue
 
         if calib_ready:
             saved_board_corners = np.array(calib_points, dtype=np.float32)
@@ -841,34 +951,8 @@ def main():
             board_right=board_right,
             board_bottom=board_bottom,
             cols=GRID_COLS,
-            rows=GRID_ROWS
+            rows=GRID_ROWS,
         )
-
-        warped_gray = preprocess_for_stability(warped)
-
-        if prev_warped_gray is not None:
-            diff_score, stable_since = update_stability_state(
-                prev_warped_gray,
-                warped_gray,
-                stable_since,
-                DIFF_THRESHOLD
-            )
-
-            if is_stable_long_enough(stable_since, STABLE_TIME_SEC):
-                stable_text = "STABLE"
-                if AUTO_CAPTURE_ENABLED and not captured_once:
-                    auto_trigger = True
-                    captured_once = True
-            else:
-                stable_text = "NOT STABLE"
-                captured_once = False
-        else:
-            stable_text = "WARMING UP"
-
-        prev_warped_gray = warped_gray
-
-        if key == MANUAL_CAPTURE_KEY:
-            manual_trigger = True
 
         warped_disp = draw_grid_points(warped, grid)
         warped_disp = draw_points(warped_disp, current_board_corners, color=(255, 255, 0), label_prefix="B")
@@ -876,86 +960,60 @@ def main():
         if USE_MANUAL_GRID_CALIBRATION and len(calib_points) > 0:
             warped_disp = draw_points(warped_disp, calib_points, color=(0, 0, 255), label_prefix="C")
 
+        with state_lock:
+            request_pending = capture_requested
+
         warped_status = [
-            f'stability: {stable_text}',
-            f'diff: {diff_score:.2f}' if diff_score is not None else 'diff: N/A',
-            f'auto capture: {"ON" if AUTO_CAPTURE_ENABLED else "OFF"}',
+            "HTTP capture: PENDING" if request_pending else "HTTP capture: waiting",
             f'grid calib mode: {"ON" if USE_MANUAL_GRID_CALIBRATION else "OFF"}',
             f'crop offset: {GRID_OUTER_OFFSET}',
             f'LED handshake: {"ON" if LED_HANDSHAKE_ENABLED else "OFF"}',
         ]
+
         warped_disp = put_status_text(warped_disp, warped_status, color=(0, 255, 255))
 
         if SHOW_WARPED_WINDOW:
             cv2.imshow("warped board with grid", warped_disp)
 
-        should_capture = manual_trigger or auto_trigger
+        with state_lock:
+            should_capture = capture_requested
+            if should_capture:
+                capture_requested = False
 
         if REQUIRE_FULL_BOARD_FOR_CAPTURE and not pipeline["have_full_board"]:
+            if should_capture:
+                with state_lock:
+                    last_result.clear()
+                    last_result.update(
+                        {
+                            "status": "failed",
+                            "fen": None,
+                            "issues": ["capture requested, but full ArUco board was not visible"],
+                            "detections": 0,
+                            "mapped": 0,
+                            "assigned": 0,
+                        }
+                    )
+                print("Capture requested, but full ArUco board was not visible")
             should_capture = False
 
         if not should_capture:
             continue
 
-        capture_frame = prepare_frame_for_capture(warped)
-
-        if SAVE_CAPTURE_IMAGE:
-            cv2.imwrite(CAPTURE_PATH, capture_frame)
-            print(f"Saved capture to {CAPTURE_PATH}")
-
-        crop_debug = crop_with_offset(capture_frame, current_board_corners, GRID_OUTER_OFFSET)
-        cv2.imwrite("board_crop_debug.jpg", crop_debug)
-
-        detections = run_yolo_on_warped(model, capture_frame)
-        mapped = map_detections_to_grid(detections, grid)
-        assigned = resolve_grid_conflicts(mapped)
-        board, unknown_classes = assigned_to_board(assigned)
-        issues = sanity_check_board(board)
-        fen = board_to_fen(board)
-
-        use_this_board = True
-
-        if unknown_classes:
-            issues.append("unknown classes: " + ", ".join(sorted(set(unknown_classes))))
-
-        if issues and KEEP_LAST_VALID_BOARD and last_valid_board is not None:
-            use_this_board = False
-
-        if use_this_board:
-            if not issues:
-                last_valid_board = [row[:] for row in board]
-                last_valid_fen = fen
-                last_assigned = assigned[:]
-        else:
-            board = [row[:] for row in last_valid_board]
-            fen = last_valid_fen
-            assigned = last_assigned[:]
-            issues = ["rejected current frame, using last valid board"] + issues
-
-        print()
-        print("=" * 60)
-        print("CAPTURE TRIGGERED")
-        print("trigger:", "manual" if manual_trigger else "auto")
-        print("detections:", len(detections))
-        print("mapped:", len(mapped))
-        print("assigned:", len(assigned))
-        print("board:")
-        print(board_to_text(board))
-        print("fen:")
-        print(fen)
-        publish_fen(fen)
-        if issues:
-            print("issues:")
-            for item in issues:
-                print("-", item)
+        capture_frame, assigned, fen, issues = process_capture(
+            model=model,
+            warped=warped,
+            grid=grid,
+            current_board_corners=current_board_corners,
+            last_valid_state=last_valid_state,
+        )
 
         if SHOW_DETECTIONS_WINDOW:
             det_vis = draw_assignments(draw_grid_points(capture_frame, grid), assigned)
             det_vis = draw_points(det_vis, current_board_corners, color=(255, 255, 0), label_prefix="B")
 
             overlay_lines = [
-                f"trigger: {'manual' if manual_trigger else 'auto'}",
-                f"detections: {len(detections)}",
+                "trigger: HTTP /capture",
                 f"assigned: {len(assigned)}",
                 f"fen: {fen}",
             ]
@@ -970,5 +1028,17 @@ def main():
     cv2.destroyAllWindows()
 
 
+def start_flask_server():
+    app.run(
+        host=CV_SERVER_HOST,
+        port=CV_SERVER_PORT,
+        debug=False,
+        use_reloader=False,
+        threaded=True,
+    )
+
+
 if __name__ == "__main__":
+    server_thread = threading.Thread(target=start_flask_server, daemon=True)
+    server_thread.start()
     main()
