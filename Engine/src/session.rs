@@ -45,6 +45,7 @@ impl GameLogger {
         let _ = self.file.flush();
     }
 
+
     fn piece_name(piece_type: u8) -> &'static str {
         match piece_type {
             PAWN     => "Pawn",

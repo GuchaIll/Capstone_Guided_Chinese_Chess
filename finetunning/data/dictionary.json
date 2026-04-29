@@ -1,0 +1,2482 @@
+[
+  {
+    "term": "三步虎",
+    "definition": "Step Tiger defense. Defined by the move order 1. C2=5 N8+7 2. N2+3 R9=8 3. .... C8=9",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "三车闹士",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "三进兵杀",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "上仕局-冷門開局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "下馬威(揮炮打馬)-冷門開局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中兵",
+    "definition": "self-explanatory. Any pawn on the center file.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "中士线",
+    "definition": "rank between the cannon rank and the bottom rank, which is also the rank where the advisor moves to in its first move.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "中官炮",
+    "definition": "Central Cannon. Opening notation: C2=5.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "中局",
+    "definition": "aka Middle Game or Midgame Phase.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "中帅",
+    "definition": "refers to the king in one of the 3 points on the center rank",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "中炮",
+    "definition": "Central Cannon. Opening notation: C2=5.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "中炮-常見開局",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮七路馬對屏風馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮七路馬對屏風馬-紅左馬盤河",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮七路馬對屏風馬-紅進中兵",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮七路馬對屏風馬-紅進中兵對黑雙砲過河",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮七路马",
+    "definition": "Central Cannon th Horse. Opening notation: C2=5, followed by moving the knight 8th file knight within the next move. Emphasis is on this horse..",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "中炮不進三兵對左砲封車轉列炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮兩頭蛇對左三步虎",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Three-Step Tiger / Two-Headed Snake family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮右横車對反宫馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮右橫車(其他)對屏風馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮右橫車對屏風馬-紅巡河炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Riverbank Cannon / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮右橫車對屏風馬-紅進中兵",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮右橫車對屏風馬-紅邊炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮右橫車對左三步虎",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Three-Step Tiger / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮右直車對後補列炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮夹马",
+    "definition": "Central Cannon Linking Horses. Opening notation: C2=5 H2+3 H8+7 P5+1 H7+5 are red’s first few moves. Normally the chariot would have also moved 1-2 moves. Emphasis is on the direct attack by red’s...",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "中炮對三步虎",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Three-Step Tiger family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮對列炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮對反宮馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Reversed Palace Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮對反宮馬後補左馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Reversed Palace Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮對單提馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮對單提馬橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮對士角炮轉單提馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Palace-Corner Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮對屏風馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮對左三步虎轉列炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Three-Step Tiger family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮對左三步虎轉列炮-紅兩頭蛇",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Three-Step Tiger / Two-Headed Snake family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮對左三步虎轉列炮-紅左直車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Three-Step Tiger family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮對左三步虎騎河車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Three-Step Tiger family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮對左炮封車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮對後補列炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮對進右馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮對進右馬上士",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮對進左馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮對鴛鴦炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮對龜背炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Turtle-Back Cannons family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮局",
+    "definition": "Central Cannon opening. Opening notation: C2=5, most commonly used red opening.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "中炮巡河炮對反宫馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Riverbank Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮巡河炮對單提馬橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Riverbank Cannon / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮巡河炮對屏風馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Riverbank Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮巡河炮對屏風馬-紅左馬盤河對黑左馬外盤河",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Riverbank Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮巡河炮對屏風馬-黑飛右象",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Riverbank Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮巡河炮對屏風馬-黑飛左象",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Riverbank Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮巡河炮對屏風馬-黑飛左象右橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Riverbank Cannon / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮巡河炮對屏風馬-黑飛左象左砲巡河",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Riverbank Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮巡河炮對左三步虎",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Three-Step Tiger / Riverbank Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮巡河炮緩開車對屏風馬左馬外盤河-紅右橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Riverbank Cannon / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮巡河車對屏風馬-紅不進左馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Riverbank Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮巡河車對屏風馬-紅進左馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Riverbank Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮巡河车",
+    "definition": "Central Cannon Patrolling chaRiot. Opening notation: C2=5, H2+3 , R1=2, R2+4 are red’s first 4 moves.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "中炮左直車對後補列炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮左邊馬對屏風馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮左邊馬對屏風馬-紅色左橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮急進左馬對反宮馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Reversed Palace Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮横车",
+    "definition": "Central Cannon Rank chaRiot. Opening notation: C2=5, H2+3 , R1+1.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "中炮过河车",
+    "definition": "Central Cannon PR chaRiot. Opening notation: C2=5, H2+3 , R1=2, R2+6 are red’s first 4 moves..",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "中炮进七兵",
+    "definition": "Central Cannon th Pawn. Opening notation: C2=5 H2+3 P3+1 are Red’s first 3 moves..",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "中炮进三兵",
+    "definition": "Central Cannon rd Pawn. Opening notation: C2=5 H2+3 P3+1 are Red’s first 3 moves..",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "中炮进中兵",
+    "definition": "Central Cannon Central Pawn. Opening notation: C2=5, followed by charging the central pawn within the next few moves..",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "中炮進7兵對單提馬橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮進三兵對左砲封車轉列炮-紅七路馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮進三兵對左砲封車轉列炮-紅兩頭蛇",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Two-Headed Snake family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮進三兵對左砲封車轉列炮-紅右馬盤河",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮進三兵對左砲封車轉列炮-紅左邊馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮進三兵對左砲封車轉列炮-紅進炮打馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮進中兵對左三步虎騎河車轉列炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Three-Step Tiger family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河炮對左三步虎",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Three-Step Tiger family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車七路馬對屏風馬(不包括兩頭蛇)",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot / Two-Headed Snake family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車七路馬對屏風馬兩頭蛇",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot / Two-Headed Snake family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車七路馬對屏風馬兩頭蛇-紅左橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot / Two-Headed Snake family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車七路馬對屏風馬兩頭蛇-紅左橫車兑七兵對黑高右炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot / Two-Headed Snake family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車七路馬對屏風馬兩頭蛇-紅左橫車兑三兵對黑高右炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot / Two-Headed Snake family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車七路馬對屏風馬兩頭蛇-紅左橫車兑雙兵對黑高右炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot / Two-Headed Snake family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車七路馬對屏風馬兩頭蛇-紅左橫車對黑高右炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot / Two-Headed Snake family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬上士",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬右橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬左馬盤河",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬左馬盤河-紅七路馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬左馬盤河-紅七路馬對黑飛右象",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬左馬盤河-紅七路馬黑橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬左馬盤河-紅邊炮對黑飛右象",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬平砲兌車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬平砲兌車-紅七路馬對黑退邊砲",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬平砲兌車-紅七路馬對黑退邊砲上右士",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬平砲兌車-紅仕角炮對黑退邊砲",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬平砲兌車-紅左邊炮對黑退邊砲上右士",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬平砲兌車-紅左邊炮對黑退邊砲上右士右直車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬平砲兌車-紅左邊馬對黑退邊砲",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬平砲兌車-紅左馬盤河對黑退邊砲上右士",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬平砲兌車-紅進中兵對黑退邊砲",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬平砲兌車-黑退邊砲",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車互進七兵對屏風馬飛象",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車對反宮馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Reversed Palace Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車對屏風馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車對後補列炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮過河車左邊馬對屏風馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中炮雙直車對後補列炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "中立不倚",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "中线",
+    "definition": "self-explanatory.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "中路",
+    "definition": "self-explanatory.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "九尾龜(起邊兵)-冷門開局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "二鬼拍门",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "五七炮",
+    "definition": "an opening whereby the cannons are eventually lined up at the 5th and 7th file on the cannon rank. More of an attacking opening",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "五七炮互進七兵對屏風馬",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮互進三兵對反宮馬",
+    "definition": "A named Xiangqi opening or opening variation in the Reversed Palace Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮互進三兵對反宮馬-紅棄雙兵對黑右砲過河",
+    "definition": "A named Xiangqi opening or opening variation in the Reversed Palace Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮互進三兵對反宮馬-黑右砲過河",
+    "definition": "A named Xiangqi opening or opening variation in the Reversed Palace Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮互進三兵對屏風馬邊卒右馬外盤河",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮互進三兵對屏風馬邊卒右馬外盤河-紅左橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮互進三兵對屏風馬邊卒右馬外盤河-紅左橫車右車巡河對黑飛左象",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮互進三兵對屏風馬邊卒右馬外盤河-紅左橫車右馬盤河對黑飛左象",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮互進三兵對屏風馬邊卒右馬外盤河-紅左橫車對黑兌邊卒",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮互進三兵對屏風馬邊卒右馬外盤河-紅左橫車對黑飛右象",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮互進三兵對屏風馬邊卒右馬外盤河-紅左橫車對黑飛左象",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮對反宮馬",
+    "definition": "A named Xiangqi opening or opening variation in the Reversed Palace Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮對反宮馬右直車",
+    "definition": "A named Xiangqi opening or opening variation in the Reversed Palace Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮對反宮馬左橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Reversed Palace Horse / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮對反宮馬左直車",
+    "definition": "A named Xiangqi opening or opening variation in the Reversed Palace Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮對屏風馬",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮對屏風馬進3卒",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮對屏風馬進3卒右馬外盤河",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮對屏風馬進7卒",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮對屏風馬進7卒-紅左直車對黑右直車右砲巡河",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮對屏風馬進7卒-紅左直車對黑右直車右砲過河",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮對屏風馬進7卒-紅左直車對黑右直車左砲過河",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七炮對屏風馬進7卒-黑右砲巡河",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七砲對屏風馬進7卒-紅左直車對黑右直車",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五七砲對屏風馬進7卒-黑右直車",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五九炮",
+    "definition": "an opening whereby the cannons are eventually lined up at the 5th and 9th file on the cannon rank. Mostly attacking type of opening",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "五九炮對屏風馬",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五八炮",
+    "definition": "an opening whereby the cannons are eventually lined up at the 5th and 8th file on the cannon rank. Can be defensive or attacking",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "五八炮互進三兵對屏風馬",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五八炮互進三兵對屏風馬-紅左正馬",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五八炮互進三兵對屏風馬-紅左邊馬",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五八炮互進三兵對屏風馬-紅左邊馬對黑上士",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五八炮互進三兵對屏風馬-紅左邊馬對黑兌7卒",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五八炮互進三兵對屏風馬-紅左邊馬對黑邊卒",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五八炮互進三兵對屏風馬-紅左邊馬平炮壓馬對黑邊卒",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五八炮互進三兵對屏風馬-紅平炮壓馬",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五八炮對反宫馬",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五八炮對屏風馬",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五六炮",
+    "definition": "an opening whereby the cannons are eventually lined up at the 5th and 6th file on the cannon rank. Relatively defensive opening.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "五六炮對屏風馬",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五六炮左正馬對反宮馬",
+    "definition": "A named Xiangqi opening or opening variation in the Reversed Palace Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五六炮左正馬對反宮馬-黑右直車",
+    "definition": "A named Xiangqi opening or opening variation in the Reversed Palace Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五六炮左正馬對反宮馬-黑右直車邊炮",
+    "definition": "A named Xiangqi opening or opening variation in the Reversed Palace Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五六炮左正馬對反宮馬-黑右直車邊炮進7卒",
+    "definition": "A named Xiangqi opening or opening variation in the Reversed Palace Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五六炮左邊馬對屏風馬",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五六炮左邊馬對屏風馬-黑進7卒右直車右砲過河",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五六炮緩開車對反宮馬",
+    "definition": "A named Xiangqi opening or opening variation in the Reversed Palace Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五六炮過河車對屏風馬",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五六炮過河車對屏風馬-黑兩頭蛇",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse / Cross-River Chariot / Two-Headed Snake family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五六炮過河車對屏風馬-黑進7卒右直車",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse / Cross-River Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "五困江东",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "五炮左邊馬對屏風馬-黑進7卒右直車",
+    "definition": "A named Xiangqi opening or opening variation in the Screen Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仕角炮-常見開局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仕角炮對右中炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仕角炮對進7卒",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仕角炮對進左馬",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仕角炮轉反宮馬對右中炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Reversed Palace Horse family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路(進右馬)對飛象",
+    "definition": "A named Xiangqi opening or opening variation in the Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路-常見開局",
+    "definition": "A named Xiangqi opening or opening variation in the Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路互進右馬局",
+    "definition": "A named Xiangqi opening or opening variation in the Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路对卒底炮",
+    "definition": "Pawn vs Elbow cannon opening, Angel's Guide vs Thundering defence.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "仙人指路對中炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路對仕角炮",
+    "definition": "A named Xiangqi opening or opening variation in the Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路對卒底砲",
+    "definition": "A named Xiangqi opening or opening variation in the Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路對進右馬",
+    "definition": "A named Xiangqi opening or opening variation in the Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路對過宮炮",
+    "definition": "A named Xiangqi opening or opening variation in the Cross-Palace Cannon / Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路對金鉤炮",
+    "definition": "A named Xiangqi opening or opening variation in the Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路對飛象",
+    "definition": "A named Xiangqi opening or opening variation in the Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉右中炮對卒底砲",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮卒底砲飛左象-紅左直車對黑右橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲轉順炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Same Direction Cannons / Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛右象",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛右象-互進邊馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛右象-紅右邊馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛左象",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛左象-紅先上仕",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛左象-紅右邊馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛左象-紅巡河車右邊馬對黑連進7卒右橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way / Riverbank Chariot / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛左象-紅左直車右邊馬上仕對黑連進7卒右橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛左象-紅左直車右邊馬對黑連進7卒右橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛左象-紅左直車右邊馬對黑連進7卒拐角馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛左象-紅左直車右馬盤河對黑右橫車上士",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛左象-紅左直車右馬盤河對黑右橫車過河",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛左象-紅左直車右馬盤河對黑右橫車邊卒",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛左象-紅炮打中卒",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛左象-紅進左馬",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛左象-紅進左馬對黑右橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛左象-紅雙直車右邊馬對黑連進7卒右橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛左象-黑連進7卒",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中炮對卒底砲飛左象-黑進7卒",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路轉左中砲對卒底砲",
+    "definition": "A named Xiangqi opening or opening variation in the Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "仙人指路飛相對卒底砲",
+    "definition": "A named Xiangqi opening or opening variation in the Flying Elephant / Immortal Pointing the Way family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "低兵",
+    "definition": "any pawn on YOUR OPPONENT’S cannon or throat rank",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "例和",
+    "definition": "A situation normally in the endgame where the result is a draw if nobody makes a blunder.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "例胜",
+    "definition": "A situation normally in the endgame whereby one of the colours would be guranteed to win if he knew the method of doing so.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "侧帅",
+    "definition": "refers to the king in either of the 6 points on the armpit files 4th or 6th files.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "侧面虎杀",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "借兵助威",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "偷步",
+    "definition": "To steal a move; to gain a tempo by improving the position while preserving the same underlying structure.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=902&lang=en"
+  },
+  {
+    "term": "先弃后取",
+    "definition": "sacrificing one piece and capturing another opponent’s piece one or a few moves later. Usually positional advantage is also gained.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "先手",
+    "definition": "self-explanatory.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "先走",
+    "definition": "In xiangqi, by default, Red moves first .",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "兑",
+    "definition": "refers to the exchange of pieces ,",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "兑子争先",
+    "definition": "exchanging pieces to gain tempo and positional gain.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "兩頭蛇對進右馬",
+    "definition": "A named Xiangqi opening or opening variation in the Two-Headed Snake family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "兩頭蛇對進右馬轉卒底砲",
+    "definition": "A named Xiangqi opening or opening variation in the Two-Headed Snake family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "八角马",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "兵底炮-冷門開局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "兵攻险路",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "兵机在手",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "兵权万里",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "兵甲运胜",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "兵贵神速",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "其它的杀着",
+    "definition": "A catch-all class for attacking or mating techniques that do not fit the main named material families.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "减灶行兵",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "列炮局",
+    "definition": "Opposite Direction Cannons opening. Defined by the move order 1. C2=5 C2=5",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "列相局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "列马车杀",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "判和",
+    "definition": "A controversial situation whereby the arbiter has ruled a draw.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "劣马奔泉",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "十谒朱门",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "卒以取败",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "卒底局",
+    "definition": "Black counters red’s P7+1 opening with C2=3. Also sometimes known as Short Pawn Cannon Opening.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "卒行",
+    "definition": "rank where the pawns are lined up in the beginning of the game. Has strategic purposes",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "单兵类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of single pawn.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "单提马布局",
+    "definition": "Single Horse defense. Opening notation: H2+3 H8+9 are black’s first few moves. Some like to call it the lame horse defense..",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "单炮类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of single cannon.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "单缺士",
+    "definition": "having both elephants but only one advisor",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "单缺象",
+    "definition": "having one elephant but 2 advisors",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "单车指垒",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "单马类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of single horse.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "卧槽马",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "卧槽马杀",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "双方布局",
+    "definition": "[ Opening deployment of both sides ] Pawn vs Pawn opening. Defined by the move order 1. P7+1 P7+1",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "双炮类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of two cannons.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "双炮马类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of two cannons, and horse.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "双照将杀",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "双虎守洞",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "双车兵类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of two chariots, and pawn.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "双车双炮类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of two chariots, and two cannons.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "双车双马类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of two chariots, and two horses.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "双车炮类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of two chariots, and cannon.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "双车类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of two chariots.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "双车胁士",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "双车错",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "双车错杀",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "双车马炮类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of two chariots, horse, and cannon.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "双车马类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of two chariots, and horse.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "双马炮类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of two horses, and cannon.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "双马类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of two horses.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "双马饮泉",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "反攻马布局",
+    "definition": "Sandwich Horses defense. Opening notation: H2+3, C8=6 , H8+7 are Black’s first few moves. Sometimes known as the Pseudo Two Knight’s defence..",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "吃子",
+    "definition": "self-explanatory.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "后悔无及",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "后手/被动",
+    "definition": "self-explanatory.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "后走",
+    "definition": "by default, Black moves last",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "周旋中矩",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "困鲤跃池",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "基本杀法",
+    "definition": "A Xiangqi taxonomy of named basic mating techniques and standard kill patterns.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "基本杀法 单车破双象(底象).PGN",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "基本杀法 单车破双象(黑方有底卒走闲)",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "基本杀法26 闷宫",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "基本杀法组合运用",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "塞马嘶群",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "士角",
+    "definition": "the 2 points adjacent to the center file, on the 4th and 6th file on the cannon rank",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "士角炮",
+    "definition": "any cannon occupying the palcorner(s)",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "士角炮局",
+    "definition": "Palcorner Cannon opening. Opening notation: C2=4 in the first move. Also known as Short cannon opening.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "士象全",
+    "definition": "having both elephants and advisors",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "天地炮",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "夹车炮",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "夹车炮杀",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "夾卒炮(炮二進一保中兵)-極冷門開局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "妙着",
+    "definition": "A brilliant ingenious move. Usually represented by an exclamation mark at the end.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "守化善道",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "实用残局",
+    "definition": "An endgame situation that has occurred many times before such that its results can be predicted.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "寶炮車(車一進二保炮棄馬)-極冷門開局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "对兵局",
+    "definition": "[ Opening deployment of both sides ] Pawn vs Pawn opening. Defined by the move order 1. P7+1 P7+1",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "对面笑杀 01-基本杀法",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "封锁",
+    "definition": "blockade",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "将军出塞",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "将军抽子",
+    "definition": "capturing an opponent’s piece following a check",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "将军无解",
+    "definition": "- Check in such a way that the opponent's King cannot resolve the check Threatening to Checkmate (TTC)",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "将军死棋",
+    "definition": "- Check in such a way that the opponent's King cannot resolve the check Threatening to Checkmate (TTC)",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "對兵互進右馬局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "對兵對進右馬局-紅橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "對兵對進右馬局-紅邊炮",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "對兵對進右馬局-紅飛相",
+    "definition": "A named Xiangqi opening or opening variation in the Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "對兵局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "對兵轉兵底炮",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "對兵轉兵底炮對右中砲",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "對兵轉兵底炮對左中砲",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "對兵進右馬局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "屏风马双炮过河",
+    "definition": "screen horse variation whereby red does not push his filed rook forward, but chooses to use a ranked rook opening.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "屏风马左炮封车",
+    "definition": "Screen Horses with Left Cannon Blockade. Opening notation: C2=5 N8+7 2. N2+3 R9=8 3. R1=2 C8+4.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "屏风马左马盘河",
+    "definition": "Screen Horses with RB Horse. Defined by the move order 1. C2=5 H8+7, 2. H2+3 R9=8, 3. R1=2 P7+1, 4. R2+6 H7+6. Very aggressive counter",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "屏风马布局",
+    "definition": "Screen Horses defense, Horse defence. Opening notation: H2+3 , H8+7 are black’s first few moves. Most widely used counter to the Central Cannon opening. There are many many variations to this defen...",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "屏风马平炮兑车",
+    "definition": "Screen Horses Edge Cannon for chaRiot exchange. Defined by the move order 1. C2=5 H8+7, 2. H2+3 R9=8, 3. R1=2 P7+1, 4. R2+6, C8=9…most widely used counter to red’s central cannon opening",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "巡河炮",
+    "definition": "any cannon occupying the river bank on YOUR side of the board",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "巡河炮-冷門開局",
+    "definition": "A named Xiangqi opening or opening variation in the Riverbank Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "巡河车",
+    "definition": "any chariot found on the river bank file on YOUR side of the board.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "巧和",
+    "definition": "An endgame situation whereby under normal circumstances, it would be a draw. However, the positioning of the pieces for the player with the advantage is so poor such that the weaker colour is able...",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "巧胜",
+    "definition": "An endgame situation whereby under normal circumstances, the game would be a draw. However, the positioning of the pieces of one colour is so poor and there is a chance of way for the other side to...",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "底兵",
+    "definition": "any pawn on YOUR OPPONENT’s bottom rank. The pawn can only move sideways once it reaches this rank",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "开局",
+    "definition": "the first few moves of the game. Or simply put, the Opening Phase. For more information, click",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "弃子",
+    "definition": "self-explanatory.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "弃子抢攻",
+    "definition": "sacrificing a piece to attack the opponent’s king",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "弱冠称兵",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "归心马",
+    "definition": "any horse occupying the centroid. Also known in Chinese as 窩心馬",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "往结和亲",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "得先",
+    "definition": "would mean a material gain or gain in tempo or positional advantage",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "得将卒心",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "御駕親征(帥五進一)-極冷門開局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "御马失引",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "志士励行",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "急先鋒(起中兵)-冷門開局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "悟入斗宫",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "戌卒守功",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "拒兵绝渡",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "拔簧马杀",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "拦",
+    "definition": "A piece moves to a position where it prevents the opponent from moving one of its pieces in certain direction",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "捉双",
+    "definition": "situation whereby one piece can attack two opponent pieces at the same time",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "捕风捉影",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "据兵败马",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "排局",
+    "definition": "a deliberately arranged formation of pieces, analogous to problems in International Chess. Think of it as a xiangqi puzzle. Seldom if possible, does such a formation appear in a normal game.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "排闼入禁",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "揚威炮(炮二進三至對方巡河線)-極冷門開局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "放龟江中",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "文武开基",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "斗列炮",
+    "definition": "black answers red’s C2=5 with C2=5.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "斗顺炮",
+    "definition": "Black answers red’s C2=5 with C8=5. HT Lau called it the lee cannon (?)",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "梦入神机",
+    "definition": "A classical Xiangqi composition collection and taxonomy of named studies.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "棋子",
+    "definition": "Collective term to refer to the men on the board. There are seven different chess pieces: king, advisor, elephant, chariot, horse, cannon and pawn.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "棋盘",
+    "definition": "the surface on which Xiangqi is conducted. It is usually made up of paper or wood with markings to denote where the pieces will be moved.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "棋证",
+    "definition": "the person in charge of the ruling of a game when controversy arises.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "横车",
+    "definition": "any chariot moving in a rank. Used mainly in the opening to describe the chariot moving in throat rank.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "欠行",
+    "definition": "Self-explanatory. But please remember, in Xiangqi, a stalemate is ruled as a win for the aggressor and a loss for the passive side! There is no ruling of a draw in a stalemate situation.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "正着/官着",
+    "definition": "The best possible or correct move in a certain position.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "步骤不凡",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "残局",
+    "definition": "Endgame or Endgame Phase.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "残局攻杀谱",
+    "definition": "A Xiangqi taxonomy and manual tradition for named attacking endgame classes and mating patterns.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "河头",
+    "definition": "specifically refers to the rank just before the river on YOUR side of the board",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "河头车",
+    "definition": "any chariot found on the river bank file on YOUR side of the board.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "河头马",
+    "definition": "any horse on occupying the river bank on YOUR OPPONENT’s side of the board. Used mainly to describe the horse occupying the 4th and 6th file on the riverbank.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "游離相(八卦陣前身)-冷門開局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "炮兵类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of cannon, and pawn.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "炮辗丹沙",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "由中应外",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "白脸将杀",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "直车",
+    "definition": "Any chariot moving in a file. used mainly in the opening to describe the chariot moving in the 2nd or 8th file.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "瞻前忽后",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "秣马劢兵",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "立马车",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "立马车杀",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "笃信谨守",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "组合运用",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "羊角士",
+    "definition": "any advisor occupying the palcorners or the 4th and 6th file in the cannon rank.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "良驹受困",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "苔封曲径",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "解杀还杀",
+    "definition": "resolving a check and returning one immediately on the next move.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "让一先",
+    "definition": "For the first move, one player moves 2 consecutive moves before the opponent starts moving. The rest of the game is carried on as usual",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "让三先",
+    "definition": "same as above except the player first moves 4 consecutive moves.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "让二先",
+    "definition": "same as above except the player first moves 3 consecutive moves.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "让单马",
+    "definition": "one of the sides plays with only one knight, instead of the usual two. 让双马 2-horse handicap : same as above except that one side plays with no horses while the opponent as the full formation",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "象棋残局基本杀法",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "象田",
+    "definition": "the 16 points (or 8 points apiece) on the entire board where the elephant may be blocked. Most often refers to the 2 adjacent points next to the centroid ( on the 4th and 6th file) on the throat rank.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "象眼",
+    "definition": "the 16 points (or 8 points apiece) on the entire board where the elephant may be blocked. Most often refers to the 2 adjacent points next to the centroid ( on the 4th and 6th file) on the throat rank.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "起馬互進七兵局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "起馬對進7卒",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "起馬局-常見開局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "起馬轉中炮對進7卒",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "起馬轉仕角炮對進7卒",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "起馬轉邊炮對進7卒",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "车兵类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of chariot, and pawn.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "车双炮类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of chariot, and two cannons.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "车双马类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of chariot, and two horses.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "车炮兵类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of chariot, cannon, and pawn.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "车炮抽杀",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "车炮类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of chariot, and cannon.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "车马兵类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of chariot, horse, and pawn.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "车马冷着",
+    "definition": "combination kill by a horse and chariot. One of the most basic and important things to learn in endgame.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "车马炮兵类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of chariot, horse, cannon, and pawn.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "车马炮类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of chariot, horse, and cannon.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "车马类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of chariot, and horse.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "车驾东巡",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "过宫炮局",
+    "definition": "Cross Palace Cannon opening, Parading Cannon opening. Opening notation: C2=6. Also known as the long cannon opening.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "进马局",
+    "definition": "Horse opening. Opening notation: H2+3 or H8+7 in the first move. Some call it the knight opening..",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "连环马",
+    "definition": "the condition/situation when both horses are linked together.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "退一步胜",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "過宮炮-常見開局",
+    "definition": "A named Xiangqi opening or opening variation in the Cross-Palace Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "過宮炮對左中炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Cross-Palace Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "過宮炮對橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Cross-Palace Cannon / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "過宮炮對進左馬",
+    "definition": "A named Xiangqi opening or opening variation in the Cross-Palace Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "過宮炮直車對左中炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Cross-Palace Cannon family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "過宮炮直車對左中炮橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Cross-Palace Cannon / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "過河炮-冷門開局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "邊炮局-冷門開局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "邊馬局-冷門開局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "重炮杀法",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "重迭炮",
+    "definition": "The Stacked cannons counter was also seen in the past. Unorthodox. 1. C2=5 C8+1, 2. H2+3 C2=8.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "金鈎炮-冷門開局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "金钩炮",
+    "definition": "Black counters red’s P7+1 opening with C2=7. A direct translation would be golden hooked cannon but some call it the Long Pawn Cannon Opening",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "鐵滑車-冷門開局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "钓鱼马",
+    "definition": "one type of a kill in combination with a chariot.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "钓鱼马杀",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "铁门栓",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "铁门闩杀",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "长兑",
+    "definition": "you attempt to exchange one of your pieces for an opponent’s piece.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "长将",
+    "definition": "checking your opponent with every move.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "长拦",
+    "definition": "similar definition to perpetual chase",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "长杀",
+    "definition": "more will be discussed in the rules of Xiangqi",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "闷宫杀法",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "闷杀",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "闷杀杀法",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "限着",
+    "definition": "In competition, a time limit is set for both players.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "順炮橫車對直車",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮橫車對直車巡河",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮橫車對緩開車",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮直車對橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮直車對橫車-紅仕角炮",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮直車對橫車-紅先上仕",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮直車對橫車-紅兩頭蛇",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons / Two-Headed Snake / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮直車對橫車-紅兩頭蛇對黑雙橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons / Two-Headed Snake / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮直車對橫車-紅巡河車",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons / Riverbank Chariot / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮直車對橫車-紅左邊馬",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮直車對橫車-紅進七兵",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮直車對橫車-紅進三兵",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮直車對橫車-紅過河車",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons / Cross-River Chariot / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮直車對緩開-黑邊砲",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮直車對緩開車",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮直車對緩開車-黑兌直車",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮直車對緩開車-黑右橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮直車對緩開車-黑過河炮",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮直車對緩開車——黑左橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮緩開車",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮緩開車對橫車",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順炮緩開車對直車",
+    "definition": "A named Xiangqi opening or opening variation in the Same Direction Cannons family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "順相局",
+    "definition": "A named Xiangqi opening or opening variation.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "顺炮局",
+    "definition": "Same Direction Cannons opening. Defined by the move order 1. C2=5 C8=5",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "领将驱兵",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "飛相互進7兵局",
+    "definition": "A named Xiangqi opening or opening variation in the Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相對右中炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相對右仕角炮",
+    "definition": "A named Xiangqi opening or opening variation in the Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相對右過宮炮",
+    "definition": "A named Xiangqi opening or opening variation in the Cross-Palace Cannon / Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相對左中炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相對左仕角炮",
+    "definition": "A named Xiangqi opening or opening variation in the Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相對左過宮炮",
+    "definition": "A named Xiangqi opening or opening variation in the Cross-Palace Cannon / Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相對進3卒",
+    "definition": "A named Xiangqi opening or opening variation in the Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相對進7卒",
+    "definition": "A named Xiangqi opening or opening variation in the Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相對進右馬",
+    "definition": "A named Xiangqi opening or opening variation in the Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相對進左馬",
+    "definition": "A named Xiangqi opening or opening variation in the Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相局-常見開局",
+    "definition": "A named Xiangqi opening or opening variation in the Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相左邊馬對右仕角炮",
+    "definition": "A named Xiangqi opening or opening variation in the Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相橫車對右仕角炮",
+    "definition": "A named Xiangqi opening or opening variation in the Flying Elephant / Ranked Chariot family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相轉屏風馬對左中炮",
+    "definition": "A named Xiangqi opening or opening variation in the Central Cannon / Screen Horse / Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相進七兵對右仕角炮",
+    "definition": "A named Xiangqi opening or opening variation in the Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相進七兵對進右馬",
+    "definition": "A named Xiangqi opening or opening variation in the Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相進三兵對右仕角炮",
+    "definition": "A named Xiangqi opening or opening variation in the Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相進三兵對進右馬",
+    "definition": "A named Xiangqi opening or opening variation in the Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相進右馬對左過宮炮",
+    "definition": "A named Xiangqi opening or opening variation in the Cross-Palace Cannon / Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相進右馬對左過宮炮-紅直車對黑進7卒",
+    "definition": "A named Xiangqi opening or opening variation in the Cross-Palace Cannon / Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相進右馬對左過宮炮-紅直車邊炮對黑進7卒",
+    "definition": "A named Xiangqi opening or opening variation in the Cross-Palace Cannon / Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相進左馬對右仕角炮",
+    "definition": "A named Xiangqi opening or opening variation in the Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飛相進左馬對進7卒",
+    "definition": "A named Xiangqi opening or opening variation in the Flying Elephant family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "飞象局",
+    "definition": "Elephant opening. Opening notation: E3+5. Sometimes known as the bishop opening.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "马兵类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of horse, and pawn.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "马后炮",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "马后炮杀",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "马炮兵类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of horse, cannon, and pawn.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "马炮类",
+    "definition": "An endgame attacking class in the 残局攻杀谱 taxonomy, grouped by the material combination of horse, and cannon.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/advanced-checkmates.json"
+  },
+  {
+    "term": "骑河",
+    "definition": "specifically refers to the rank just opposite the river on YOUR OPPONENT’S board",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "骑河炮",
+    "definition": "any cannon occupying the river bank on YOUR OPPONENT’s side of the board",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "骑河车",
+    "definition": "any chariot found on the river bank file on YOUR OPPONENT’s side of the board.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "高兵",
+    "definition": "any pawn that is on YOUR OPPONENT’S riverbank or pawn rank.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "高名进步",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "高钓马",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "高钓马(侧面虎)",
+    "definition": "A named basic kill pattern in Xiangqi.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=100&catid=207&Itemid=522&lang=en"
+  },
+  {
+    "term": "鸳鸯炮",
+    "definition": "Paired Cannons Defence. 1. C2=5 H2+3, 2. H2+3 P7+1, 3. R1=2 R9+2. Unorthodox.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  },
+  {
+    "term": "鹬蚌相持",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "鼓噪勒兵",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "龙马负图",
+    "definition": "A named classical Xiangqi composition or study from the 梦入神机 tradition.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/meng-ru-shen-ji.json"
+  },
+  {
+    "term": "龜背炮-冷門開局",
+    "definition": "A named Xiangqi opening or opening variation in the Turtle-Back Cannons family.",
+    "source": "/Users/guchaill/Coding/Capstone_Guided_Chinese_Chess/server/web_scraper/knowledge/json/opening-repertoire.json"
+  },
+  {
+    "term": "龟背炮/凤凰炮/软硬炮",
+    "definition": "No official WXF translation.",
+    "source": "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+  }
+]

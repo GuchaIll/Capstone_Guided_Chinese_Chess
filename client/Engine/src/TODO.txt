@@ -1,6 +1,0 @@
-TODO:
--Define Coordinate System for board
--Implement Rule Validation
--Implement Game State Transitions and turns
--Set up web socket streaming with frontend react display
--Unit Testing
