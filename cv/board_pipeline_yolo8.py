@@ -3,13 +3,14 @@ import cv2
 import math
 import json
 import time
+import base64
 import threading
 import urllib.request
 import urllib.error
 from collections import Counter
 
 import numpy as np
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from ultralytics import YOLO
 
 
@@ -17,7 +18,7 @@ from ultralytics import YOLO
 # config
 # =========================
 
-CAMERA_INDEX = 1
+CAMERA_INDEX = 0
 
 REQUIRED_IDS = [0, 1, 2, 3]
 WARP_W = 900
@@ -98,12 +99,19 @@ app = Flask(__name__)
 state_lock = threading.Lock()
 
 capture_requested = False
+capture_request_id = 0
+capture_request_options = {}
+last_completed_capture_id = 0
 last_result = {
     "status": "not_ready",
     "fen": None,
     "issues": [],
     "detections": 0,
     "assigned": 0,
+    "capture_id": 0,
+    "captured_at": None,
+    "image_path": CAPTURE_PATH,
+    "image_mime": "image/jpeg",
 }
 
 calib_points = []
@@ -122,12 +130,38 @@ def health():
 
 @app.route("/capture", methods=["POST"])
 def request_capture():
-    global capture_requested
+    global capture_requested, capture_request_id
+    payload = request.get_json(silent=True) or {}
+    post_to_bridge = bool(payload.get("post_to_bridge", True))
 
     with state_lock:
         capture_requested = True
+        capture_request_id += 1
+        requested_capture_id = capture_request_id
+        capture_request_options[requested_capture_id] = {
+            "post_to_bridge": post_to_bridge,
+        }
 
-    return jsonify({"status": "capture_requested"})
+    deadline = time.monotonic() + 15.0
+    while time.monotonic() < deadline:
+        with state_lock:
+            if int(last_result.get("capture_id", 0) or 0) >= requested_capture_id:
+                payload = last_result.copy()
+                image_path = payload.get("image_path")
+                if image_path and os.path.exists(image_path):
+                    with open(image_path, "rb") as image_file:
+                        payload["image_base64"] = base64.b64encode(image_file.read()).decode("ascii")
+                else:
+                    payload["image_base64"] = None
+                return jsonify(payload)
+        time.sleep(0.05)
+
+    return jsonify({
+        "status": "timeout",
+        "capture_id": requested_capture_id,
+        "image_path": CAPTURE_PATH,
+        "image_mime": "image/jpeg",
+    }), 504
 
 
 @app.route("/last_result", methods=["GET"])
@@ -746,7 +780,7 @@ def prepare_frame_for_capture(warped):
 # capture pipeline
 # =========================
 
-def process_capture(model, warped, grid, current_board_corners, last_valid_state):
+def process_capture(model, warped, grid, current_board_corners, last_valid_state, capture_id, post_to_bridge):
     last_valid_board = last_valid_state["board"]
     last_valid_fen = last_valid_state["fen"]
     last_assigned = last_valid_state["assigned"]
@@ -800,7 +834,8 @@ def process_capture(model, warped, grid, current_board_corners, last_valid_state
     print("fen:")
     print(fen)
 
-    publish_fen(fen)
+    if post_to_bridge:
+        publish_fen(fen)
 
     if issues:
         print("issues:")
@@ -814,6 +849,11 @@ def process_capture(model, warped, grid, current_board_corners, last_valid_state
         "detections": len(detections),
         "mapped": len(mapped),
         "assigned": len(assigned),
+        "capture_id": capture_id,
+        "captured_at": time.time(),
+        "image_path": CAPTURE_PATH,
+        "image_mime": "image/jpeg",
+        "post_to_bridge": post_to_bridge,
     }
 
     with state_lock:
@@ -828,7 +868,7 @@ def process_capture(model, warped, grid, current_board_corners, last_valid_state
 # =========================
 
 def main():
-    global calib_points, calib_ready, saved_board_corners, capture_requested
+    global calib_points, calib_ready, saved_board_corners, capture_requested, last_completed_capture_id
 
     load_grid_calibration()
 
@@ -921,6 +961,8 @@ def main():
             with state_lock:
                 if capture_requested:
                     capture_requested = False
+                    last_completed_capture_id = capture_request_id
+                    failed_request_options = capture_request_options.pop(last_completed_capture_id, {})
                     last_result.clear()
                     last_result.update(
                         {
@@ -930,6 +972,11 @@ def main():
                             "detections": 0,
                             "mapped": 0,
                             "assigned": 0,
+                            "capture_id": last_completed_capture_id,
+                            "captured_at": time.time(),
+                            "image_path": CAPTURE_PATH,
+                            "image_mime": "image/jpeg",
+                            "post_to_bridge": bool(failed_request_options.get("post_to_bridge", True)),
                         }
                     )
                     print("Capture requested, but warped board is not available")
@@ -975,14 +1022,22 @@ def main():
         if SHOW_WARPED_WINDOW:
             cv2.imshow("warped board with grid", warped_disp)
 
+        requested_capture_id = last_completed_capture_id
+        requested_capture_options = {"post_to_bridge": True}
         with state_lock:
-            should_capture = capture_requested
+            should_capture = capture_requested and capture_request_id > last_completed_capture_id
             if should_capture:
+                requested_capture_id = capture_request_id
                 capture_requested = False
+                requested_capture_options = capture_request_options.pop(
+                    requested_capture_id,
+                    {"post_to_bridge": True},
+                )
 
         if REQUIRE_FULL_BOARD_FOR_CAPTURE and not pipeline["have_full_board"]:
             if should_capture:
                 with state_lock:
+                    last_completed_capture_id = requested_capture_id
                     last_result.clear()
                     last_result.update(
                         {
@@ -992,6 +1047,11 @@ def main():
                             "detections": 0,
                             "mapped": 0,
                             "assigned": 0,
+                            "capture_id": requested_capture_id,
+                            "captured_at": time.time(),
+                            "image_path": CAPTURE_PATH,
+                            "image_mime": "image/jpeg",
+                            "post_to_bridge": bool(requested_capture_options.get("post_to_bridge", True)),
                         }
                     )
                 print("Capture requested, but full ArUco board was not visible")
@@ -1006,7 +1066,11 @@ def main():
             grid=grid,
             current_board_corners=current_board_corners,
             last_valid_state=last_valid_state,
+            capture_id=requested_capture_id,
+            post_to_bridge=bool(requested_capture_options.get("post_to_bridge", True)),
         )
+        with state_lock:
+            last_completed_capture_id = requested_capture_id
 
         if SHOW_DETECTIONS_WINDOW:
             det_vis = draw_assignments(draw_grid_points(capture_frame, grid), assigned)

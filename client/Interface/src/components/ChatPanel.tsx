@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import axios from 'axios';
 import { MoveRecord, SuggestedMove, PIECE_INFO } from '../types';
@@ -41,7 +43,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel
   moveHistory,
   aiThinking,
   suggestedMove,
-  
+  gameStateFen,
   speechService,
 }, ref) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -54,7 +56,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel
 
   const httpProtocol = globalThis.location.protocol === 'https:' ? 'https' : 'http';
   const defaultCoachUrl = `${httpProtocol}://${globalThis.location.host}`;
-  const coachUrl = import.meta.env.VITE_COACH_URL || defaultCoachUrl;
+  const coachUrl = process.env.NEXT_PUBLIC_COACH_URL || defaultCoachUrl;
 
   // Expose sendVoiceMessage and sendMoveEvent to parent via ref
   useImperativeHandle(ref, () => ({
@@ -66,6 +68,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel
       axios.post(`${coachUrl}/dashboard/chat`, {
         message: msg,
         session_id: sessionIdRef.current,
+        fen: gameStateFen,
       }).then(res => {
         const response = res.data.response || 'Sorry, I could not understand that.';
         setMessages(prev => [...prev, { role: 'assistant', content: response }]);
@@ -91,7 +94,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel
         // Silently ignore move event failures
       }).finally(() => setIsTyping(false));
     },
-  }), [coachUrl, speechService]);
+  }), [coachUrl, speechService, gameStateFen]);
 
   // ---- Scroll ----
   const scrollToBottom = () => {
@@ -108,7 +111,11 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel
     setActiveButtons([]);
     setIsTyping(true);
 
-    axios.post(`${coachUrl}/dashboard/chat`, { message: value, session_id: sessionIdRef.current })
+    axios.post(`${coachUrl}/dashboard/chat`, {
+      message: value,
+      session_id: sessionIdRef.current,
+      fen: gameStateFen,
+    })
       .then(res => {
         setMessages(prev => [...prev, {
           role: 'assistant',
@@ -123,7 +130,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel
         }]);
         setIsTyping(false);
       });
-  }, [coachUrl]);
+  }, [coachUrl, gameStateFen]);
 
   // ---- Send chat message ----
   const handleSendChat = async () => {
@@ -138,6 +145,7 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel
       const response = await axios.post(`${coachUrl}/dashboard/chat`, {
         message: text,
         session_id: sessionIdRef.current,
+        fen: gameStateFen,
       });
       setMessages(prev => [...prev, {
         role: 'assistant',

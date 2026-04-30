@@ -47,10 +47,11 @@ npm run dev -- --host 0.0.0.0 --port 3000
 
 ### 4) (Optional) Override backend URLs
 By default the client uses the current page hostname and the co-located `/bridge` proxy for gameplay plus port `5000` for coaching.
-You can override via Vite env vars:
+With the Next.js client, use `NEXT_PUBLIC_*` env vars in `client/Interface/.env.local`:
 ```bash
-VITE_STATE_BRIDGE_BASE=http://<laptop-ip>:5003
-VITE_COACH_URL=http://<laptop-ip>:5000
+NEXT_PUBLIC_STATE_BRIDGE_TOKEN=integration-bridge-token
+NEXT_PUBLIC_STATE_BRIDGE_BASE=http://<laptop-ip>:5003
+NEXT_PUBLIC_STATE_BRIDGE_WS_BASE=ws://<laptop-ip>:5003
 ```
 
 ### Build for Production

@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * /agents — Agent Pipeline Inspector page  (Go Orchestration)
  *
@@ -23,7 +25,7 @@ import {
   Panel,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import AgentNodeComponent from '../components/AgentNode';
 import type { DashboardEvent, GraphInfo } from '../types/agentState';
 
@@ -31,9 +33,15 @@ import type { DashboardEvent, GraphInfo } from '../types/agentState';
 //   CONSTANTS
 // ========================
 
+function defaultDashboardBase(): string {
+  if (typeof globalThis.window === 'undefined') {
+    return 'http://localhost:5002/dashboard';
+  }
+  return `${globalThis.location.protocol}//${globalThis.location.hostname}:5002/dashboard`;
+}
+
 const DASHBOARD_BASE =
-  import.meta.env.VITE_DASHBOARD_URL ||
-  `${window.location.protocol}//${window.location.hostname}:5002/dashboard`;
+  process.env.NEXT_PUBLIC_DASHBOARD_URL || defaultDashboardBase();
 
 const nodeTypes = { agentNode: AgentNodeComponent };
 
@@ -325,7 +333,7 @@ export default function AgentsPage() {
       {/* ---- Top Nav Bar ---- */}
       <header className="h-12 bg-slate-900 border-b border-white/10 flex items-center px-6 gap-6 shrink-0">
         <Link
-          to="/"
+          href="/"
           className="flex items-center gap-2 text-slate-400 hover:text-slate-200 transition-colors"
         >
           <span className="material-icons text-sm">arrow_back</span>

@@ -48,6 +48,7 @@ describe('ChatPanel', () => {
         expect.stringContaining('/dashboard/chat'),
         expect.objectContaining({
           message: 'What should I do here?',
+          fen: 'test-fen',
           session_id: expect.any(String),
         })
       );

@@ -1,5 +1,7 @@
+'use client';
+
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import ChessBoard from './components/ChessBoard';
 import ChatPanel from './components/ChatPanel';
 import type { ChatPanelHandle } from './components/ChatPanel';
@@ -10,36 +12,33 @@ import { VoiceButton, VoiceFeedback, VoiceSettings } from './components/VoiceCon
 import { useGameState } from './hooks/useGameState';
 import { useWebSocket } from './hooks/useWebSocket';
 import { useChessVoiceCommands } from './hooks/useChessVoiceCommands';
+import { useBoardSync } from './hooks/useBoardSync';
+import { useBridgeEventStream } from './hooks/useBridgeEventStream';
+import {
+  asBestMoveData,
+  asFenUpdateData,
+  asMoveMadeData,
+  parseEngineMessage,
+} from './types/bridgeProtocol';
+import type {
+  BridgeBusEvent,
+  EngineAiMoveMessage,
+  EngineMoveResultMessage,
+  EngineStateMessage,
+} from './types/bridgeProtocol';
 import { SpeechService } from './services/speech/SpeechService';
 import { SuggestedMove, RED, BLACK } from './types';
 import type { GameResult } from './types';
 import type { Position, Side } from './types';
 import type { AgentGraphState } from './types/agentState';
 import type { TurnPhase } from './types/turnPhase';
-import { deriveMoveFromFenDiff, fenPlacementsEqual } from './utils/fenMoveDiff';
+import { bridgeWsUrl } from './services/bridgeClient';
 import './App.css';
 
 const sideToString = (s: Side): 'red' | 'black' => (s === RED ? 'red' : 'black');
 const otherSide = (s: Side): Side => (s === RED ? BLACK : RED);
-const stateBridgeBase = import.meta.env.VITE_STATE_BRIDGE_BASE || `${window.location.origin}/bridge`;
-const useBridgeCommands = (import.meta.env.VITE_USE_BRIDGE_COMMANDS ?? 'true') !== 'false';
-const stateBridgeWs = stateBridgeBase.replace(/^http/, 'ws');
-
-interface BridgeStateSnapshot {
-  fen: string;
-  cv_fen: string | null;
-  side_to_move?: 'red' | 'black';
-  game_result?: string;
-  is_check?: boolean;
-  event_seq?: number;
-}
-
-interface BridgeBusEvent {
-  type: string;
-  data: Record<string, unknown>;
-  ts: number;
-  seq: number | null;
-}
+const useBridgeCommands =
+  (process.env.NEXT_PUBLIC_USE_BRIDGE_COMMANDS ?? 'true') !== 'false';
 
 interface PendingCoachingEvent {
   move: string;
@@ -62,6 +61,18 @@ function App() {
   const [turnNotice, setTurnNotice] = useState<string | null>(null);
   const [turnActionPending, setTurnActionPending] = useState(false);
   const [opponentMove, setOpponentMove] = useState<{ from: Position; to: Position } | null>(null);
+  const [boardSyncAlert, setBoardSyncAlert] = useState<string | null>(null);
+  // CV health probe + capture/verify helpers live in a hook so they can be
+  // tested in isolation and don't pollute the App component with timers.
+  const {
+    cvServiceHealthy,
+    liveBoardCheckEnabled,
+    setLiveBoardCheckEnabled,
+    requestBoardCapture,
+    validatePendingMoveWithLiveBoardCheck,
+    detectPhysicalMove,
+    verifyPhysicalBoardSync,
+  } = useBoardSync(gameState.fen);
   // Which side the human plays. Defaults to RED (Xiangqi opening side).
   // Switching to BLACK triggers an auto-reset so the engine plays the opener.
   const [playerSide, setPlayerSide] = useState<Side>(RED);
@@ -89,6 +100,8 @@ function App() {
   playerSideRef.current = playerSide;
   const turnPhaseRef = useRef<TurnPhase>(turnPhase);
   turnPhaseRef.current = turnPhase;
+  const pendingMoveRef = useRef<{ from: string; to: string } | null>(pendingMove);
+  pendingMoveRef.current = pendingMove;
 
   // Helper: trigger AI turn after server confirms player's move (or at game
   // start when the engine is the side-to-move).
@@ -130,118 +143,124 @@ function App() {
     );
   }, []);
 
+  const applyStateMessage = useCallback((data: EngineStateMessage) => {
+    endTurnInFlightRef.current = false;
+    setGameStateFromFen(data.fen);
+    setOpponentMove(null);
+    setTurnActionPending(false);
+    // If the engine's side is to move (game start when player is BLACK,
+    // or right after a side-switch reset), kick off the AI automatically.
+    const fenSide = (data.fen.split(' ')[1] ?? 'w').toLowerCase();
+    const sideOnMove: Side = fenSide === 'b' ? BLACK : RED;
+    const result = data.result ?? 'in_progress';
+    if (result !== 'in_progress') {
+      setResult(result as GameResult);
+    }
+    if (
+      isConnectedRef.current &&
+      sideOnMove !== playerSideRef.current &&
+      result === 'in_progress' &&
+      turnPhaseRef.current === 'player_idle' &&
+      !aiThinkingRef.current
+    ) {
+      triggerAiTurn();
+    }
+  }, [setGameStateFromFen, triggerAiTurn]);
+
+  const applyMoveResultMessage = useCallback((data: EngineMoveResultMessage) => {
+    endTurnInFlightRef.current = false;
+    if (!data.valid) {
+      setPendingMove(null);
+      setTurnPhase('player_idle');
+      setTurnNotice(data.reason ?? 'Move was rejected by the engine.');
+      setTurnActionPending(false);
+      if (isConnectedRef.current) {
+        sendMessageRef.current(JSON.stringify({ type: 'get_state' }));
+      }
+      return;
+    }
+
+    if (data.fen) setGameStateFromFen(data.fen);
+    setOpponentMove(null);
+    setPendingMove(null);
+    setTurnNotice(null);
+    setTurnActionPending(false);
+    if (data.move) {
+      pushMoveRecord(data.move.substring(0, 2), data.move.substring(2, 4));
+    }
+
+    chatPanelRef.current?.sendMoveEvent(
+      data.move ?? '',
+      data.fen ?? '',
+      sideToString(playerSideRef.current),
+      data.result ?? 'in_progress',
+      data.is_check ?? false,
+      data.score ?? 0,
+    );
+
+    if (data.result && data.result !== 'in_progress') {
+      setResult(data.result as GameResult);
+    } else if (isConnectedRef.current && data.result === 'in_progress') {
+      triggerAiTurn();
+    }
+  }, [setGameStateFromFen, pushMoveRecord, triggerAiTurn, setResult]);
+
+  const applyAiMoveMessage = useCallback((data: EngineAiMoveMessage) => {
+    endTurnInFlightRef.current = false;
+    if (data.fen) setGameStateFromFen(data.fen);
+    if (data.move) {
+      const from = data.move.substring(0, 2);
+      const to = data.move.substring(2, 4);
+      pushMoveRecord(from, to);
+      const fromPos = { file: from.charCodeAt(0) - 'a'.charCodeAt(0), rank: Number(from[1]) };
+      const toPos = { file: to.charCodeAt(0) - 'a'.charCodeAt(0), rank: Number(to[1]) };
+      if (Number.isInteger(fromPos.rank) && Number.isInteger(toPos.rank)) {
+        setOpponentMove({ from: fromPos, to: toPos });
+      }
+    }
+    aiThinkingRef.current = false;
+    setAiThinking(false);
+    setTurnNotice("Mirror the engine move on the physical board, then press End Engine's Turn.");
+    setTurnActionPending(false);
+    setTurnPhase('engine_done');
+    pendingAcknowledgementCommentaryRef.current = {
+      move: data.move ?? '',
+      fen: data.fen ?? '',
+      side: sideToString(otherSide(playerSideRef.current)),
+      result: data.result ?? 'in_progress',
+      isCheck: data.is_check ?? false,
+      score: data.score ?? 0,
+    };
+
+    if (data.result && data.result !== 'in_progress') {
+      setResult(data.result as GameResult);
+    }
+  }, [setGameStateFromFen, pushMoveRecord, setResult]);
+
   const handleEngineMessage = useCallback((message: string) => {
-    try {
-      const data = JSON.parse(message);
-      console.log('[App] Received:', data.type, data);
+    const data = parseEngineMessage(message);
+    if (data === null) return;
+    console.log('[App] Received:', data.type);
 
-      if (data.type === 'state') {
-        endTurnInFlightRef.current = false;
-        setGameStateFromFen(data.fen);
-        setOpponentMove(null);
-        setTurnActionPending(false);
-        // If the engine's side is to move (game start when player is BLACK,
-        // or right after a side-switch reset), kick off the AI automatically.
-        const fenSide = (data.fen?.split(' ')[1] || 'w').toLowerCase();
-        const sideOnMove: Side = fenSide === 'b' ? BLACK : RED;
-        const result = data.result || 'in_progress';
-        if (
-          isConnectedRef.current &&
-          sideOnMove !== playerSideRef.current &&
-          result === 'in_progress' &&
-          turnPhaseRef.current === 'player_idle' &&
-          !aiThinkingRef.current
-        ) {
-          console.log('[App] State indicates engine to move — triggering AI');
-          triggerAiTurn();
-        }
-      } else if (data.type === 'move_result') {
-        endTurnInFlightRef.current = false;
-        if (data.valid) {
-          console.log('[App] Player move accepted, updating FEN');
-          setGameStateFromFen(data.fen);
-          setOpponentMove(null);
-          setPendingMove(null);
-          setTurnNotice(null);
-          setTurnActionPending(false);
-          if (data.move) {
-            const from = data.move.substring(0, 2);
-            const to = data.move.substring(2, 4);
-            pushMoveRecord(from, to);
-          }
-
-          // Notify coaching pipeline about the player's move
-          chatPanelRef.current?.sendMoveEvent(
-            data.move || '',
-            data.fen || '',
-            sideToString(playerSideRef.current),
-            data.result || 'in_progress',
-            data.is_check || false,
-            data.score || 0,
-          );
-
-          if (data.result && data.result !== 'in_progress') {
-            setResult(data.result);
-          }
-
-          if (isConnectedRef.current && data.result === 'in_progress') {
-            console.log('[App] Player move confirmed, scheduling AI turn');
-            triggerAiTurn();
-          }
-        } else {
-          console.log('[App] Player move rejected:', data.reason);
-          setPendingMove(null);
-          setTurnPhase('player_idle');
-          setTurnNotice(data.reason || 'Move was rejected by the engine.');
-          setTurnActionPending(false);
-          if (isConnectedRef.current) {
-            sendMessageRef.current(JSON.stringify({ type: 'get_state' }));
-          }
-        }
-      } else if (data.type === 'legal_moves') {
+    switch (data.type) {
+      case 'state':
+        applyStateMessage(data);
+        return;
+      case 'move_result':
+        applyMoveResultMessage(data);
+        return;
+      case 'legal_moves':
         setTurnNotice(null);
-        setLegalTargets(data.targets || []);
-      } else if (data.type === 'suggestion') {
-        setSuggestedMove({
-          from: data.from,
-          to: data.to,
-          score: data.score,
-        });
-      } else if (data.type === 'ai_move') {
-        console.log('[App] AI move received:', data.move, 'score:', data.score);
-        endTurnInFlightRef.current = false;
-        setGameStateFromFen(data.fen);
-        if (data.move) {
-          const from = data.move.substring(0, 2);
-          const to = data.move.substring(2, 4);
-          pushMoveRecord(from, to);
-          const fromPos = { file: from.charCodeAt(0) - 'a'.charCodeAt(0), rank: Number(from[1]) };
-          const toPos = { file: to.charCodeAt(0) - 'a'.charCodeAt(0), rank: Number(to[1]) };
-          if (Number.isInteger(fromPos.rank) && Number.isInteger(toPos.rank)) {
-            setOpponentMove({ from: fromPos, to: toPos });
-          }
-        }
-        aiThinkingRef.current = false;
-        setAiThinking(false);
-        setTurnNotice("Mirror the engine move on the physical board, then press End Engine's Turn.");
-        setTurnActionPending(false);
-        // Engine's move is on the board; player must click End Turn to
-        // acknowledge — this gives time to mirror the move on the physical board.
-        setTurnPhase('engine_done');
-        pendingAcknowledgementCommentaryRef.current = {
-          move: data.move || '',
-          fen: data.fen || '',
-          side: sideToString(otherSide(playerSideRef.current)),
-          result: data.result || 'in_progress',
-          isCheck: data.is_check || false,
-          score: data.score || 0,
-        };
-
-        if (data.result && data.result !== 'in_progress') {
-          setResult(data.result);
-        }
-      } else if (data.type === 'error') {
-        console.error('[App] Server error:', data.message);
+        setLegalTargets(data.targets);
+        return;
+      case 'suggestion':
+        setSuggestedMove({ from: data.from, to: data.to, score: data.score ?? 0 });
+        return;
+      case 'ai_move':
+        applyAiMoveMessage(data);
+        return;
+      case 'error':
+        console.error('[App] Server error:', data.message ?? data.reason);
         endTurnInFlightRef.current = false;
         if (aiTurnTimeoutRef.current !== null) {
           clearTimeout(aiTurnTimeoutRef.current);
@@ -249,13 +268,11 @@ function App() {
         }
         aiThinkingRef.current = false;
         setAiThinking(false);
-        setTurnNotice(data.message || 'Engine error.');
+        setTurnNotice(data.message ?? data.reason ?? 'Engine error.');
         setTurnActionPending(false);
-      }
-    } catch {
-      console.log('[App] Received non-JSON message:', message);
+        return;
     }
-  }, [setGameStateFromFen, pushMoveRecord, triggerAiTurn, setResult]);
+  }, [applyStateMessage, applyMoveResultMessage, applyAiMoveMessage]);
 
   const shouldApplyBridgeMove = useCallback((source: string, moveStr: string, fen: string) => {
     const signature = `${source}:${moveStr}:${fen}`;
@@ -267,108 +284,55 @@ function App() {
   }, []);
 
   const handleBridgeCommandMessage = useCallback((message: string) => {
-    try {
-      const data = JSON.parse(message);
-      console.log('[App] Bridge command response:', data.type, data);
+    const data = parseEngineMessage(message);
+    if (data === null) return;
+    console.log('[App] Bridge command response:', data.type);
 
-      if (data.type === 'state') {
-        endTurnInFlightRef.current = false;
-        setGameStateFromFen(data.fen);
-        setTurnActionPending(false);
-        if (data.result && data.result !== 'in_progress') {
-          setResult(data.result);
-        }
-      } else if (data.type === 'legal_moves') {
+    switch (data.type) {
+      case 'state':
+        applyStateMessage(data);
+        return;
+      case 'legal_moves':
         setTurnNotice(null);
-        setLegalTargets(data.targets || []);
-      } else if (data.type === 'suggestion') {
-        setSuggestedMove({
-          from: data.from,
-          to: data.to,
-          score: data.score,
-        });
-      } else if (data.type === 'move_result') {
-        if (data.valid) {
-          const moveStr = data.move || '';
-          const fen = data.fen || '';
-          if (shouldApplyBridgeMove('player', moveStr, fen)) {
-            endTurnInFlightRef.current = false;
-            setGameStateFromFen(fen);
-            setOpponentMove(null);
-            setPendingMove(null);
-            setTurnNotice(null);
-            setTurnActionPending(false);
-            if (moveStr) {
-              pushMoveRecord(moveStr.substring(0, 2), moveStr.substring(2, 4));
-            }
-
-            chatPanelRef.current?.sendMoveEvent(
-              moveStr,
-              fen,
-              sideToString(playerSideRef.current),
-              data.result || 'in_progress',
-              data.is_check || false,
-              data.score || 0,
-            );
-
-            if (data.result && data.result !== 'in_progress') {
-              setResult(data.result);
-            } else if (isConnectedRef.current) {
-              triggerAiTurn();
-            }
-          } else {
-            endTurnInFlightRef.current = false;
-            setTurnActionPending(false);
-          }
-        } else {
+        setLegalTargets(data.targets);
+        return;
+      case 'suggestion':
+        setSuggestedMove({ from: data.from, to: data.to, score: data.score ?? 0 });
+        return;
+      case 'move_result': {
+        if (!data.valid) {
           endTurnInFlightRef.current = false;
           setPendingMove(null);
           setTurnPhase('player_idle');
-          setTurnNotice(data.reason || 'Move was rejected by the engine.');
+          setTurnNotice(data.reason ?? 'Move was rejected by the engine.');
           setTurnActionPending(false);
+          return;
         }
-      } else if (data.type === 'ai_move') {
-        const moveStr = data.move || '';
-        const fen = data.fen || '';
-        if (shouldApplyBridgeMove('ai', moveStr, fen)) {
+        const moveStr = data.move ?? '';
+        const fen = data.fen ?? '';
+        if (!shouldApplyBridgeMove('player', moveStr, fen)) {
           endTurnInFlightRef.current = false;
-          setGameStateFromFen(fen);
-          if (moveStr) {
-            const from = moveStr.substring(0, 2);
-            const to = moveStr.substring(2, 4);
-            pushMoveRecord(from, to);
-            const fromPos = { file: from.charCodeAt(0) - 'a'.charCodeAt(0), rank: Number(from[1]) };
-            const toPos = { file: to.charCodeAt(0) - 'a'.charCodeAt(0), rank: Number(to[1]) };
-            if (Number.isInteger(fromPos.rank) && Number.isInteger(toPos.rank)) {
-              setOpponentMove({ from: fromPos, to: toPos });
-            }
-          }
-
-          aiThinkingRef.current = false;
-          setAiThinking(false);
-          setTurnNotice("Mirror the engine move on the physical board, then press End Engine's Turn.");
           setTurnActionPending(false);
-          setTurnPhase('engine_done');
-          pendingAcknowledgementCommentaryRef.current = {
-            move: moveStr,
-            fen,
-            side: sideToString(otherSide(playerSideRef.current)),
-            result: data.result || 'in_progress',
-            isCheck: data.is_check || false,
-            score: data.score || 0,
-          };
-
-          if (data.result && data.result !== 'in_progress') {
-            setResult(data.result);
-          }
-        } else {
+          return;
+        }
+        applyMoveResultMessage(data);
+        return;
+      }
+      case 'ai_move': {
+        const moveStr = data.move ?? '';
+        const fen = data.fen ?? '';
+        if (!shouldApplyBridgeMove('ai', moveStr, fen)) {
           aiThinkingRef.current = false;
           setAiThinking(false);
           endTurnInFlightRef.current = false;
           setTurnActionPending(false);
+          return;
         }
-      } else if (data.type === 'error') {
-        console.error('[App] Bridge command error:', data.message);
+        applyAiMoveMessage(data);
+        return;
+      }
+      case 'error':
+        console.error('[App] Bridge command error:', data.message ?? data.reason);
         endTurnInFlightRef.current = false;
         if (aiTurnTimeoutRef.current !== null) {
           clearTimeout(aiTurnTimeoutRef.current);
@@ -376,36 +340,35 @@ function App() {
         }
         aiThinkingRef.current = false;
         setAiThinking(false);
-        setTurnNotice(data.message || 'Bridge error.');
+        setTurnNotice(data.message ?? data.reason ?? 'Bridge error.');
         setTurnActionPending(false);
-      }
-    } catch {
-      console.log('[App] Received non-JSON bridge message:', message);
+        return;
     }
-  }, [setGameStateFromFen, setResult, pushMoveRecord, triggerAiTurn, shouldApplyBridgeMove]);
+  }, [
+    setGameStateFromFen,
+    setResult,
+    shouldApplyBridgeMove,
+    applyMoveResultMessage,
+    applyAiMoveMessage,
+  ]);
 
   const handleBridgeEvent = useCallback((event: BridgeBusEvent) => {
-    const data = event.data ?? {};
-    console.log('[App] Bridge event:', event.type, event);
+    console.log('[App] Bridge event:', event.type);
 
     if (event.type === 'state_sync' || event.type === 'fen_update') {
-      const fen = typeof data.fen === 'string' ? data.fen : null;
-      if (!fen) return;
+      const data = asFenUpdateData(event);
+      if (data === null) return;
       endTurnInFlightRef.current = false;
-      setGameStateFromFen(fen);
+      setGameStateFromFen(data.fen);
       setTurnActionPending(false);
       setOpponentMove(null);
 
-      const result = typeof data.result === 'string'
-        ? data.result
-        : typeof data.game_result === 'string'
-          ? data.game_result
-          : 'in_progress';
+      const result = data.result ?? data.game_result ?? 'in_progress';
       if (result !== 'in_progress') {
         setResult(result as GameResult);
       }
 
-      const sideToken = fen.split(' ')[1]?.toLowerCase() || 'w';
+      const sideToken = data.fen.split(' ')[1]?.toLowerCase() || 'w';
       const sideOnMove: Side = sideToken === 'b' ? BLACK : RED;
       if (
         isConnectedRef.current &&
@@ -420,35 +383,29 @@ function App() {
     }
 
     if (event.type === 'best_move') {
-      if (typeof data.from === 'string' && typeof data.to === 'string') {
-        setSuggestedMove({
-          from: data.from,
-          to: data.to,
-          score: 0,
-        });
-      }
+      const data = asBestMoveData(event);
+      if (data === null) return;
+      setSuggestedMove({ from: data.from, to: data.to, score: 0 });
       return;
     }
 
     if (event.type === 'move_made') {
-      const fen = typeof data.fen === 'string' ? data.fen : '';
-      const moveFrom = typeof data.from === 'string' ? data.from : '';
-      const moveTo = typeof data.to === 'string' ? data.to : '';
-      const source = typeof data.source === 'string' ? data.source : '';
+      const data = asMoveMadeData(event);
+      if (data === null) return;
+      const fen = data.fen ?? '';
+      const moveFrom = data.from ?? '';
+      const moveTo = data.to ?? '';
+      const source = data.source ?? '';
       const moveStr = `${moveFrom}${moveTo}`;
-      const result = typeof data.result === 'string' ? data.result : 'in_progress';
-      const isCheck = Boolean(data.is_check);
-      const score = typeof data.score === 'number' ? data.score : 0;
+      const result = data.result ?? 'in_progress';
+      const isCheck = data.is_check ?? false;
+      const score = data.score ?? 0;
       if (!shouldApplyBridgeMove(source, moveStr, fen)) {
         return;
       }
 
-      if (fen) {
-        setGameStateFromFen(fen);
-      }
-      if (moveFrom && moveTo) {
-        pushMoveRecord(moveFrom, moveTo);
-      }
+      if (fen) setGameStateFromFen(fen);
+      if (moveFrom && moveTo) pushMoveRecord(moveFrom, moveTo);
       endTurnInFlightRef.current = false;
 
       if (source === 'player') {
@@ -458,12 +415,7 @@ function App() {
         setTurnActionPending(false);
 
         chatPanelRef.current?.sendMoveEvent(
-          moveStr,
-          fen,
-          sideToString(playerSideRef.current),
-          result,
-          isCheck,
-          score,
+          moveStr, fen, sideToString(playerSideRef.current), result, isCheck, score,
         );
 
         if (result !== 'in_progress') {
@@ -523,36 +475,17 @@ function App() {
 
   const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
   const defaultEngineWsUrl = `${wsProtocol}://${window.location.host}/ws`;
-  const engineWsUrl = import.meta.env.VITE_ENGINE_WS_URL || defaultEngineWsUrl;
-  const bridgeWsUrl = `${stateBridgeWs}/ws`;
+  const engineWsUrl = process.env.NEXT_PUBLIC_ENGINE_WS_URL || defaultEngineWsUrl;
 
   const { sendMessage, isConnected } = useWebSocket({
-    url: useBridgeCommands ? bridgeWsUrl : engineWsUrl,
+    url: useBridgeCommands ? bridgeWsUrl('/ws') : engineWsUrl,
     onMessage: useBridgeCommands ? handleBridgeCommandMessage : handleEngineMessage,
   });
 
   isConnectedRef.current = isConnected;
   sendMessageRef.current = sendMessage;
 
-  useEffect(() => {
-    if (!useBridgeCommands) return;
-
-    const events = new EventSource(`${stateBridgeBase}/state/events`);
-    events.onmessage = (raw) => {
-      try {
-        handleBridgeEvent(JSON.parse(raw.data) as BridgeBusEvent);
-      } catch (error) {
-        console.warn('[App] Failed to parse bridge event:', error);
-      }
-    };
-    events.onerror = (error) => {
-      console.warn('[App] Bridge SSE error:', error);
-    };
-
-    return () => {
-      events.close();
-    };
-  }, [handleBridgeEvent]);
+  useBridgeEventStream(handleBridgeEvent, useBridgeCommands);
 
   // When a piece is selected, request legal moves and (once per turn) a suggestion.
   // Suppress during engine turn phases to avoid flooding WS.
@@ -588,6 +521,7 @@ function App() {
     }
 
     console.log('[App] Pending move set:', from, '→', to);
+    setBoardSyncAlert(null);
     setPendingMove({ from, to });
     setTurnPhase('player_pending');
     setTurnNotice('Move staged locally. Press End My Turn to submit it.');
@@ -598,77 +532,13 @@ function App() {
     return true;
   }, [pendingMove, turnPhase]);
 
-  const fetchBridgeJson = useCallback(async (
-    path: string,
-    init?: RequestInit,
-  ): Promise<unknown> => {
-    const response = await fetch(`${stateBridgeBase}${path}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(init?.headers || {}),
-      },
-      ...init,
-    });
-
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(text || `Bridge request failed with ${response.status}`);
-    }
-
-    return response.json();
-  }, []);
-
-  const detectPhysicalMove = useCallback(async () => {
-    const bridgeState = await fetchBridgeJson('/state') as BridgeStateSnapshot;
-    if (!bridgeState.cv_fen) {
-      throw new Error('No camera board position is available yet.');
-    }
-
-    const derivedMove = deriveMoveFromFenDiff(gameState.fen, bridgeState.cv_fen);
-    const legality = await fetchBridgeJson('/engine/is-move-legal', {
-      method: 'POST',
-      body: JSON.stringify({ fen: gameState.fen, move: derivedMove.move }),
-    }) as { legal: boolean };
-
-    if (!legality.legal) {
-      throw new Error(`Detected physical move ${derivedMove.move} is not legal from the current position.`);
-    }
-
-    return derivedMove;
-  }, [fetchBridgeJson, gameState.fen]);
-
-  const verifyPhysicalBoardSync = useCallback(async () => {
-    try {
-      const bridgeState = await fetchBridgeJson('/state') as BridgeStateSnapshot;
-      if (!bridgeState.cv_fen) {
-        return {
-          ok: true,
-          message: 'Bridge camera state unavailable; skipping physical-board verification.',
-        };
-      }
-
-      if (!fenPlacementsEqual(gameState.fen, bridgeState.cv_fen)) {
-        return {
-          ok: false,
-          message: 'Physical board does not match the engine move yet. Mirror the engine move first.',
-        };
-      }
-
-      return { ok: true, message: null };
-    } catch (error) {
-      console.warn('[App] Bridge sync check failed:', error);
-      return {
-        ok: true,
-        message: 'Bridge unavailable; continuing without physical-board verification.',
-      };
-    }
-  }, [fetchBridgeJson, gameState.fen]);
-
   // Commit the pending move (player) or acknowledge the engine's move.
   const handleEndTurn = useCallback(() => {
     if (endTurnInFlightRef.current) return;
 
-    if (turnPhase === 'player_pending' && pendingMove) {
+    const stagedMove = pendingMoveRef.current;
+
+    if (stagedMove) {
       if (!isConnectedRef.current) {
         console.warn('[App] Cannot end turn — not connected');
         setTurnNotice('Cannot end turn while disconnected from the engine.');
@@ -676,14 +546,62 @@ function App() {
       }
       endTurnInFlightRef.current = true;
       setTurnActionPending(true);
-      const moveStr = `${pendingMove.from}${pendingMove.to}`;
+      const moveStr = `${stagedMove.from}${stagedMove.to}`;
       console.log('[App] End Turn: committing player move', moveStr);
-      setTurnNotice(`Submitting move ${moveStr}...`);
-      sendMessageRef.current(JSON.stringify({ type: 'move', move: moveStr }));
-      setTurnPhase('awaiting_engine');
+      setTurnNotice(liveBoardCheckEnabled && cvServiceHealthy
+        ? 'Verifying the physical board before submitting the move...'
+        : `Submitting move ${moveStr}...`);
+
+      void (async () => {
+        try {
+          let cvUnavailableNotice: string | null = null;
+          if (liveBoardCheckEnabled && cvServiceHealthy) {
+            const capture = await requestBoardCapture();
+            if (capture.fen) {
+              // Real validation: camera saw a board, must agree with the
+              // engine's view of the staged move.
+              await validatePendingMoveWithLiveBoardCheck(moveStr, capture);
+            } else {
+              // CV went unavailable between the last 5-sec health probe
+              // and this click. Don't reject the move — submit with a
+              // notice so the user knows verification was skipped.
+              cvUnavailableNotice =
+                'CV service unavailable; submitting move without physical-board verification.';
+            }
+          }
+
+          setBoardSyncAlert(null);
+          setTurnNotice(cvUnavailableNotice ?? `Submitting move ${moveStr}...`);
+          sendMessageRef.current(JSON.stringify({ type: 'move', move: moveStr }));
+          setTurnPhase('awaiting_engine');
+        } catch (error: unknown) {
+          const message = error instanceof Error
+            ? error.message
+            : 'Board out of sync. This can be caused by a misplaced move or low CV confidence.';
+          // Match docs/error_handling.md: the alternative flow rejects the
+          // submission but the client *stays the same* — the staged move
+          // is preserved so the user can dismiss the warning and either
+          // press End Turn again to retry the validation, or Take Back
+          // to discard. Don't clear pendingMove or flip turnPhase.
+          setTurnNotice(message);
+          setBoardSyncAlert(message);
+          endTurnInFlightRef.current = false;
+          setTurnActionPending(false);
+        }
+      })();
     } else if (turnPhase === 'player_idle') {
       if (!isConnectedRef.current) {
         setTurnNotice('Cannot end turn while disconnected from the engine.');
+        return;
+      }
+
+      // Without a staged digital move, the only legitimate End Turn flow is
+      // "I made the move on the physical board — derive it from CV." If
+      // CV isn't available (or the user disabled live board check), there's
+      // nothing to commit, so prompt them to stage a move first instead of
+      // surfacing the raw bridge 503 to the UI.
+      if (!liveBoardCheckEnabled || !cvServiceHealthy) {
+        setTurnNotice('You need to pick a move before ending your turn.');
         return;
       }
 
@@ -698,6 +616,9 @@ function App() {
           setTurnPhase('awaiting_engine');
         })
         .catch((error: unknown) => {
+          // CV-derived move failed validation — this is a real error path
+          // (board out of sync, illegal move, etc.), not the no-move case
+          // that's now caught by the guard above.
           const message = error instanceof Error
             ? error.message
             : 'Unable to validate the physical-board move.';
@@ -719,7 +640,15 @@ function App() {
             setTurnNotice(message);
             return;
           }
-          flushAcknowledgementCommentary();
+          // Only flush coaching commentary after a clean verification.
+          // When CV is unavailable (message is non-null on the success path)
+          // we still advance the turn but skip commentary so the user isn't
+          // told a board state was confirmed when it wasn't.
+          if (message === null) {
+            flushAcknowledgementCommentary();
+          } else {
+            pendingAcknowledgementCommentaryRef.current = null;
+          }
           setTurnPhase('player_idle');
           setTurnNotice(message);
         })
@@ -728,7 +657,16 @@ function App() {
           setTurnActionPending(false);
         });
     }
-  }, [pendingMove, turnPhase, detectPhysicalMove, verifyPhysicalBoardSync, flushAcknowledgementCommentary]);
+  }, [
+    turnPhase,
+    detectPhysicalMove,
+    verifyPhysicalBoardSync,
+    flushAcknowledgementCommentary,
+    requestBoardCapture,
+    liveBoardCheckEnabled,
+    cvServiceHealthy,
+    validatePendingMoveWithLiveBoardCheck,
+  ]);
 
   // Discard the staged move and return to player_idle so a fresh piece can be chosen.
   const handleTakeBack = useCallback(() => {
@@ -750,6 +688,7 @@ function App() {
     setPendingMove(null);
     setTurnPhase('player_idle');
     setTurnNotice(null);
+    setBoardSyncAlert(null);
     setTurnActionPending(false);
     setAiThinking(false);
     endTurnInFlightRef.current = false;
@@ -765,6 +704,10 @@ function App() {
       sendMessage(JSON.stringify({ type: 'reset' }));
     }
   }, [resetGame, sendMessage, isConnected]);
+
+  const handleLiveBoardCheckToggle = useCallback(() => {
+    setLiveBoardCheckEnabled(!liveBoardCheckEnabled);
+  }, [liveBoardCheckEnabled, setLiveBoardCheckEnabled]);
 
   // Switch which side the player controls. Forces a reset so the engine
   // is in a clean state for the new orientation; if the new side is BLACK,
@@ -853,6 +796,29 @@ function App() {
                     {turnNotice}
                   </div>
                 ) : null}
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                        Live Board Check
+                      </div>
+                      <div className="mt-1 text-[11px] text-slate-300">
+                        {cvServiceHealthy ? 'Use CV to verify the board before ending your turn.' : 'CV offline — verification is disabled.'}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleLiveBoardCheckToggle}
+                      className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] transition-all ${
+                        liveBoardCheckEnabled
+                          ? 'border-emerald-400/50 bg-emerald-500/15 text-emerald-200'
+                          : 'border-white/10 bg-white/5 text-slate-400'
+                      }`}
+                    >
+                      {liveBoardCheckEnabled ? 'On' : 'Off'}
+                    </button>
+                  </div>
+                </div>
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                   <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
                     Board Markers
@@ -951,7 +917,7 @@ function App() {
             />
           </div>
           <Link
-            to="/hardware"
+            href="/hardware"
             className="flex items-center gap-2 px-4 h-9 bg-slate-800 hover:bg-amber-700 text-slate-300 hover:text-white rounded-lg border border-slate-700 hover:border-amber-500 transition-all active:scale-95"
             title="Open Hardware & Bus Dashboard"
           >
@@ -959,7 +925,7 @@ function App() {
             <span className="text-[10px] font-bold uppercase hidden md:inline">Hardware</span>
           </Link>
           <Link
-            to="/agents"
+            href="/agents"
             className="flex items-center gap-2 px-4 h-9 bg-slate-800 hover:bg-purple-700 text-slate-300 hover:text-white rounded-lg border border-slate-700 hover:border-purple-500 transition-all active:scale-95"
             title="Open Agent Pipeline Inspector"
           >
@@ -998,6 +964,31 @@ function App() {
         isOpen={showVoiceSettings}
         onClose={() => setShowVoiceSettings(false)}
       />
+
+      {boardSyncAlert ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/55 px-4">
+          <div className="w-full max-w-md rounded-3xl border border-red-500/30 bg-slate-950 p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-300">
+                  Board Out Of Sync
+                </div>
+                <p className="mt-3 text-sm text-slate-100">
+                  {boardSyncAlert}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBoardSyncAlert(null)}
+                aria-label="Dismiss board sync warning"
+                className="rounded-full border border-white/10 px-3 py-1 text-xs font-bold text-slate-300 hover:bg-white/10"
+              >
+                X
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Game Over Modal */}
       <GameOverModal

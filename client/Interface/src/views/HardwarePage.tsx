@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * /hardware — Hardware & Bus Dashboard
  *
@@ -7,13 +9,10 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
+import { bridgeBase, bridgeFetch, bridgeSseUrl } from '../services/bridgeClient';
 
 // ── Config ────────────────────────────────────────────────────────────────────
-
-const BRIDGE_BASE =
-  (import.meta.env.VITE_STATE_BRIDGE_BASE as string | undefined) ||
-  `${window.location.origin}/bridge`;
 
 const MAX_LOG = 300;
 const STALE_THRESHOLD_MS = 60_000; // service considered "inactive" after 60 s
@@ -47,6 +46,9 @@ interface BusStatus {
 }
 
 interface CvStatus {
+  healthy: boolean | null;
+  probeUrl: string | null;
+  healthDetail: string | null;
   lastCaptureTs: number | null;
   lastFen: string | null;
   errorCount: number;
@@ -93,7 +95,7 @@ function formatTs(unixTs: number): string {
 
 function classifySource(type: string, data: Record<string, unknown>): HardwareSource {
   const source = data.source as string | undefined;
-  if (type === 'cv_capture' || type === 'cv_validation_error') return 'cv';
+  if (type === 'cv_capture_requested' || type === 'cv_capture_result' || type === 'cv_capture' || type === 'cv_validation_error') return 'cv';
   if (type === 'fen_update' && source === 'cv') return 'cv';
   if (type === 'led_command') return 'led';
   if (type === 'move_made' && (source === 'ai' || source === 'opponent')) return 'engine';
@@ -121,6 +123,10 @@ function describeEvent(type: string, data: Record<string, unknown>): string {
     }
     case 'cv_capture':
       return `Camera detected board position | FEN: ${shortFen(d.fen)}`;
+    case 'cv_capture_requested':
+      return `Camera recapture requested via ${d.endpoint ?? '/capture'}`;
+    case 'cv_capture_result':
+      return `Camera capture completed (${d.status ?? 'unknown'}) | FEN: ${shortFen(d.fen)}`;
     case 'cv_validation_error':
       return `CV validation failed — ${d.reason ?? 'no reason provided'}`;
     case 'led_command': {
@@ -157,6 +163,9 @@ function describeLedAction(type: string, data: Record<string, unknown>): string 
     case 'fen_update':
     case 'cv_capture':
       return `→ LED: POST /fen  {fen: "…"}  — redraw all pieces on the board`;
+    case 'cv_capture_requested':
+    case 'cv_capture_result':
+      return '';
     case 'piece_selected': {
       const sq = d.square as string | undefined;
       const hint = sq
@@ -201,6 +210,8 @@ const SOURCE_BADGE: Record<HardwareSource, string> = {
 const TYPE_BADGE: Record<string, string> = {
   state_sync:          'bg-slate-700/80 text-slate-300',
   fen_update:          'bg-blue-900/80 text-blue-200',
+  cv_capture_requested:'bg-indigo-800/80 text-indigo-100',
+  cv_capture_result:   'bg-cyan-900/80 text-cyan-200',
   move_made:           'bg-green-900/80 text-green-200',
   cv_capture:          'bg-indigo-900/80 text-indigo-200',
   cv_validation_error: 'bg-red-900/80 text-red-300',
@@ -306,6 +317,9 @@ export default function HardwarePage() {
     lastEventTs: null,
   });
   const [cv, setCv] = useState<CvStatus>({
+    healthy: null,
+    probeUrl: null,
+    healthDetail: null,
     lastCaptureTs: null,
     lastFen: null,
     errorCount: 0,
@@ -357,15 +371,20 @@ export default function HardwarePage() {
 
   // SSE subscription to /bridge/state/events
   useEffect(() => {
-    const url = `${BRIDGE_BASE}/state/events`;
+    const url = bridgeSseUrl('/state/events');
     let es: EventSource | null = null;
     let cancelled = false;
+    // Cap consecutive failures so a misconfigured token doesn't generate
+    // a 401-retry storm on the bridge. Reset on successful onopen.
+    let failures = 0;
+    const MAX_FAILURES = 5;
 
     function connect() {
       if (cancelled) return;
       es = new window.EventSource(url);
 
       es.onopen = () => {
+        failures = 0;
         setBus((b) => ({ ...b, connected: true }));
       };
 
@@ -392,6 +411,15 @@ export default function HardwarePage() {
             ...c,
             lastCaptureTs: ts,
             lastFen: (data.fen as string) ?? c.lastFen,
+          }));
+        } else if (type === 'cv_capture_result') {
+          setCv((c) => ({
+            ...c,
+            lastCaptureTs: ts,
+            lastFen: typeof data.fen === 'string' ? data.fen : c.lastFen,
+            lastError: Array.isArray(data.issues) && data.issues.length > 0
+              ? String(data.issues[0])
+              : c.lastError,
           }));
         } else if (type === 'cv_validation_error') {
           setCv((c) => ({
@@ -432,8 +460,19 @@ export default function HardwarePage() {
       es.onerror = () => {
         setBus((b) => ({ ...b, connected: false }));
         es?.close();
+        failures += 1;
+        if (cancelled || failures >= MAX_FAILURES) {
+          if (failures >= MAX_FAILURES) {
+            console.error(
+              `[HardwarePage] SSE failed ${failures} times in a row — ` +
+              `giving up. Likely auth or bridge unreachable. Reload the ` +
+              `page after fixing.`,
+            );
+          }
+          return;
+        }
         // Reconnect after 3 s
-        if (!cancelled) setTimeout(connect, 3000);
+        setTimeout(connect, 3000);
       };
     }
 
@@ -444,6 +483,54 @@ export default function HardwarePage() {
       setBus((b) => ({ ...b, connected: false }));
     };
   }, [pushEntry]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function refreshHealth() {
+      try {
+        const response = await bridgeFetch('/health');
+        if (!response.ok) {
+          throw new Error(`Health request failed with ${response.status}`);
+        }
+        const payload = await response.json() as {
+          cv_service_healthy?: boolean;
+          cv_service?: {
+            url?: string;
+            detail?: unknown;
+          };
+        };
+        if (!cancelled) {
+          setCv((current) => ({
+            ...current,
+            healthy: payload.cv_service_healthy ?? false,
+            probeUrl: payload.cv_service?.url ?? null,
+            healthDetail: payload.cv_service?.detail
+              ? JSON.stringify(payload.cv_service.detail)
+              : null,
+          }));
+        }
+      } catch {
+        if (!cancelled) {
+          setCv((current) => ({
+            ...current,
+            healthy: false,
+            healthDetail: 'bridge health probe failed',
+          }));
+        }
+      }
+    }
+
+    void refreshHealth();
+    const interval = window.setInterval(() => {
+      void refreshHealth();
+    }, 5000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, []);
 
   // Filtered log view
   const filteredLog = filter === 'all'
@@ -469,7 +556,7 @@ export default function HardwarePage() {
       {/* ── Header ── */}
       <header className="h-12 shrink-0 flex items-center gap-4 px-5 border-b border-white/10 bg-black/20">
         <Link
-          to="/"
+          href="/"
           className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-xs"
         >
           <span className="material-icons text-sm">arrow_back</span>
@@ -505,7 +592,7 @@ export default function HardwarePage() {
           </div>
           <Row label="Total events" value={String(bus.eventsTotal)} />
           <Row label="Last event" value={relativeTime(bus.lastEventTs)} />
-          <Row label="Stream URL" value="/bridge/state/events" mono />
+          <Row label="Stream URL" value={bridgeSseUrl('/state/events')} mono />
           <div className="mt-2 text-[10px] text-slate-500">
             All hardware services subscribe to this stream.
           </div>
@@ -514,10 +601,12 @@ export default function HardwarePage() {
         {/* Camera / CV */}
         <Card title="Camera / CV Service">
           <div className="flex items-center mb-2">
-            <StatusDot active={cvActive} />
+            <StatusDot active={cv.healthy === true} />
             <span className="text-sm font-semibold">
-              {cv.lastCaptureTs === null
-                ? 'No capture yet'
+              {cv.healthy === false
+                ? 'Unavailable'
+                : cv.lastCaptureTs === null
+                ? 'Running'
                 : cvActive
                 ? 'Active'
                 : 'Idle'}
@@ -530,13 +619,21 @@ export default function HardwarePage() {
             mono
           />
           <Row label="Validation errors" value={String(cv.errorCount)} />
+          <Row label="Health" value={cv.healthy === null ? 'checking...' : cv.healthy ? 'ok' : 'down'} />
+          <Row label="Probe URL" value={cv.probeUrl ?? '—'} mono />
           {cv.lastError && (
             <div className="mt-1 text-[10px] text-red-400 font-mono truncate" title={cv.lastError}>
               ⚠ {cv.lastError}
             </div>
           )}
+          {cv.healthDetail && cv.healthy === false && (
+            <div className="mt-1 text-[10px] text-amber-400 font-mono break-all" title={cv.healthDetail}>
+              probe: {cv.healthDetail}
+            </div>
+          )}
           <div className="mt-2 text-[10px] text-slate-500">
-            Posts <span className="font-mono">POST /bridge/state/fen</span> with{' '}
+            Triggered by <span className="font-mono">POST /bridge/capture</span>, then posts{' '}
+            <span className="font-mono">POST /bridge/state/fen</span> with{' '}
             <span className="font-mono">source: "cv"</span>.
           </div>
         </Card>
@@ -670,7 +767,7 @@ export default function HardwarePage() {
 
       {/* ── Footer ── */}
       <footer className="h-9 shrink-0 flex items-center px-4 border-t border-white/10 bg-black/20 text-[10px] text-slate-600 gap-4">
-        <span>Bridge: <span className="font-mono text-slate-500">{BRIDGE_BASE}</span></span>
+        <span>Bridge: <span className="font-mono text-slate-500">{bridgeBase}</span></span>
         <span>LED port: <span className="font-mono text-slate-500">5000</span></span>
         <span>SSE events capped at {MAX_LOG} entries</span>
         {paused && (
