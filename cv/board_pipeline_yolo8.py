@@ -65,6 +65,7 @@ LED_OFF_BEFORE_CAPTURE_SEC = 0.10
 LED_RESTORE_AFTER_CAPTURE = True
 
 BRIDGE_URL = os.getenv("BRIDGE_URL", "http://localhost:5003")
+STATE_BRIDGE_TOKEN = os.getenv("STATE_BRIDGE_TOKEN", "").strip()
 CV_SERVER_HOST = os.getenv("CV_SERVER_HOST", "0.0.0.0")
 CV_SERVER_PORT = int(os.getenv("CV_SERVER_PORT", "5005"))
 
@@ -725,10 +726,13 @@ def put_status_text(img, lines, x=20, y=30, dy=30, color=(0, 255, 255)):
 def _bridge_post(path, payload):
     try:
         data = json.dumps(payload).encode()
+        headers = {"Content-Type": "application/json"}
+        if STATE_BRIDGE_TOKEN:
+            headers["Authorization"] = f"Bearer {STATE_BRIDGE_TOKEN}"
         req = urllib.request.Request(
             f"{BRIDGE_URL}{path}",
             data=data,
-            headers={"Content-Type": "application/json"},
+            headers=headers,
             method="POST",
         )
 
@@ -740,7 +744,13 @@ def _bridge_post(path, payload):
             return True
 
     except urllib.error.HTTPError as e:
-        print(f"[bridge] {path} HTTP error: {e.code}")
+        if e.code == 401:
+            print(
+                f"[bridge] {path} HTTP error: 401 Unauthorized "
+                f"(set STATE_BRIDGE_TOKEN on the CV machine)"
+            )
+        else:
+            print(f"[bridge] {path} HTTP error: {e.code}")
     except urllib.error.URLError as e:
         print(f"[bridge] {path} connection failed: {e.reason}")
     except Exception as exc:

@@ -104,6 +104,7 @@ row = int(sq[1])               # "0"=0, ..., "9"=9
 2. **Start the Docker services** on the main machine: `docker-compose up`.
 3. **Start the bridge_subscriber** on the Pi:
    ```bash
+   export STATE_BRIDGE_TOKEN=integration-bridge-token
    python ledsystem/bridge_subscriber.py \
      --bridge-url http://<machine-ip>:5003 \
      --led-url http://localhost:5000
@@ -217,11 +218,13 @@ Then the AI makes its move:
 
 ```bash
 # Standard start (connects to Docker host at 192.168.1.x)
+export STATE_BRIDGE_TOKEN=integration-bridge-token
 python ledsystem/bridge_subscriber.py \
   --bridge-url http://192.168.1.100:5003 \
   --led-url http://localhost:5000
 
 # If running bridge locally (development)
+export STATE_BRIDGE_TOKEN=integration-bridge-token
 python ledsystem/bridge_subscriber.py \
   --bridge-url http://localhost:5003 \
   --led-url http://localhost:5000
@@ -234,6 +237,7 @@ python ledsystem/bridge_subscriber.py --mode cli
 
 ```bash
 export BRIDGE_URL=http://192.168.1.100:5003
+export STATE_BRIDGE_TOKEN=integration-bridge-token
 python ledsystem/bridge_subscriber.py
 ```
 
@@ -248,6 +252,7 @@ The subscriber automatically reconnects to the state bridge SSE stream on discon
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | Board stays dark after startup | bridge_subscriber not running | Start `bridge_subscriber.py` on the Pi |
+| bridge_subscriber logs `401 Unauthorized` | Missing or incorrect bridge token | Export `STATE_BRIDGE_TOKEN` or pass `--bridge-token <token>` |
 | Board shows wrong position | `fen_update` event missed during reconnect | On reconnect, bridge sends `state_sync` — board redraws automatically |
 | LEDs don't turn off for CV capture | `led_command off` event not reaching bridge_subscriber | Check bridge_subscriber log for SSE connection errors |
 | Board shows previous position after End Turn | CV validation failed — intended behavior | Player must correct piece and press End Turn again |

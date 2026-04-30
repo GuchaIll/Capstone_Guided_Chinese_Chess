@@ -5,6 +5,7 @@ LEDs by calling the LED server HTTP API (led_server.py on port 5000).
 
 Usage on Raspberry Pi:
     python bridge_subscriber.py                           # bridge mode (default)
+    export STATE_BRIDGE_TOKEN=integration-bridge-token
     python bridge_subscriber.py --bridge-url http://192.168.1.50:5003
     python bridge_subscriber.py --led-url http://localhost:5000
     python bridge_subscriber.py --mode cli                # legacy interactive CLI
@@ -15,10 +16,11 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 import time
 from urllib.request import urlopen, Request
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 
 logging.basicConfig(
     level=logging.INFO,
@@ -67,13 +69,15 @@ RECONNECT_DELAY = 2.0
 MAX_RECONNECT_DELAY = 30.0
 
 
-def sse_stream(url: str):
+def sse_stream(url: str, bridge_token: str | None = None):
     """Yield parsed SSE data dicts from *url*.  Reconnects on failure."""
     delay = RECONNECT_DELAY
     while True:
         try:
             logger.info("Connecting to SSE stream at %s", url)
             req = Request(url, headers={"Accept": "text/event-stream"})
+            if bridge_token:
+                req.add_header("Authorization", f"Bearer {bridge_token}")
             resp = urlopen(req, timeout=None)  # noqa: S310 — trusted internal URL
             delay = RECONNECT_DELAY
             logger.info("SSE stream connected")
@@ -90,6 +94,16 @@ def sse_stream(url: str):
                             except json.JSONDecodeError:
                                 logger.warning("Bad SSE payload: %s", payload[:120])
                     buf = ""
+        except HTTPError as exc:
+            if exc.code == 401:
+                logger.warning(
+                    "SSE connection lost: HTTP 401 Unauthorized — set "
+                    "STATE_BRIDGE_TOKEN or pass --bridge-token to match the "
+                    "bridge's auth token. Reconnecting in %.0fs",
+                    delay,
+                )
+            else:
+                logger.warning("SSE connection lost: %s — reconnecting in %.0fs", exc, delay)
         except (URLError, OSError) as exc:
             logger.warning("SSE connection lost: %s — reconnecting in %.0fs", exc, delay)
         except Exception:
@@ -191,13 +205,13 @@ EVENT_HANDLERS = {
 
 # ── Main ─────────────────────────────────────────────────────────────
 
-def run_bridge_mode(bridge_url: str, led_url: str) -> None:
+def run_bridge_mode(bridge_url: str, led_url: str, bridge_token: str | None = None) -> None:
     global LED_URL
     LED_URL = led_url
     url = f"{bridge_url.rstrip('/')}/state/events"
     logger.info("Starting bridge subscriber — LED server: %s", led_url)
 
-    for event in sse_stream(url):
+    for event in sse_stream(url, bridge_token=bridge_token):
         event_type = event.get("type", "")
         event_data = event.get("data", {})
         handler = EVENT_HANDLERS.get(event_type)
@@ -224,6 +238,14 @@ def main() -> None:
         "--led-url", default="http://localhost:5000",
         help="LED server base URL (default: http://localhost:5000)",
     )
+    parser.add_argument(
+        "--bridge-token",
+        default=os.getenv("STATE_BRIDGE_TOKEN", "").strip(),
+        help=(
+            "Bearer token for the state bridge SSE endpoint "
+            "(default: STATE_BRIDGE_TOKEN env var)"
+        ),
+    )
     args = parser.parse_args()
 
     if args.mode == "cli":
@@ -235,7 +257,11 @@ def main() -> None:
             print("CLI mode requires ledsystem.py with NeoPixel hardware.", file=sys.stderr)
             sys.exit(1)
     else:
-        run_bridge_mode(args.bridge_url, args.led_url)
+        run_bridge_mode(
+            args.bridge_url,
+            args.led_url,
+            bridge_token=args.bridge_token or None,
+        )
 
 
 if __name__ == "__main__":

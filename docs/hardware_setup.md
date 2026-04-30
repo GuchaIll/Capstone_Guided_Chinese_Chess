@@ -203,6 +203,7 @@ Run from the `cv/` directory so relative paths resolve correctly:
 
 ```bash
 cd cv
+export STATE_BRIDGE_TOKEN=integration-bridge-token
 BRIDGE_URL=http://<main-ip>:5003 ../.venv/bin/python board_pipeline_yolo8.py
 ```
 
@@ -214,6 +215,7 @@ When the script is running:
 - all 4 ArUco markers must be visible for a valid full-board warp
 - pressing `c` triggers a capture
 - the script posts the generated FEN to `http://<main-ip>:5003/state/fen`
+- the script sends `Authorization: Bearer $STATE_BRIDGE_TOKEN` on bridge POSTs
 
 On the main computer, refresh `http://localhost:3000/hardware` and confirm:
 
@@ -309,6 +311,7 @@ In a second terminal on the Pi:
 ```bash
 cd /path/to/Capstone_Guided_Chinese_Chess
 source .venv/bin/activate
+export STATE_BRIDGE_TOKEN=integration-bridge-token
 python ledsystem/bridge_subscriber.py \
   --bridge-url http://<main-ip>:5003 \
   --led-url http://localhost:5000
@@ -317,6 +320,7 @@ python ledsystem/bridge_subscriber.py \
 The subscriber:
 
 - connects to `http://<main-ip>:5003/state/events`
+- sends `Authorization: Bearer $STATE_BRIDGE_TOKEN` on the SSE request
 - listens for bridge SSE events
 - translates them into LED server `POST` calls
 
@@ -329,6 +333,11 @@ curl http://<main-ip>:5003/health
 ```
 
 When `bridge_subscriber.py` connects successfully, it should log that the SSE stream is connected.
+
+If it logs `SSE connection lost: HTTP 401 Unauthorized`, the Pi is reaching the
+bridge but did not present a valid bridge token. Re-export `STATE_BRIDGE_TOKEN`
+to match the main stack's `STATE_BRIDGE_TOKEN` value, or pass
+`--bridge-token <token>` explicitly.
 
 On the main computer hardware dashboard, LED activity should start appearing once events are published.
 
@@ -479,9 +488,11 @@ Expected result:
 | CV script starts but never captures a valid board | Missing ArUco markers or wrong camera index | `CAMERA_INDEX`, marker visibility, warped board window |
 | CV script fails on startup with missing model file | `cv/models/best.pt` is absent | Add weights or update `MODEL_PATH` |
 | CV capture runs but frontend says no camera board position is available yet | CV publish never reached the bridge | `BRIDGE_URL`, `curl http://<main-ip>:5003/health`, main hardware dashboard |
+| CV script logs `401 Unauthorized` on `/state/fen` or `/state/led-command` | Missing or wrong `STATE_BRIDGE_TOKEN` on the CV machine | `export STATE_BRIDGE_TOKEN=...` before starting `board_pipeline_yolo8.py` |
 | LED server crashes on import | Missing Pi hardware packages | Install `adafruit-blinka` and `adafruit-circuitpython-neopixel` |
 | LED server starts but lights do not respond | Wiring mismatch or permission issue | GPIO `D18`, pixel count, run with `sudo -E` if needed |
 | Pi subscriber keeps reconnecting | Pi cannot reach the main bridge | `curl http://<main-ip>:5003/health` from the Pi |
+| Pi subscriber gets `401 Unauthorized` | Missing or wrong `STATE_BRIDGE_TOKEN` on the Pi | `export STATE_BRIDGE_TOKEN=...` before starting `bridge_subscriber.py` |
 
 ---
 
@@ -490,4 +501,3 @@ Expected result:
 - `README.md` for the full software stack
 - `docs/led_controller_manual.md` for LED colors and event mapping
 - `docs/bridge_server_flow.md` for the bridge event lifecycle
-

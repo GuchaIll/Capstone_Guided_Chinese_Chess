@@ -70,6 +70,7 @@ GRID_CALIBRATION_FILE = "calibration/grid_calibration.npy"
 GRID_OUTER_OFFSET = 50
 
 BRIDGE_URL = os.getenv("BRIDGE_URL", "http://localhost:5003")
+STATE_BRIDGE_TOKEN = os.getenv("STATE_BRIDGE_TOKEN", "").strip()
 
 # YOLOX class names must match your training order exactly
 YOLOX_CLASS_NAMES = [
@@ -756,12 +757,23 @@ def _bridge_post(path, payload):
     """POST JSON to the state bridge. Fails silently if bridge is down."""
     try:
         data = json.dumps(payload).encode()
+        headers = {"Content-Type": "application/json"}
+        if STATE_BRIDGE_TOKEN:
+            headers["Authorization"] = f"Bearer {STATE_BRIDGE_TOKEN}"
         req = urllib.request.Request(
             f"{BRIDGE_URL}{path}",
             data=data,
-            headers={"Content-Type": "application/json"},
+            headers=headers,
         )
         urllib.request.urlopen(req, timeout=2)
+    except urllib.error.HTTPError as exc:
+        if exc.code == 401:
+            print(
+                f"[bridge] {path} failed: 401 Unauthorized "
+                f"(set STATE_BRIDGE_TOKEN on the CV machine)"
+            )
+        else:
+            print(f"[bridge] {path} failed: HTTP {exc.code}")
     except Exception as exc:
         print(f"[bridge] {path} failed: {exc}")
 

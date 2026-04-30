@@ -25,6 +25,26 @@ def test_sse_stream_parses_single_and_multiple_messages(monkeypatch):
     assert second == payloads[1]
 
 
+def test_sse_stream_sends_bearer_token_when_configured(monkeypatch):
+    seen = {}
+    raw = b'data: {"type":"state_sync","data":{"fen":"start"}}\n\n'
+
+    def fake_urlopen(req, timeout=None):
+        seen["authorization"] = req.get_header("Authorization")
+        return io.BytesIO(raw)
+
+    monkeypatch.setattr(subscriber, "urlopen", fake_urlopen)
+
+    stream = subscriber.sse_stream(
+        "http://bridge/state/events",
+        bridge_token="integration-bridge-token",
+    )
+    first = next(stream)
+
+    assert seen["authorization"] == "Bearer integration-bridge-token"
+    assert first == {"type": "state_sync", "data": {"fen": "start"}}
+
+
 def test_handle_fen_update_updates_cached_fen_and_posts_to_led_server(monkeypatch):
     calls = []
     monkeypatch.setattr(subscriber, "_led_post", lambda path, body=None: calls.append((path, body)) or True)
