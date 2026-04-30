@@ -1,11 +1,15 @@
 # Rust
 /target
 
-# Node / React / Vite
+# Node / React / Vite / Next.js
 node_modules/
 dist/
 *.local
 .vite/
+.next/
+.next
+out/
+.vercel
 
 # Python server
 server/.env
@@ -32,6 +36,11 @@ Thumbs.db
 
 # Engine logs
 Engine/logs/*.txt
+
+# Scraped HTML caches (generated artefacts — do not commit)
+server/web_scraper/knowledge/raw/
+finetunning/data/term_cache/*.html
+finetunning/data/term_cache/*.htm
 
 # Docker
 docker-compose.override.yml
