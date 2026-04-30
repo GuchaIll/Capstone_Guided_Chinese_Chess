@@ -26,38 +26,31 @@ Most Xiangqi learners struggle with a "feedback gap" — they know they lost, bu
 ## Core Features
 
 ### The Physical-Digital Loop
-- **Computer Vision (CV):** Powered by YOLO v8, Kibo identifies piece positions via camera. No manual entry required — just press "End Turn."
-- **LED Guidance:** A NeoPixel-embedded board mirrors the AI's thoughts. It highlights legal moves, engine suggestions (Green), and AI threats (Blue/Purple).
-- **Validation:** The Rust engine cross-references the physical state with game rules, preventing illegal moves before they happen.
-
-
+- **Computer Vision:** YOLO v8 + ArUco perspective correction detects piece positions from a camera frame and exports a FEN string. No manual move entry — just press "End Turn."
+- **LED Guidance:** A NeoPixel-embedded board mirrors the AI's thinking: legal moves (White), best-move suggestion (Green), AI response (Blue/Purple), blunder alert (Red).
+- **Validation:** The Rust engine cross-references the CV FEN with legal moves before any state update occurs.
 
 <p align="center">
   <img src="img/cv.jpg" alt="Computer vision detecting Xiangqi pieces on the physical board">
 </p>
 
-See the physical board in action: [Board demo video](https://drive.google.com/file/d/1cGfy4v5rDAi409OZ9evruLFTVsEpsxWs/view?usp=sharing).
-
 ### 9-Agent Coaching Intelligence
-Kibo doesn't just play against you; it *teaches* you. Our Go-based pipeline processes every move through three distinct paths:
-- **The Blunder Guard:** Immediately halts play if you make a high-loss move (>150cp), forcing a "teachable moment."
-- **The Fast Path:** Provides instant engine evaluations for standard moves.
-- **The Master Path:** Triggered by tactical swings or complex patterns, an LLM-led "Coach" synthesizes a strategic explanation, verified by a "Guard" agent for accuracy.
-- 
+Our Go-based pipeline processes every move through three paths:
+- **Blunder Guard:** Immediately halts play on moves with >150 cp loss and queues a targeted puzzle.
+- **Fast Path:** Engine evaluation + principal variation returned instantly when no blunder is detected.
+- **Slow Path:** Triggered by tactical patterns or large evaluation swings — an LLM Coach synthesizes a strategic explanation, verified by a Guard agent for move legality before delivery.
+
 <p align="center">
-  <a href="https://drive.google.com/file/d/1cGfy4v5rDAi409OZ9evruLFTVsEpsxWs/view?usp=sharing">
-    <img src="img/agents.png" alt="agents" >
-  </a>
+  <img src="img/agents.png" alt="9-agent coaching pipeline">
 </p>
 
-
 ### Immersive Interface
-- **3D Coach Avatar:** A Three.js animated character (Kibo) who reacts to your play — dancing for wins and providing visual cues for advice.
-- **Voice Control:** Fully browser-native STT/TTS. Talk to Kibo to move pieces or ask for advice.
-- **Plug-and-Play AI:** Ships with a "Mock Mode" for offline play, but supports OpenRouter, OpenAI, and Anthropic for high-level coaching.
+- **3D Coach Avatar:** Kibo (Three.js / Mixamo FBX) reacts to game events with trigger-mapped animations — cheering on wins, expressing frustration on blunders — driven by the state bridge's WebSocket event bus.
+- **Voice Control:** Browser-native STT/TTS; wake word "Kibo" routes spoken moves to the board and questions to the coaching pipeline.
+- **Plug-and-Play AI:** Ships with Mock Mode (no API key). Supports OpenRouter, OpenAI, and Anthropic via environment variable.
 
 <p align="center">
-  <img src="img/kibo.jpg" alt="Kibo 3D coaching avatar" width = "50%">
+  <img src="img/kibo.jpg" alt="Kibo 3D coaching avatar" width="50%">
 </p>
 
 ---
@@ -66,14 +59,68 @@ Kibo doesn't just play against you; it *teaches* you. Our Go-based pipeline proc
 
 ```mermaid
 graph TD
-    A[Physical Board] -->|Press End Turn| B(CV Pipeline: YOLO v8)
-    B -->|FEN State| C{State Bridge}
-    C -->|Validate| D[Rust Engine]
-    C -->|Analyze| E[Go Coach Pipeline]
-    E -->|Advice/Puzzles| F[React Frontend]
-    D -->|LED Commands| A
-    F -->|Voice/Animations| G[Kibo 3D Avatar]
+    subgraph Hardware["Physical Hardware (Raspberry Pi)"]
+        Button[End Turn Button<br/>GPIO]
+        Camera[USB/CSI Camera]
+        LEDStrip[NeoPixel LED Strip<br/>GPIO D18]
+        Board[Wooden Xiangqi Board<br/>with ArUco markers]
+    end
+
+    subgraph PiSoftware["On-Pi Software"]
+        CV[CV Pipeline<br/>YOLO v8 + OpenCV]
+        LEDServer[LED Server<br/>Flask :5000]
+        BridgeSub[Bridge Subscriber<br/>SSE → LED commands]
+    end
+
+    subgraph MainMachine["Main Machine (Docker)"]
+        StateBridge[State Bridge<br/>FastAPI + SSE :5003]
+        RustEngine[Rust Engine<br/>Warp WS :8080]
+        GoCoach[Go Coach<br/>9-agent LLM :5002]
+        ReactUI[React Frontend<br/>Next.js :3000]
+        Kibo3D[Kibo 3D Avatar<br/>Three.js :3001]
+        ChromaDB[(ChromaDB<br/>RAG Knowledge)]
+    end
+
+    Button -->|press event| CV
+    Camera -->|frame capture| CV
+    CV -->|FEN string| StateBridge
+    StateBridge -->|validate move| RustEngine
+    RustEngine -->|legal moves / AI move| StateBridge
+    StateBridge -->|analysis request| GoCoach
+    GoCoach -->|RAG query| ChromaDB
+    GoCoach -->|coaching advice| ReactUI
+    StateBridge -->|SSE: fen_update, best_move| ReactUI
+    StateBridge -->|SSE: LED commands| BridgeSub
+    BridgeSub -->|HTTP POST| LEDServer
+    LEDServer -->|NeoPixel colors| LEDStrip
+    ReactUI -->|animation commands| Kibo3D
 ```
+
+### System Architecture (as Built)
+
+Kibo is a physical-digital hybrid with four logical layers:
+
+| Layer | Components | Deployment |
+|---|---|---|
+| **Physical Input** | Camera, End Turn button, wooden board with ArUco markers | Raspberry Pi 4 |
+| **On-Pi Processing** | YOLO v8 CV pipeline + LED server + bridge subscriber | Raspberry Pi 4 |
+| **Game & Coaching Core** | Rust engine (rules, AI), FastAPI state bridge, Go 9-agent coach, ChromaDB RAG | Docker on main machine |
+| **User Interface** | React game board, Three.js Kibo avatar, voice control | Docker on main machine |
+
+Critical data flow:
+
+1. User moves piece → presses physical button.
+2. Pi captures image → YOLO v8 detects pieces (ArUco markers enable perspective correction for accurate piece mapping) → FEN string sent to State Bridge.
+3. State Bridge validates FEN against Rust Engine. If illegal → Pi LEDs flash red + frontend modal.
+4. If legal → update board → SSE to React UI and LED subscriber on Pi.
+5. LED subscriber calls Pi's LED server to light up legal moves / best move / AI response.
+6. Go Coach analyzes position (blunder check, tactical patterns, RAG retrieval) → returns advice to UI + Kibo animation commands.
+
+> **Key architectural note:** The Rust Engine never directly controls LEDs. All LED commands flow through the **State Bridge → Bridge Subscriber → LED Server** sequence. This decoupling was added after initial design when we integrated the physical board.
+
+### Architecture Evolution
+
+Our initial design assumed the Rust Engine would speak directly to the LED board via WebSocket. During integration, we discovered that the Pi's network latency and LED driver constraints required an asynchronous, event-driven approach. We introduced the **Bridge Subscriber** (SSE client on Pi) and **LED Server** (Flask REST API) as a separate control plane. This change improved reliability and allowed the CV pipeline to run independently. The current diagram reflects this production architecture.
 
 ### Technical Stack
 
@@ -88,535 +135,53 @@ graph TD
 
 ---
 
-## Hardware & Software Overview
-
-<p align="center">
-  <img src="img/block_diagram.png" alt="High-level system architecture block diagram" width = "80%">
-</p>
-
-Kibo is a physical-digital system. The hardware layer is a Raspberry Pi running on the same network as the main machine; the software layer runs entirely in Docker on any laptop or desktop.
-
-### Hardware Components
-
-| Component | Details |
-|---|---|
-| **Raspberry Pi 4** | Hosts the LED server (`:5000`), bridge subscriber, and CV pipeline |
-| **NeoPixel GRBW Strip** | 400 individually addressable LEDs embedded beneath the board, wired to GPIO D18 |
-| **USB / CSI Camera** | Aimed at the board; feeds frames to YOLO v8 for piece detection |
-| **Xiangqi Board** | Physical 9×10 board with ArUco marker corners for perspective correction |
-| **End Turn Button** | GPIO button on the Pi that triggers a CV capture and sends the new state to the bridge |
-
-### Software Components
-
-| Component | Technology | Role |
-|---|---|---|
-| **Rust Engine** | Warp / WebSocket | Authoritative game logic: rule enforcement, Alpha-Beta AI, FEN validation |
-| **State Bridge** | Python / FastAPI | Central event hub; relays board state to the frontend, LED board, and coach via SSE |
-| **Go Coach** | Go / 9-agent LLM graph | Blunder detection, tactical analysis, puzzle generation, LLM coaching synthesis |
-| **React Client** | React / TypeScript | Game board UI, chat panel, voice control, and agent inspector |
-| **Kibo Avatar** | Three.js / GLTF | Animated 3D coach; reacts to game events; driven by animation command broadcasts |
-| **ChromaDB** | ChromaDB v2 / HTTP | Vector store hosting four Xiangqi knowledge collections |
-| **Embedding Service** | Python / sentence-transformers (`BAAI/bge-m3`) | Converts text queries to dense vectors for RAG retrieval |
-| **CV Pipeline** | Python / YOLO v8 + OpenCV | Detects piece positions from camera frames; exports board state as a FEN string |
-| **LED Board Driver** | Python / Adafruit NeoPixel | Translates SSE events from the bridge into NeoPixel color commands |
-
----
-
-## Knowledge Base & ChromaDB Migration
-
-<p align="center">
-  <img src="img/schema_diagram.png" alt="RAG collection and retrieval flow">
-</p>
-
-The Go coaching pipeline retrieves Xiangqi knowledge from four ChromaDB vector collections: `openings`, `tactics`, `endgames`, and `beginner_principles`. These collections must be populated before the coaching service can return strategy explanations.
-
-### Collections
-
-| Collection | Content |
-|---|---|
-| `openings` | Opening theory, system names, opening principles |
-| `tactics` | Tactical patterns: clearance, fork, pin, dislodge, discovered check |
-| `endgames` | Endgame patterns, checkmate constructions, practical motifs |
-| `beginner_principles` | General principles, proverbs, piece values, phase advice |
-
-### Prerequisites
-
-- Python 3.10+ with `pip`
-- ChromaDB and embedding service running (included in `docker compose up`)
-
-### Step 1 — Create the virtual environment
-
-```bash
-cd server/web_scraper/knowledge
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-### Step 2 — Acquire raw HTML sources
-
-`acquire.py` fetches all source URLs defined in `sources.yaml` and writes raw HTML to `raw/`.
-
-```bash
-# Fetch Wave 1 sources (main knowledge corpus)
-python acquire.py --wave 1
-
-# Re-fetch sources whose URLs were corrected (safe to run again)
-python acquire.py --wave 1 --force
-```
-
-### Step 3 — Run the full pipeline
-
-`run_pipeline.sh` chains all four stages: acquire → normalize → chunk → ingest.
-
-```bash
-# Full pipeline with defaults (Wave 1, ChromaDB at localhost:8000)
-./run_pipeline.sh
-
-# Custom ChromaDB or embedding URL
-CHROMADB_URL=http://localhost:8000 EMBEDDING_URL=http://localhost:8100 ./run_pipeline.sh
-
-# Force re-run all stages even if outputs already exist
-./run_pipeline.sh --force
-
-# Dry run — acquire + normalize + chunk only, skip ChromaDB write
-./run_pipeline.sh --dry-run
-```
-
-Or run the stages individually:
-
-```bash
-# 1. Normalize raw HTML → cleaned text
-python normalize.py
-
-# 2. Chunk cleaned text into overlapping passages
-python chunk.py
-
-# 3. Export chunks to JSON (builds json/knowledge_base.json)
-python export_json.py
-
-# 4. Embed and upsert into ChromaDB
-python populate_chromadb.py
-
-# Force-repopulate (clears existing data and re-ingests)
-python populate_chromadb.py --force
-```
-
-### Step 4 — Validate the migration
-
-```bash
-python validate_chromadb_collections.py \
-  --chromadb-url http://localhost:8000 \
-  --embedding-url http://localhost:8100 \
-  --output-prefix chromadb_validation_latest
-```
-
-Reports are written to `manifests/chromadb_validation_latest.json` and `manifests/chromadb_validation_latest.md`. Expected collection sizes after a full Wave 1 ingest: `openings`≈111, `tactics`≈31, `endgames`≈80, `beginner_principles`≈199.
-
----
-
-## 🎮 Quick Start
+## Quick Start
 
 ### Prerequisites
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) v24+
-- (Optional) OpenRouter or OpenAI API Key for advanced coaching
-
-### Launch (Mock Mode)
-Run the entire system locally without an API key:
+- (Optional) OpenRouter or OpenAI API key for live coaching
 
 ```bash
 git clone --recurse-submodules <repo-url>
 cd Capstone_Guided_Chinese_Chess
-cp .env.example .env
+cp .env.example .env          # add API key or leave blank for Mock Mode
 docker compose up --build
 ```
 
-> **First-time setup:** After `docker compose up --build` completes, populate the coaching knowledge base by following the [Knowledge Base & ChromaDB Migration](#knowledge-base--chromadb-migration) guide. The game runs without it, but coaching explanations will be unavailable until the collections are loaded.
-
-### Access the Ecosystem
+First build takes ~5 minutes (Rust compilation + ML library downloads).
 
 | URL | What you get |
 |---|---|
-| http://localhost:3000 | Main Game UI |
-| http://localhost:3001 | 3D Avatar View |
-| http://localhost:5002/dashboard/ | Intelligence Dashboard |
-
-If you want a quick product walkthrough before running the full stack, watch the [board working demo](https://drive.google.com/file/d/1cGfy4v5rDAi409OZ9evruLFTVsEpsxWs/view?usp=sharing).
-
----
-
-## 📖 Deep Dive: The Turn Lifecycle
-
-When a player moves a physical piece and hits **End Turn**:
-
-1. **Vision:** YOLO v8 captures the board, generating a FEN string.
-2. **Verification:** The Rust Engine ensures the move is legal. If not, LEDs flash red and the UI blocks the turn.
-3. **Analysis:** The Go Coach checks for a blunder. If detected, it skips deep analysis and immediately generates a "Fix this move" puzzle.
-4. **Synthesis:** If the move is tactical, the Position Analyst identifies patterns (pins, forks). The Coach Agent drafts an explanation, and the Guard Agent verifies that no illegal moves were suggested.
-5. **Feedback:** Kibo (the avatar) emotes, the voice synthesizes the advice, and the physical board lights up the recommended "Best Move."
-
----
-
-## Features
-
-### Physical Board Integration
-- **End Turn button** triggers CV camera capture — no manual move entry needed
-- **Computer vision** (YOLO v8 + ArUco markers) detects piece positions and generates a FEN
-- **Engine validation**: the new board state must match a legal move before anything updates
-- **Validation failure modal**: if the CV FEN does not match a legal move, the frontend blocks play and prompts the player to correct the piece
-- **LED guidance**: move highlights, best-move suggestions, and AI responses are mirrored on the physical board in real time
-
-### AI Coaching — 9-Agent Pipeline (Go)
-
-The coaching pipeline runs automatically on every End Turn. It has three output paths:
-
-| Path | Trigger | Output |
-|---|---|---|
-| **Blunder abort** | Move is a blunder (>150 cp loss) | Blunder summary only; all other analysis skipped; puzzle queued for next turn |
-| **Fast path** | No blunder, no coach trigger | Engine evaluation + principal variation (no LLM call) |
-| **Slow path** | No blunder + coach trigger met | Engine evaluation + LLM coaching advice (approved by Guard) |
-
-**Coach triggers** — the LLM runs only when at least one is satisfied:
-- Player has made **3 or more moves** since Coach last ran
-- **Evaluation swings ≥ 200 centipawns** from the previous position
-- **Tactical pattern detected** (fork, pin, hanging piece, cannon threat)
-
-| Agent | Role |
-|---|---|
-| **Ingest** | Parses FEN, move, and question from raw input |
-| **Inspection** | Validates FEN against the engine before anything runs |
-| **Orchestrator** | Classifies intent, sets routing flags, evaluates coach trigger conditions |
-| **Blunder Detection** | Runs first — aborts all downstream agents if a blunder is detected |
-| **Position Analyst** | Deep position evaluation; detects tactical patterns; feeds fast path |
-| **Puzzle Curator** | Generates training puzzles (runs in parallel with Position Analyst) |
-| **Coach** | LLM synthesis of all analysis into coaching advice (slow path only) |
-| **Guard** | Scores Coach output — verifies every move in advice is legal; approves or rejects |
-| **Feedback** | Assembles the final response for the appropriate path |
-
-### Gameplay
-- Full Xiangqi rule enforcement (legal moves, flying general, perpetual check/chase, stalemate)
-- Alpha-Beta minimax AI opponent with configurable difficulty
-- Drag-and-drop or click-to-move piece interaction on an authentic 9×10 board
-- Real-time move sync over WebSocket; AI turn fires automatically after player move is accepted
-
-### LED Board Color Guide
-
-| Color | Meaning |
-|---|---|
-| Red | Selected piece |
-| White | Empty legal destination |
-| Orange | Capturable destination |
-| Blue | Opponent / AI move origin |
-| Purple | Opponent / AI move destination |
-| Green | Best-move suggestion from engine |
-| Yellow / Pink | Win celebration animation |
-
-### Kibo — 3D Coach Avatar
-Kibo is a digital avatar that transforms chess gameplay into a personalized, interactive experience and reflects on your progress over time, surfacing insights about your growth as a player — making every game feel like a coaching session.
-
-- Three.js GLTF character with full animation state machine
-- States: Idle · Walking · Running · Sitting · Standing · Dance
-- Emotes: Wave · Jump · Yes · No · Punch · ThumbsUp
-- Coaching server broadcasts animation commands when LLM output contains action keywords
-
-### Voice Interaction
-- Wake-word detection: **"Kibo"** (also accepts: Kibble, Kimbo, Kiko, Kido)
-- Web Speech API STT / TTS — fully in-browser, no external service required
-- Chess moves spoken aloud are sent to the board; other speech goes to the chat panel
-
-### LLM Flexibility
-- Pluggable provider: OpenRouter · OpenAI · Anthropic · Mock (offline fallback)
-- Mock provider ships by default — the full pipeline runs without an API key
-- Switch provider via environment variables, no code changes required
-
----
-
-## Project Structure
-
-```
-Capstone_Guided_Chinese_Chess/
-├── Engine/                       # Rust — game logic, AI, WebSocket server
-│   └── src/
-│       ├── api.rs                # Warp HTTP/WS handlers
-│       ├── game.rs               # Xiangqi rules and board
-│       ├── game_state.rs         # Position, history, scoring
-│       └── ai/
-│           └── alpha_beta.rs
-│
-├── server/
-│   ├── state_bridge/             # Python FastAPI — central event hub
-│   │   ├── app.py                # REST + SSE endpoints
-│   │   ├── engine_relay.py       # Persistent WS relay to Rust engine
-│   │   ├── events.py             # EventBus (SSE broadcast)
-│   │   └── state.py              # In-memory GameStateBridge
-│   │
-│   ├── chess_coach/              # Go — 9-agent coaching pipeline
-│   │   ├── cmd/main.go           # HTTP server, tool registry, graph wiring
-│   │   ├── graph.go              # Agent graph definition
-│   │   ├── agents/               # All 9 agent implementations
-│   │   ├── engine/               # BridgeClient, WSClient, MockEngine
-│   │   ├── tools/                # Engine tools, RAG tools, puzzle tools
-│   │   └── skills/               # Coaching skill definitions (JSON)
-│   │
-│   ├── go_agent_framework/       # Git submodule — reusable Go agent runtime
-│   │   ├── core/                 # Agent graph engine, node lifecycle, SSE bus
-│   │   ├── contrib/              # Optional integrations (LLM adapters, RAG helpers)
-│   │   ├── dashboard/            # Embedded web dashboard (agent graph visualizer)
-│   │   ├── observability/        # Prometheus metrics and tracing helpers
-│   │   └── examples/             # Standalone usage examples
-│   │
-│   ├── agent_orchestration/      # Python — LLM orchestration, session memory
-│   │   ├── agents/               # Specialist agent implementations
-│   │   └── tools/                # Engine client, RAG retriever, LLM client
-│   │
-│   └── embedding_service/        # Python — sentence transformer API
-│
-├── ledsystem/                    # Raspberry Pi — LED board driver
-│   ├── led_board.py              # NeoPixel hardware layer
-│   ├── led_server.py             # Flask REST API (:5000)
-│   └── bridge_subscriber.py     # SSE → LED event handler
-│
-├── cv/                           # Computer vision — board state detection
-│   └── board_pipeline_yolo8.py  # YOLO v8 + ArUco perspective warp + FEN export
-│
-├── client/Interface/             # React + TypeScript — board UI
-│   └── src/
-│       ├── components/           # Board, ChatPanel, GameOverModal, VoiceControl
-│       ├── hooks/                # useGameState, useWebSocket, useVoiceCommands
-│       └── pages/                # GamePage, AgentsPage
-│
-├── Kibo/                         # Three.js — Kibo 3D character viewer
-│
-├── bridge_server_flow.md         # Detailed state bridge sequence diagrams
-├── agents_flow.md                # Full coaching pipeline reference
-├── led_controller_manual.md      # LED board step-by-step user guide
-└── docker-compose.yml            # 8-service container orchestration
-```
-
----
-
-## Port Mapping
-
-| Service | Host Port | Container Port | Protocol |
-|---|---|---|---|
-| **chess-engine** | — (internal only) | 8080 | HTTP + WebSocket |
-| **state-bridge** | 5003 | 5003 | HTTP + WebSocket (REST + SSE + WS) |
-| **go-coaching** | 5002 | 8080 | HTTP |
-| **chess-coaching** | 5001 | 5000 | HTTP |
-| **chromadb** | 8000 | 8000 | HTTP |
-| **embedding** | 8100 | 8100 | HTTP |
-| **chess-client** | 3000 / 80 | 3000 | HTTP |
-| **kibo-viewer** | 3001 | 3001 | HTTP |
-| **led-server** (Pi) | 5000 | — | HTTP |
-
-### Key Endpoints
-
-| URL | Description |
-|---|---|
-| `http://localhost:3000` | Main game interface |
-| `http://localhost:3000/agents` | Agent pipeline inspector |
-| `http://localhost:3001` | Kibo 3D avatar |
-| `ws://localhost:5003/ws` | State bridge gameplay WebSocket |
-| `http://localhost:5003/state/events` | State bridge SSE stream |
-| `http://localhost:5003/health` | State bridge health |
-| `http://localhost:5002/dashboard/` | Go Coach live agent graph UI |
-| `http://localhost:5002/dashboard/events` | Real-time SSE of agent execution |
-| `http://localhost:5002/coach` | General coaching endpoint |
-| `http://localhost:5002/coach/analyze` | Position analysis only |
-| `http://localhost:5002/coach/blunder` | Blunder detection on a move sequence |
-| `http://localhost:5002/coach/puzzle` | Puzzle generation |
-| `http://localhost:5002/health` | Go coach health |
-| `http://localhost:5002/metrics` | Prometheus metrics |
-| `http://localhost:5001/health` | Python coach health |
-
----
-
-## Setup Guide
-
-### Prerequisites
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) v24+
-- Git
-- (Physical board only) Raspberry Pi with NeoPixel LED strip and camera module
-
-### 1. Clone the Repository
-```bash
-git clone <repo-url>
-cd Capstone_Guided_Chinese_Chess
-```
-
-### 1a. Initialize Submodules
-
-This repository includes `server/go_agent_framework` as a Git submodule. After cloning, initialize it:
-
-```bash
-git submodule update --init --recursive
-```
-
-If you cloned with `--recurse-submodules` the submodule is already populated and you can skip this step.
-
-To update the submodule to its latest commit in the future:
-
-```bash
-git submodule update --remote server/go_agent_framework
-```
-
-### 2. Configure Environment
-```bash
-cp .env.example .env
-```
-
-```dotenv
-# LLM provider (leave blank to run in mock mode — no API key needed)
-LLM_PROVIDER=openrouter
-OPENROUTER_API_KEY=sk-or-...
-
-# OR use Anthropic:
-# LLM_PROVIDER=anthropic
-# ANTHROPIC_API_KEY=sk-ant-...
-
-# Embedding model for RAG (downloads on first run)
-EMBEDDING_MODEL=BAAI/bge-m3
-```
-
-The app runs fully in **mock mode** without an API key — all pipeline agents execute and return canned coaching responses.
-
-### 3. Start All Services
-```bash
-docker compose up --build
-```
-
-First build takes ~5 minutes (Rust compilation + ML library downloads). Subsequent starts use cached layers.
-
-### 4. Open the App
-
-| URL | What you get |
-|---|---|
-| http://localhost:3000 | Game board + chat + voice |
+| http://localhost:3000 | Main game interface |
 | http://localhost:3001 | Kibo 3D avatar |
-| http://localhost:3000/agents | Live agent inspector |
-| http://localhost:5002/dashboard/ | Go coaching pipeline dashboard |
+| http://localhost:5002/dashboard/ | Live agent graph UI |
 
-### Stopping
-```bash
-docker compose down
-```
+> **One-time knowledge base setup:** After the first build, populate the ChromaDB coaching collections. See [docs/chromadb_setup.md](docs/chromadb_setup.md).
+
+> **Physical board (Pi):** See [docs/hardware_setup.md](docs/hardware_setup.md) for LED server, bridge subscriber, and CV pipeline setup.
 
 ---
 
-## Physical Board Setup (Raspberry Pi)
-
-### Prerequisites
-- Raspberry Pi 4 (or 3B+)
-- NeoPixel GRBW LED strip (400 pixels) wired to GPIO D18
-- USB or CSI camera aimed at the board
-- Pi and main machine on the same network
-
-### 1. Install dependencies on the Pi
-```bash
-pip install flask requests adafruit-circuitpython-neopixel ultralytics opencv-python
-```
-
-### 2. Start the LED server
-```bash
-cd ledsystem
-python led_server.py
-# Runs at http://localhost:5000
-```
-
-### 3. Start the bridge subscriber
-```bash
-python bridge_subscriber.py \
-  --bridge-url http://<main-machine-ip>:5003 \
-  --led-url http://localhost:5000
-```
-
-### 4. Start the CV pipeline
-```bash
-cd cv
-BRIDGE_URL=http://<main-machine-ip>:5003 python board_pipeline_yolo8.py
-```
-
-Once running, **End Turn** on the frontend triggers CV capture, engine validation, and LED updates automatically. See [led_controller_manual.md](led_controller_manual.md) for full LED color reference and step-by-step game sequences.
-
----
-
-## Local Development (Without Docker)
-
-### Rust Engine
-```bash
-cd Engine
-cargo run --release
-# binds to 127.0.0.1:8080 by default for bridge-only access
-```
-
-### State Bridge
-```bash
-cd server/state_bridge
-pip install -r requirements.txt
-ENGINE_WS_URL=ws://localhost:8080/ws uvicorn app:app --port 5003 --reload
-```
-
-Use the bridge as the public gameplay endpoint:
-
-```text
-ws://localhost:5003/ws
-http://localhost:5003/state/events
-```
-
-### Go Coaching Service
-```bash
-cd server/chess_coach
-BRIDGE_URL=http://localhost:5003 go run ./cmd/main.go
-# http://localhost:5002
-```
-
-### Python Coaching Server
-```bash
-cd server
-pip install -r requirements.txt
-ENGINE_WS_URL=ws://localhost:8080/ws uvicorn app:app --port 5001 --reload
-```
-
-### React Client
-```bash
-cd client/Interface
-npm install
-npm run dev
-# http://localhost:3000
-```
-
----
-
-## Architecture Documentation
-
-| Document | Contents |
-|---|---|
-| [bridge_server_flow.md](bridge_server_flow.md) | Complete state bridge sequence diagrams: End Turn → CV → validation → LED sync, SSE event reference, engine relay patterns |
-| [agents_flow.md](agents_flow.md) | Full 9-agent coaching pipeline: per-agent state reads/writes, bridge endpoint calls, tool registry, coach trigger logic |
-| [led_controller_manual.md](led_controller_manual.md) | LED board hardware reference, color guide, step-by-step game sequences, troubleshooting |
-| [hardware_setup.md](docs/hardware_setup.md) | Step-by-step setup for the main computer, CV computer, and Raspberry Pi LED controller |
-
----
-
-## How a Turn Works (Physical Board)
+## How a Turn Works
 
 ```
 Player moves piece → presses End Turn
     │
     ├─ LEDs turn off (100 ms CV blackout)
     │
-    ├─ CV captures board → YOLO detects pieces → FEN generated
+    ├─ Pi: CV captures board → YOLO v8 detects pieces → FEN generated
     │
-    ├─ State Bridge validates FEN against engine legal moves
+    ├─ State Bridge validates FEN against Rust Engine legal moves
     │       │
     │       ├─ FAIL → LEDs restore, warning modal on screen → player corrects piece
     │       │
     │       └─ PASS → board state updated
     │                   └─ SSE fen_update → frontend board redraws
     │                   └─ SSE best_move  → green LED + board highlight
+    │                   └─ SSE LED commands → Bridge Subscriber → LED Server → Pi LEDs
     │                   └─ AI move computed → blue/purple LED + board update
     │
-    └─ ChatPanel sends move to Go Coach
+    └─ Go Coach analyzes position
             │
             ├─ Blunder Detection runs first
             │       └─ BLUNDER → feedback with blunder summary only, puzzle queued
@@ -630,29 +195,28 @@ Player moves piece → presses End Turn
 
 ---
 
-## Future Improvements
+## 🧠 Engineering Takeaways
 
-### Coaching
-- Fine-tuned Xiangqi-specific model replacing generic LLM prompting
-- Cross-session player profile persistence (SQLite → cloud)
-- Spaced repetition for puzzle library with difficulty ratings
-- Opening explorer with ECO-style Xiangqi opening database
-
-### Physical Board
-- Piece-lift detection via reed switches or pressure sensors for automatic piece selection highlighting
-- Improved CV robustness under variable lighting conditions
-- Fan-out LED architecture to support larger board sizes
-
-### Infrastructure
-- Redis pub/sub for multi-session agent isolation
-- Grafana dashboard for LLM latency, token usage, and blunder rates
-- Mobile-responsive board layout for iPhone / iPad play
-- Game replay and annotated PGN export
+> Decoupling LED control from the Rust engine via an SSE subscriber on the Pi made the system more resilient to network hiccups — a design change we made mid-integration when direct WebSocket control proved unreliable under Pi load. The 6-week timeline taught us to prioritise rigorous testing where it mattered most (blunder detection, engine relay) and mock everything else (full LLM calls, CV in unit tests). Building the Go agent framework as a reusable submodule was the right call: it let us iterate on the 9-agent graph independently and will outlive this project.
 
 ---
 
-## 🛠️ Future Roadmap
+## Future Improvements
 
-- **Personalization:** Cross-session player profiles to track "Tactical Blindspots."
-- **Hardware:** Pressure-sensitive board for 0-latency piece detection.
-- **Knowledge:** Fine-tuning a Llama-3 model specifically on historical Xiangqi manuals.
+- **Coaching:** Fine-tuned Xiangqi-specific model; cross-session player profiles; spaced repetition puzzle library
+- **Physical Board:** Piece-lift detection via reed switches for zero-latency selection highlighting; improved CV robustness under variable lighting
+- **Infrastructure:** Redis pub/sub for multi-session isolation; Grafana dashboard for LLM latency and blunder rates; game replay and annotated PGN export
+
+---
+
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [docs/chromadb_setup.md](docs/chromadb_setup.md) | ChromaDB knowledge base pipeline: acquire → normalize → chunk → ingest |
+| [docs/hardware_setup.md](docs/hardware_setup.md) | Full Raspberry Pi setup: LED server, bridge subscriber, CV pipeline, wiring |
+| [docs/bridge_server_flow.md](docs/bridge_server_flow.md) | State bridge sequence diagrams: End Turn → CV → validation → LED sync |
+| [docs/agents_flow.md](docs/agents_flow.md) | 9-agent coaching pipeline: per-agent state, bridge calls, tool registry |
+| [docs/led_controller_manual.md](docs/led_controller_manual.md) | LED color guide, step-by-step game sequences, troubleshooting |
+| [docs/local_dev.md](docs/local_dev.md) | Running services outside Docker: Rust, Go coach, state bridge, React client |
+
