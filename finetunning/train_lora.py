@@ -30,9 +30,11 @@ Prerequisites
 from __future__ import annotations
 
 import argparse
+import inspect
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -160,15 +162,21 @@ def train(args: argparse.Namespace) -> None:
     import torch
     from datasets import Dataset
     from peft import LoraConfig, TaskType
+    from transformers import DataCollatorForLanguageModeling
     from transformers import (
         AutoModelForCausalLM,
         AutoTokenizer,
         TrainingArguments,
         logging as hf_logging,
     )
-    from trl import DataCollatorForCompletionOnlyLM, SFTTrainer
+    from trl import SFTTrainer
 
     hf_logging.set_verbosity_error()
+
+    try:
+        from trl import DataCollatorForCompletionOnlyLM  # type: ignore
+    except ImportError:
+        DataCollatorForCompletionOnlyLM = None
 
     # --- Load dataset ---
     print(f"Loading training data from: {args.train_file}")
@@ -227,10 +235,23 @@ def train(args: argparse.Namespace) -> None:
 
     # --- Completion-only data collator (loss only on assistant tokens) ---
     response_template = "<|im_start|>assistant\n"
-    data_collator = DataCollatorForCompletionOnlyLM(
-        response_template=response_template,
-        tokenizer=tokenizer,
-    )
+    if DataCollatorForCompletionOnlyLM is not None:
+        data_collator = DataCollatorForCompletionOnlyLM(
+            response_template=response_template,
+            tokenizer=tokenizer,
+        )
+    else:
+        print(
+            "trl.DataCollatorForCompletionOnlyLM is unavailable; "
+            "using built-in completion-only masking fallback."
+        )
+        data_collator = _CompletionOnlyFallbackCollator(
+            tokenizer=tokenizer,
+            response_template=response_template,
+            max_length=args.max_seq_len,
+            torch_module=torch,
+            lm_collator_cls=DataCollatorForLanguageModeling,
+        )
 
     # --- Training arguments ---
     use_fp16 = not args.no_fp16 and torch.cuda.is_available()
@@ -255,16 +276,33 @@ def train(args: argparse.Namespace) -> None:
     )
 
     # --- Trainer ---
-    trainer = SFTTrainer(
-        model=base_model,
-        train_dataset=train_dataset,
-        eval_dataset=val_dataset,
-        peft_config=lora_config,
-        data_collator=data_collator,
-        formatting_func=lambda sample: sample["text"],
-        max_seq_length=args.max_seq_len,
-        args=training_args,
-    )
+    trainer_kwargs: dict[str, Any] = {
+        "model": base_model,
+        "train_dataset": train_dataset,
+        "eval_dataset": val_dataset,
+        "peft_config": lora_config,
+        "data_collator": data_collator,
+        "args": training_args,
+    }
+    trainer_signature = inspect.signature(SFTTrainer.__init__)
+    trainer_params = trainer_signature.parameters
+
+    if "formatting_func" in trainer_params:
+        trainer_kwargs["formatting_func"] = lambda sample: sample["text"]
+    elif "dataset_text_field" in trainer_params:
+        trainer_kwargs["dataset_text_field"] = "text"
+
+    if "tokenizer" in trainer_params:
+        trainer_kwargs["tokenizer"] = tokenizer
+    elif "processing_class" in trainer_params:
+        trainer_kwargs["processing_class"] = tokenizer
+
+    if "max_seq_length" in trainer_params:
+        trainer_kwargs["max_seq_length"] = args.max_seq_len
+    elif "max_length" in trainer_params:
+        trainer_kwargs["max_length"] = args.max_seq_len
+
+    trainer = SFTTrainer(**trainer_kwargs)
 
     # --- Train ---
     print(
@@ -296,6 +334,99 @@ def train(args: argparse.Namespace) -> None:
         f"  model = PeftModel.from_pretrained(model, '{output_dir}')\n"
         f"  tokenizer = AutoTokenizer.from_pretrained('{output_dir}')"
     )
+
+
+class _CompletionOnlyFallbackCollator:
+    """Compatibility fallback when TRL doesn't export completion-only collator."""
+
+    def __init__(
+        self,
+        *,
+        tokenizer: Any,
+        response_template: str,
+        max_length: int,
+        torch_module: Any,
+        lm_collator_cls: Any,
+    ) -> None:
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+        self.torch = torch_module
+        self.template_ids = tokenizer.encode(
+            response_template,
+            add_special_tokens=False,
+        )
+        self.lm_collator = lm_collator_cls(
+            tokenizer=tokenizer,
+            mlm=False,
+            return_tensors="pt",
+        )
+
+    def __call__(self, features: list[dict[str, Any]]) -> dict[str, Any]:
+        encoded_features: list[dict[str, Any]] = []
+        for feature in features:
+            if "text" in feature:
+                encoded = self.tokenizer(
+                    feature["text"],
+                    truncation=True,
+                    max_length=self.max_length,
+                    add_special_tokens=False,
+                )
+                input_ids = encoded["input_ids"]
+                attention_mask = encoded["attention_mask"]
+            elif "input_ids" in feature:
+                input_ids = self._to_int_list(feature["input_ids"])
+                if len(input_ids) > self.max_length:
+                    input_ids = input_ids[: self.max_length]
+                if "attention_mask" in feature:
+                    attention_mask = self._to_int_list(feature["attention_mask"])[: len(input_ids)]
+                else:
+                    attention_mask = [1] * len(input_ids)
+            else:
+                raise KeyError(
+                    f"Expected feature to contain 'text' or 'input_ids', got keys: {sorted(feature.keys())}"
+                )
+
+            labels = list(input_ids)
+            start = self._find_last_subsequence(input_ids, self.template_ids)
+            if start == -1:
+                labels = [-100] * len(labels)
+            else:
+                assistant_start = start + len(self.template_ids)
+                labels[:assistant_start] = [-100] * assistant_start
+            encoded_features.append(
+                {
+                    "input_ids": input_ids,
+                    "attention_mask": attention_mask,
+                    "labels": labels,
+                }
+            )
+
+        batch = self.lm_collator(encoded_features)
+        labels = batch["labels"]
+        pad_token_id = self.tokenizer.pad_token_id
+        if pad_token_id is not None:
+            labels = self.torch.where(
+                batch["input_ids"] == pad_token_id,
+                self.torch.full_like(labels, -100),
+                labels,
+            )
+        batch["labels"] = labels
+        return batch
+
+    @staticmethod
+    def _find_last_subsequence(haystack: list[int], needle: list[int]) -> int:
+        if not needle or len(needle) > len(haystack):
+            return -1
+        for start in range(len(haystack) - len(needle), -1, -1):
+            if haystack[start : start + len(needle)] == needle:
+                return start
+        return -1
+
+    @staticmethod
+    def _to_int_list(values: Any) -> list[int]:
+        if hasattr(values, "tolist"):
+            values = values.tolist()
+        return [int(value) for value in values]
 
 
 # ========================

@@ -205,7 +205,7 @@ def test_physical_board_end_turn_success_flow(reset_bridge_state: dict[str, obje
         "state_sync",
         "led_command",
         "led_command",
-        "fen_update",
+        "cv_capture",
         "best_move",
         "move_made",
     ]

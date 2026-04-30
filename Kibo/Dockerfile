@@ -13,6 +13,11 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci --ignore-scripts 2>/dev/null || npm install
 
+# Bridge auth is enforced on /ws/kibo, so bake the token into the Vite
+# bundle for browser WebSocket handshakes.
+ARG STATE_BRIDGE_TOKEN=integration-bridge-token
+ENV VITE_STATE_BRIDGE_TOKEN=$STATE_BRIDGE_TOKEN
+
 # Copy source and build
 COPY . .
 RUN npm run build

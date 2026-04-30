@@ -5,7 +5,7 @@ export default defineConfig({
     port: 3001,
     proxy: {
       '/ws/kibo': {
-        target: 'ws://localhost:5001',
+        target: 'ws://localhost:5003',
         ws: true,
       },
     },

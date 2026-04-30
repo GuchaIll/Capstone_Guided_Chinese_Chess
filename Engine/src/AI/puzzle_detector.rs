@@ -219,6 +219,14 @@ pub fn detect_puzzle(
     // ── 5. Cannon screen threats (cannon aligned with live target) ────────
     for screen in &analysis.cannon_screens {
         if screen.target_piece.is_some() {
+            // Skip cannon-on-cannon screens. In Xiangqi opening setup both
+            // sides keep cannons on the b- and h-files, so each cannon
+            // "threatens" the opposing knight through the opposing cannon.
+            // The threat is mutual and structural, not tactical, so it would
+            // otherwise score the starting position as puzzle-worthy.
+            if screen.screen_piece.to_lowercase().contains("cannon") {
+                continue;
+            }
             let target_sq = screen.target_square.clone().unwrap_or_default();
             let desc = format!(
                 "{} cannon at {} threatens {} through screen at {}",

@@ -649,7 +649,8 @@ mod tests {
         state.apply_move_str("h9g7");
         assert_eq!(state.halfmove_clock(), 2);
 
-        state.apply_move_str("e2e9");
+        // Red cannon b2 captures black knight at b9 (one screen at b7).
+        state.apply_move_str("b2b9");
         assert_eq!(state.halfmove_clock(), 0);
     }
 
@@ -680,7 +681,8 @@ mod tests {
         state.apply_move_str("e2e6");
         assert_eq!(state.fullmove_number(), 2);
 
-        state.apply_move_str("g7f5");
+        // Black pawn a6→a5 — simple forward push, away from the active file.
+        state.apply_move_str("a6a5");
         assert_eq!(state.fullmove_number(), 3);
     }
 
@@ -703,10 +705,11 @@ mod tests {
         assert_eq!(state.captured().red_captured.len(), 0);
         assert_eq!(state.captured().black_captured.len(), 0);
 
+        // Red pawn advances, black pawn advances, red pawn captures.
         let mut state2 = GameState::new();
-        state2.apply_move_str("a0a1");
-        state2.apply_move_str("a9a8");
-        state2.apply_move_str("a1a6");
+        state2.apply_move_str("a3a4");
+        state2.apply_move_str("a6a5");
+        state2.apply_move_str("a4a5");
 
         assert_eq!(state2.captured().red_captured.len(), 1);
         assert_eq!(state2.captured().red_captured[0], BLACK_PAWN);

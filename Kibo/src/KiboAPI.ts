@@ -1,5 +1,6 @@
 import { KiboCharacter } from './KiboCharacter';
-import type { KiboCommand, KiboStatus, CharacterState, CharacterEmote } from './types';
+import type { KiboCommand, KiboStatus, CharacterState, CharacterEmote, FbxAnimation } from './types';
+import { pickAnimation } from './animationMap';
 
 /**
  * KiboAPI – the control surface the orchestration engine uses to stage
@@ -30,6 +31,10 @@ export class KiboAPI {
 
   playEmote(emote: CharacterEmote, duration?: number): void {
     this.character.playEmote(emote, duration);
+  }
+
+  playFbx(name: FbxAnimation, duration?: number): void {
+    this.character.playFbx(name, duration);
   }
 
   setExpression(name: string, weight: number): void {
@@ -89,6 +94,19 @@ export class KiboAPI {
         break;
       case 'playEmote':
         if (cmd.emote) this.playEmote(cmd.emote, cmd.duration);
+        break;
+      case 'playFbx':
+        if (cmd.fbx) this.playFbx(cmd.fbx, cmd.duration);
+        break;
+      case 'playTrigger':
+        if (cmd.trigger) {
+          const anim = pickAnimation(cmd.trigger);
+          if (anim) {
+            this.playFbx(anim, cmd.duration);
+          } else {
+            console.warn('[KiboAPI] No animation mapped for trigger:', cmd.trigger);
+          }
+        }
         break;
       case 'setExpression':
         if (cmd.expression) {

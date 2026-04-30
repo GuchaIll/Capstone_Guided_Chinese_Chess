@@ -31,6 +31,25 @@ SERVICE_HEALTHCHECKS = {
     "go_coaching": "http://127.0.0.1:5002/health",
     "coaching": "http://127.0.0.1:5001/health",
 }
+# Match the token wired into docker-compose.yml for the state-bridge service.
+# Override in the environment if running compose with a different token.
+BRIDGE_TOKEN = os.environ.get(
+    "STATE_BRIDGE_TOKEN", "integration-bridge-token"
+)
+BRIDGE_HOSTS = ("127.0.0.1:5003", "localhost:5003")
+
+
+def _request_targets_bridge(url: str) -> bool:
+    return any(host in url for host in BRIDGE_HOSTS)
+
+
+def _with_bridge_auth(
+    url: str, headers: dict[str, str] | None
+) -> dict[str, str]:
+    merged = dict(headers or {})
+    if _request_targets_bridge(url) and "Authorization" not in merged:
+        merged["Authorization"] = f"Bearer {BRIDGE_TOKEN}"
+    return merged
 
 
 def _is_environment_blocked(message: str) -> bool:
@@ -64,7 +83,7 @@ def http_request(
     req = urllib.request.Request(url, data=data, method=method)
     if data is not None:
         req.add_header("Content-Type", "application/json")
-    for key, value in (headers or {}).items():
+    for key, value in _with_bridge_auth(url, headers).items():
         req.add_header(key, value)
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -123,7 +142,8 @@ def read_sse_events(
     trigger: Callable[[], None] | None = None,
     timeout: float = 15.0,
 ) -> list[dict[str, Any]]:
-    req = urllib.request.Request(url, headers={"Accept": "text/event-stream"})
+    sse_headers = _with_bridge_auth(url, {"Accept": "text/event-stream"})
+    req = urllib.request.Request(url, headers=sse_headers)
     events: list[dict[str, Any]] = []
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         if trigger is not None:
@@ -154,7 +174,8 @@ def read_sse_events_for_duration(url: str, duration: float) -> list[dict[str, An
     stop = threading.Event()
 
     def _reader() -> None:
-        req = urllib.request.Request(url, headers={"Accept": "text/event-stream"})
+        sse_headers = _with_bridge_auth(url, {"Accept": "text/event-stream"})
+        req = urllib.request.Request(url, headers=sse_headers)
         data_lines: list[str] = []
         try:
             with urllib.request.urlopen(req, timeout=duration + 2.0) as resp:

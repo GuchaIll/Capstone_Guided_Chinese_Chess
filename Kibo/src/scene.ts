@@ -1,7 +1,10 @@
 import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 /**
  * Set up the base Three.js scene: camera, lights, ground, grid, renderer.
+ * Returns OrbitControls for free camera roaming and an updateDebug()
+ * function to refresh the camera position overlay — call both each frame.
  */
 export function createScene() {
   // Renderer
@@ -9,20 +12,21 @@ export function createScene() {
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
 
-  // Camera
+  // Camera — Kibo is at native Mixamo scale (~170 units tall).
+  // Matches the camera position used in the Three.js FBX example.
   const camera = new THREE.PerspectiveCamera(
     45,
     window.innerWidth / window.innerHeight,
-    0.25,
-    100,
+    1,
+    2000,
   );
-  camera.position.set(-5, 3, 10);
-  camera.lookAt(0, 2, 0);
+  camera.position.set(100, 200, 300);
+  camera.lookAt(0, 100, 0);
 
   // Scene
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xe0e0e0);
-  scene.fog = new THREE.Fog(0xe0e0e0, 20, 100);
+  scene.fog = new THREE.Fog(0xe0e0e0, 200, 1000);
 
   // Lights
   const hemiLight = new THREE.HemisphereLight(0xffffff, 0x8d8d8d, 3);
@@ -50,6 +54,34 @@ export function createScene() {
   // Clock
   const clock = new THREE.Clock();
 
+  // ── OrbitControls — free camera roaming ──────────────────────────
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 100, 0); // waist height at native Mixamo scale
+  controls.enableDamping = true;  // smooth inertia
+  controls.dampingFactor = 0.08;
+  controls.update();
+
+  // ── Camera debug overlay ─────────────────────────────────────────
+  const panel = document.createElement('div');
+  panel.style.cssText = [
+    'position:fixed', 'bottom:12px', 'left:12px',
+    'background:rgba(0,0,0,0.55)', 'color:#e8e8e8',
+    'font:12px/1.6 monospace', 'padding:8px 12px',
+    'border-radius:6px', 'pointer-events:none',
+    'white-space:pre', 'z-index:9999',
+  ].join(';');
+  document.body.appendChild(panel);
+
+  const f = (n: number) => n.toFixed(3).padStart(8);
+
+  function updateDebug() {
+    const p = camera.position;
+    const t = controls.target;
+    panel.textContent =
+      `pos    x:${f(p.x)}  y:${f(p.y)}  z:${f(p.z)}\n` +
+      `target x:${f(t.x)}  y:${f(t.y)}  z:${f(t.z)}`;
+  }
+
   // Resize handler
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -57,5 +89,5 @@ export function createScene() {
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  return { renderer, camera, scene, clock };
+  return { renderer, camera, scene, clock, controls, updateDebug };
 }
