@@ -148,7 +148,7 @@ func TestBuildGraphSlowPathInvokesCoachLLMAndGuard(t *testing.T) {
 	if !strings.Contains(feedback, "Evaluation:") {
 		t.Fatalf("feedback missing evaluation: %q", feedback)
 	}
-	if !strings.Contains(feedback, "Coaching advice [move_count]") {
+	if !strings.Contains(feedback, "Coaching advice:") {
 		t.Fatalf("feedback missing coaching advice section: %q", feedback)
 	}
 	if !strings.Contains(feedback, "Play b0c2") {
@@ -214,6 +214,33 @@ func TestBuildGraphSuppressesIllegalAdviceOnSlowPath(t *testing.T) {
 	}
 	if approved, _ := ctx.State["coach_advice_approved"].(bool); approved {
 		t.Fatalf("guard should reject illegal advice")
+	}
+}
+
+func TestBuildGraphKeepsDescriptiveMoveCommentaryOnSlowPath(t *testing.T) {
+	graph := newGraphForTest(t, &rejectingMoveEngine{MockEngine: &engine.MockEngine{}}, llm.Models{
+		Analysis:      &countingLLM{response: "Red played e4e5 to claim space, but that move may have weakened the surrounding pieces."},
+		Orchestration: &countingLLM{response: "EXPLAIN"},
+	})
+
+	ctx := newGraphContext(map[string]interface{}{
+		"fen":                    testGraphFEN,
+		"question":               "Comment on this move.",
+		"move":                   "e4e5",
+		"has_move":               true,
+		"moves_since_last_coach": 3,
+	})
+
+	if err := graph.Run(ctx); err != nil {
+		t.Fatalf("graph run: %v", err)
+	}
+
+	feedback, _ := ctx.State["feedback"].(string)
+	if !strings.Contains(feedback, "Red played e4e5") {
+		t.Fatalf("descriptive move commentary should survive guard approval: %q", feedback)
+	}
+	if approved, _ := ctx.State["coach_advice_approved"].(bool); !approved {
+		t.Fatalf("guard should approve descriptive commentary about the analyzed move")
 	}
 }
 

@@ -13,8 +13,12 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, AsyncIterator
 
+from pydantic import BaseModel
+
 
 class EventType(str, Enum):
+    CV_CAPTURE_REQUESTED = "cv_capture_requested"
+    CV_CAPTURE_RESULT = "cv_capture_result"
     FEN_UPDATE = "fen_update"
     MOVE_MADE = "move_made"
     CV_CAPTURE = "cv_capture"
@@ -25,6 +29,7 @@ class EventType(str, Enum):
     PIECE_SELECTED = "piece_selected"
     GAME_RESET = "game_reset"
     STATE_SYNC = "state_sync"
+    KIBO_TRIGGER = "kibo_trigger"
 
 
 @dataclass
@@ -33,6 +38,18 @@ class Event:
     data: dict[str, Any] = field(default_factory=dict)
     timestamp: float = field(default_factory=time.time)
     sequence: int | None = None
+
+    @classmethod
+    def from_model(cls, event_type: EventType, payload: BaseModel) -> "Event":
+        """Build an Event from a validated Pydantic payload model.
+
+        Use this in preference to constructing Event(data={...}) so the
+        wire shape of every published event is checked at the boundary.
+        """
+        return cls(
+            type=event_type,
+            data=payload.model_dump(by_alias=True, exclude_none=True),
+        )
 
     def to_sse(self) -> str:
         """Format as an SSE message line."""

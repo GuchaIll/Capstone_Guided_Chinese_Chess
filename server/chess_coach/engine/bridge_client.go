@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -14,14 +15,18 @@ import (
 // Use when the coaching service runs inside Docker alongside the state bridge.
 type BridgeClient struct {
 	baseURL string
+	token   string
 	http    *http.Client
 }
 
 // NewBridgeClient creates a BridgeClient pointing at the given base URL,
-// e.g. "http://state-bridge:5003".
+// e.g. "http://state-bridge:5003". The Bearer token is read from the
+// STATE_BRIDGE_TOKEN environment variable; mutating endpoints on the bridge
+// will reject requests when it is empty.
 func NewBridgeClient(baseURL string) *BridgeClient {
 	return &BridgeClient{
 		baseURL: baseURL,
+		token:   os.Getenv("STATE_BRIDGE_TOKEN"),
 		http:    &http.Client{Timeout: 90 * time.Second},
 	}
 }
@@ -37,6 +42,9 @@ func (c *BridgeClient) post(ctx context.Context, path string, body interface{}, 
 		return fmt.Errorf("bridge request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
 
 	resp, err := c.http.Do(req)
 	if err != nil {
@@ -101,6 +109,9 @@ func (c *BridgeClient) GetState(ctx context.Context) (map[string]interface{}, er
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/state", nil)
 	if err != nil {
 		return nil, err
+	}
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {

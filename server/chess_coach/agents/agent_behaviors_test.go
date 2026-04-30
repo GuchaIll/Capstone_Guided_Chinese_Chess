@@ -186,7 +186,7 @@ func TestCoachAgentUsesDynamicFallbackWhenMockLLMIsActive(t *testing.T) {
 	}
 }
 
-func TestBlunderDetectionAgentSynthesizesFallbackFromHangingPiece(t *testing.T) {
+func TestBlunderDetectionAgentDoesNotSynthesizeBlunderFromHangingPiecePattern(t *testing.T) {
 	ctx := newTestContext(map[string]interface{}{
 		"fen":                     testXiangqiFEN,
 		"move":                    "b0c2",
@@ -201,19 +201,19 @@ func TestBlunderDetectionAgentSynthesizesFallbackFromHangingPiece(t *testing.T) 
 		t.Fatalf("blunder detection run: %v", err)
 	}
 
-	if got := ctx.State["blunder_abort"]; got != true {
-		t.Fatalf("expected fallback blunder_abort=true, got %v", got)
+	if got := ctx.State["blunder_abort"]; got != false {
+		t.Fatalf("expected no synthetic blunder abort, got %v", got)
 	}
-	if got := ctx.State["route_puzzle"]; got != true {
-		t.Fatalf("expected puzzle to be routed after fallback blunder, got %v", got)
+	if got := ctx.State["route_puzzle"]; got != nil {
+		t.Fatalf("expected puzzle routing to stay untouched, got %v", got)
 	}
-	if got := ctx.State["coach_trigger"]; got != "tactical_pattern" {
-		t.Fatalf("expected tactical_pattern coach trigger, got %v", got)
+	if got := ctx.State["coach_trigger"]; got != "none" {
+		t.Fatalf("expected coach trigger to remain unchanged, got %v", got)
 	}
 	blunderData, _ := ctx.State["blunder_analysis"].(map[string]interface{})
 	blunders, _ := blunderData["blunders"].([]interface{})
-	if len(blunders) == 0 {
-		t.Fatalf("expected synthesized blunder entry, got %#v", blunderData)
+	if len(blunders) != 0 {
+		t.Fatalf("expected no synthesized blunder entry, got %#v", blunderData)
 	}
 }
 
@@ -234,6 +234,44 @@ func TestGuardAgentRejectsIllegalAdviceMoves(t *testing.T) {
 	}
 	if got := ctx.State["coaching_advice"]; got != "" {
 		t.Fatalf("coaching_advice should be cleared, got %v", got)
+	}
+}
+
+func TestGuardAgentAllowsDescriptiveMoveMentionsForAnalyzedMove(t *testing.T) {
+	ctx := newTestContext(map[string]interface{}{
+		"fen":             testXiangqiFEN,
+		"move":            "e4e5",
+		"coaching_advice": "Red played e4e5 to gain space, but that move may have loosened key defenses.",
+	})
+	reg := newTestToolRegistry(t, &rejectingEngine{MockEngine: &engine.MockEngine{}})
+
+	agent := &GuardAgent{Tools: reg}
+	if err := agent.Run(ctx); err != nil {
+		t.Fatalf("guard run: %v", err)
+	}
+
+	if got := ctx.State["coach_advice_approved"]; got != true {
+		t.Fatalf("descriptive move mention should be approved, got %v", got)
+	}
+	if got := ctx.State["coaching_advice"]; got == "" {
+		t.Fatalf("coaching_advice should be preserved for descriptive mentions")
+	}
+}
+
+func TestGuardAgentAllowsAdviceWithoutExplicitMoveStrings(t *testing.T) {
+	ctx := newTestContext(map[string]interface{}{
+		"fen":             testXiangqiFEN,
+		"coaching_advice": "Improve your central control and keep your pieces coordinated before starting an attack.",
+	})
+	reg := newTestToolRegistry(t, &rejectingEngine{MockEngine: &engine.MockEngine{}})
+
+	agent := &GuardAgent{Tools: reg}
+	if err := agent.Run(ctx); err != nil {
+		t.Fatalf("guard run: %v", err)
+	}
+
+	if got := ctx.State["coach_advice_approved"]; got != true {
+		t.Fatalf("advice without move strings should be approved, got %v", got)
 	}
 }
 
@@ -264,8 +302,28 @@ func TestFeedbackAgentComposesExplanationPath(t *testing.T) {
 	if !strings.Contains(feedback, "Best move: b0c2") {
 		t.Fatalf("feedback missing best move: %q", feedback)
 	}
-	if !strings.Contains(feedback, "Coaching advice [move_count]") {
+	if !strings.Contains(feedback, "Coaching advice:") {
 		t.Fatalf("feedback missing coaching section: %q", feedback)
+	}
+}
+
+func TestFeedbackAgentSanitizesCoachAdviceFormatting(t *testing.T) {
+	ctx := newTestContext(map[string]interface{}{
+		"coaching_advice":       "Context: Control the center first. This longer explanation was triggered by explicit.",
+		"coach_advice_approved": true,
+		"coach_trigger":         "explicit",
+	})
+
+	if err := (&FeedbackAgent{}).Run(ctx); err != nil {
+		t.Fatalf("feedback run: %v", err)
+	}
+
+	feedback, _ := ctx.State["feedback"].(string)
+	if strings.Contains(feedback, "Context:") {
+		t.Fatalf("feedback should not leak debug context labels: %q", feedback)
+	}
+	if strings.Contains(feedback, "[explicit]") {
+		t.Fatalf("feedback should not show internal trigger labels: %q", feedback)
 	}
 }
 

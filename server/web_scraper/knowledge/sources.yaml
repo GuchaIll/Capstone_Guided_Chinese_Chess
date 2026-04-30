@@ -9,6 +9,22 @@ notes:
   - "2026-04-22: Resolved xqinenglish_tjm_practical_endgames URL (catid=220). Added xiangqi_com_how_to_play and xiangqi_com_pieces_and_moves as new Wave 1 sources."
 
 sources:
+  - source_id: xqinenglish_simple_glossary
+    title: "Basics of Xiangqi (Chinese Chess) Simple Glossary"
+    site_name: xqinenglish
+    canonical_url: "https://www.xqinenglish.com/index.php?option=com_content&view=article&id=110&catid=110&Itemid=504&lang=en"
+    url_status: resolved
+    phase: all_phases
+    format: html
+    extraction_method: html_content_div
+    raw_subdir: xqinenglish
+    priority: P0
+    wave: 1
+    status: planned
+    expected_collections: [beginner_principles, openings, tactics, endgames]
+    tags: [glossary, terminology, beginner]
+    notes: "Primary seed source for term-level Xiangqi definitions in English. Good first-stop page for dictionary enrichment and alias collection."
+
   - source_id: xqinenglish_opening_basics_05
     title: "Basics of Xiangqi (Chinese Chess) 05 The Opening Phase"
     site_name: xqinenglish

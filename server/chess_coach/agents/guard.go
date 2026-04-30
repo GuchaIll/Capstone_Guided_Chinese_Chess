@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"go_agent_framework/core"
 	"go_agent_framework/observability"
@@ -40,12 +41,13 @@ func (a *GuardAgent) Run(ctx *core.Context) error {
 	}
 
 	fen, _ := ctx.State["fen"].(string)
+	analyzedMove, _ := ctx.State["move"].(string)
 
 	// Check every move string found in the advice text using per-move legality
 	// checks. Avoid the full legal-move enumeration (which floods the engine
 	// WebSocket by iterating all 90 squares) — the targeted is_move_legal call
 	// only inspects a single square per candidate.
-	mentioned := guardMovePattern.FindAllString(advice, -1)
+	mentioned := extractPrescriptiveMoves(advice, analyzedMove)
 	reason, ok := a.checkMoves(ctx, fen, mentioned)
 	if !ok {
 		ctx.State["coach_advice_approved"] = false
@@ -68,7 +70,7 @@ func (a *GuardAgent) Run(ctx *core.Context) error {
 // checkMoves verifies each move string found in the advice. Returns (reason, ok).
 func (a *GuardAgent) checkMoves(ctx *core.Context, fen string, moves []string) (string, bool) {
 	if len(moves) == 0 {
-		return "no candidate move found in advice text", false
+		return "", true
 	}
 	for _, mv := range moves {
 		if !a.isMoveLegal(ctx, fen, mv) {
@@ -93,4 +95,87 @@ func (a *GuardAgent) isMoveLegal(ctx *core.Context, fen, move string) bool {
 	}
 	_ = json.Unmarshal([]byte(result.Output), &out)
 	return out.Legal
+}
+
+func extractPrescriptiveMoves(advice string, analyzedMove string) []string {
+	matches := guardMovePattern.FindAllStringIndex(advice, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+
+	prescriptive := make([]string, 0, len(matches))
+	seen := make(map[string]struct{}, len(matches))
+	lowerAdvice := strings.ToLower(advice)
+	lowerAnalyzed := strings.ToLower(strings.TrimSpace(analyzedMove))
+
+	for _, match := range matches {
+		move := advice[match[0]:match[1]]
+		lowerMove := strings.ToLower(move)
+		if _, exists := seen[lowerMove]; exists {
+			continue
+		}
+		if lowerAnalyzed != "" && lowerMove == lowerAnalyzed {
+			continue
+		}
+
+		start := match[0] - 32
+		if start < 0 {
+			start = 0
+		}
+		end := match[1] + 24
+		if end > len(lowerAdvice) {
+			end = len(lowerAdvice)
+		}
+		context := lowerAdvice[start:end]
+
+		if looksDescriptiveContext(context, lowerMove) {
+			continue
+		}
+		if looksPrescriptiveContext(context, lowerMove) {
+			prescriptive = append(prescriptive, move)
+			seen[lowerMove] = struct{}{}
+		}
+	}
+
+	return prescriptive
+}
+
+func looksDescriptiveContext(context string, move string) bool {
+	descriptivePhrases := []string{
+		"played " + move,
+		"move " + move,
+		"the move " + move,
+		"after " + move,
+		"because of " + move,
+		"comment on this move",
+		"red played " + move,
+		"black played " + move,
+	}
+	for _, phrase := range descriptivePhrases {
+		if strings.Contains(context, phrase) {
+			return true
+		}
+	}
+	return false
+}
+
+func looksPrescriptiveContext(context string, move string) bool {
+	prescriptivePhrases := []string{
+		"play " + move,
+		"consider " + move,
+		"try " + move,
+		"recommend " + move,
+		"prefer " + move,
+		"best move: " + move,
+		"best move is " + move,
+		"engine prefers " + move,
+		"you should play " + move,
+		"should be " + move,
+	}
+	for _, phrase := range prescriptivePhrases {
+		if strings.Contains(context, phrase) {
+			return true
+		}
+	}
+	return false
 }

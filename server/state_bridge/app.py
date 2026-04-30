@@ -10,18 +10,34 @@ import asyncio
 import json
 import logging
 import os
+import secrets
 import time
 import uuid
+import urllib.error
+import urllib.request
 from collections import deque
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 from cv_validation import FenDiffError, derive_move_from_fen_diff
 from events import Event, EventBus, EventType
+from event_models import (
+    BestMoveData,
+    CvCaptureData,
+    CvCaptureRequestedData,
+    CvCaptureResultData,
+    CvValidationErrorData,
+    FenUpdateData,
+    KiboTriggerData,
+    LedCommandData,
+    MoveMadeData,
+    PieceSelectedData,
+    StateSyncData,
+)
 from state import GameStateBridge, STARTING_FEN
 from engine_relay import EngineRelay
 
@@ -37,9 +53,71 @@ DEFAULT_SUGGEST_DEPTH = 5
 DEFAULT_AI_DIFFICULTY = 4
 MAX_TRACKED_COMMAND_IDS = 4096
 CV_DEDUP_WINDOW_SECONDS = 0.5
+CV_SERVICE_URL = os.getenv("CV_SERVICE_URL", "http://localhost:5005").rstrip("/")
+CV_CAPTURE_TIMEOUT_SECONDS = float(os.getenv("CV_CAPTURE_TIMEOUT_SECONDS", "20"))
+CV_HEALTH_TIMEOUT_SECONDS = float(os.getenv("CV_HEALTH_TIMEOUT_SECONDS", "3"))
 _seen_command_ids: set[str] = set()
 _seen_command_order: deque[str] = deque()
 _recent_cv_fens: dict[str, float] = {}
+
+# ── Authorization ────────────────────────────────────────────────────
+# Mutating endpoints, the SSE event stream, and both WebSocket surfaces
+# require a Bearer token presented in the Authorization header, or a
+# `?token=` query parameter for callers that cannot set headers (notably
+# the browser EventSource API).
+STATE_BRIDGE_TOKEN = os.getenv("STATE_BRIDGE_TOKEN", "").strip()
+# /health stays open so liveness probes and load-balancers don't need the
+# secret. Everything else is gated.
+PUBLIC_PATHS: frozenset[str] = frozenset({"/health"})
+
+if not STATE_BRIDGE_TOKEN:
+    logger.warning(
+        "STATE_BRIDGE_TOKEN is unset — the bridge will refuse every gated "
+        "request with HTTP 503. Set STATE_BRIDGE_TOKEN in the environment "
+        "before exposing this service."
+    )
+
+
+def _extract_bearer(header_value: str | None) -> str | None:
+    if not header_value:
+        return None
+    scheme, _, token = header_value.partition(" ")
+    if scheme.lower() != "bearer":
+        return None
+    return token.strip() or None
+
+
+def _check_token(presented: str | None) -> bool:
+    if not STATE_BRIDGE_TOKEN or presented is None:
+        return False
+    return secrets.compare_digest(presented, STATE_BRIDGE_TOKEN)
+
+
+def _authorize_request(request: Request) -> JSONResponse | None:
+    """Return a 401/503 response if the request is not authorized, else None."""
+    if not STATE_BRIDGE_TOKEN:
+        return JSONResponse(
+            {"error": "Bridge misconfigured: STATE_BRIDGE_TOKEN unset"},
+            status_code=503,
+        )
+    auth_header = request.headers.get("authorization")
+    query_token = request.query_params.get("token")
+    presented = _extract_bearer(auth_header) or query_token
+    if not _check_token(presented):
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    return None
+
+
+async def _authorize_websocket(websocket: WebSocket) -> bool:
+    """Validate the WS handshake; close with 1008 and return False on failure."""
+    presented = (
+        _extract_bearer(websocket.headers.get("authorization"))
+        or websocket.query_params.get("token")
+    )
+    if not _check_token(presented):
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return False
+    return True
 
 
 def _looks_like_xiangqi_fen(fen: str) -> bool:
@@ -102,6 +180,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def authorization_middleware(request: Request, call_next):
+    if request.url.path in PUBLIC_PATHS:
+        return await call_next(request)
+    rejection = _authorize_request(request)
+    if rejection is not None:
+        return rejection
+    return await call_next(request)
 
 # =====================================================================
 # Request models (mirrors led_server.py JSON contracts, extended)
@@ -193,6 +281,40 @@ class DetectPuzzlePayload(BaseModel):
     best_move: str | None = None
 
 
+# Valid trigger names must match KiboTrigger in Kibo/src/types.ts
+_VALID_KIBO_TRIGGERS = frozenset({
+    "player_win", "player_lose", "material_gain", "high_accuracy",
+    "avoids_blunder", "optimal_move", "misses_move", "illegal_move",
+})
+
+
+class KiboTriggerPayload(BaseModel):
+    trigger: str    # one of _VALID_KIBO_TRIGGERS
+    duration: float | None = None   # animation crossfade duration (seconds)
+
+
+class CvCaptureResult(BaseModel):
+    """Validated shape of the CV /capture response.
+
+    Mirror of the React-side BridgeCaptureResult schema. Fields the bridge
+    doesn't republish (e.g. image_base64) are accepted but ignored via
+    `model_config = {"extra": "ignore"}`.
+    """
+
+    model_config = {"extra": "ignore"}
+
+    status: str = "unknown"
+    fen: str | None = None
+    issues: list[str] = []
+    # CV service emits capture_id as an int sequence number; accept either
+    # form so a future change in the upstream encoding doesn't desync the
+    # bridge contract.
+    capture_id: str | int | None = None
+    captured_at: str | None = None
+    image_path: str | None = None
+    image_mime: str | None = None
+
+
 def _bridge_state_message() -> dict[str, object]:
     return {
         "type": "state",
@@ -216,10 +338,17 @@ async def get_state():
 @app.get("/health")
 async def health():
     authoritative_bundle_healthy = relay.connected
+    cv_service_healthy, cv_health_detail = await _check_cv_service_health()
     return {
         "status": "ok",
         "authoritative_bundle_healthy": authoritative_bundle_healthy,
+        "cv_service_healthy": cv_service_healthy,
         "relay": relay.status(),
+        "cv_service": {
+            "healthy": cv_service_healthy,
+            "url": CV_SERVICE_URL,
+            "detail": cv_health_detail,
+        },
         "snapshot": {
             "fen": state.fen,
             "side_to_move": state.side_to_move,
@@ -259,21 +388,21 @@ def _is_duplicate_cv_capture(fen: str) -> bool:
 
 async def _publish_led_command(command: str) -> None:
     state.leds_off = command == "off"
-    await bus.publish(Event(
-        type=EventType.LED_COMMAND,
-        data={"command": command},
+    await bus.publish(Event.from_model(
+        EventType.LED_COMMAND,
+        LedCommandData(command=command),
     ))
 
 
 async def _publish_cv_validation_error(cv_fen: str, reason: str, *, status_code: int) -> JSONResponse:
-    await bus.publish(Event(
-        type=EventType.CV_VALIDATION_ERROR,
-        data={
-            "source": "cv",
-            "cv_fen": cv_fen,
-            "current_fen": state.fen,
-            "reason": reason,
-        },
+    await bus.publish(Event.from_model(
+        EventType.CV_VALIDATION_ERROR,
+        CvValidationErrorData(
+            source="cv",
+            cv_fen=cv_fen,
+            current_fen=state.fen,
+            reason=reason,
+        ),
     ))
     await _publish_led_command("on")
     return JSONResponse(
@@ -300,9 +429,9 @@ async def _publish_best_move_from_suggestion(fen: str) -> None:
     from_sq = move[:2]
     to_sq = move[2:4]
     state.set_best_move(from_sq, to_sq)
-    await bus.publish(Event(
-        type=EventType.BEST_MOVE,
-        data={"from": from_sq, "to": to_sq},
+    await bus.publish(Event.from_model(
+        EventType.BEST_MOVE,
+        BestMoveData.model_validate({"from": from_sq, "to": to_sq}),
     ))
 
 
@@ -314,6 +443,57 @@ def _engine_bundle_unavailable_response() -> JSONResponse:
         },
         status_code=503,
     )
+
+
+def _blocking_json_request(
+    url: str,
+    *,
+    method: str = "GET",
+    body: dict[str, object] | None = None,
+    timeout: float = CV_CAPTURE_TIMEOUT_SECONDS,
+) -> tuple[int, dict[str, object]]:
+    payload = json.dumps(body).encode("utf-8") if body is not None else None
+    request = urllib.request.Request(url, data=payload, method=method)
+    request.add_header("Accept", "application/json")
+    if payload is not None:
+        request.add_header("Content-Type", "application/json")
+
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
+            raw = response.read().decode("utf-8")
+            parsed = json.loads(raw) if raw else {}
+            return response.status, parsed
+    except urllib.error.HTTPError as exc:
+        raw = exc.read().decode("utf-8", errors="replace")
+        try:
+            parsed = json.loads(raw) if raw else {}
+        except json.JSONDecodeError:
+            parsed = {"error": raw or str(exc)}
+        return exc.code, parsed
+
+
+async def _request_cv_capture() -> tuple[int, dict[str, object]]:
+    return await asyncio.to_thread(
+        _blocking_json_request,
+        f"{CV_SERVICE_URL}/capture",
+        method="POST",
+        body={"post_to_bridge": False},
+    )
+
+
+async def _check_cv_service_health() -> tuple[bool, dict[str, object]]:
+    try:
+        status_code, payload = await asyncio.to_thread(
+            _blocking_json_request,
+            f"{CV_SERVICE_URL}/health",
+            method="GET",
+            timeout=CV_HEALTH_TIMEOUT_SECONDS,
+        )
+    except (urllib.error.URLError, OSError, TimeoutError) as exc:
+        return False, {"error": str(exc)}
+
+    healthy = status_code == 200 and payload.get("status") == "ok"
+    return healthy, payload
 
 
 # =====================================================================
@@ -368,15 +548,15 @@ async def post_fen(body: FenPayload):
             fen_after=body.fen,
         )
         await _publish_led_command("on")
-        await bus.publish(Event(
-            type=EventType.FEN_UPDATE,
-            data={
-                "fen": body.fen,
-                "source": "cv",
-                "side_to_move": state.side_to_move,
-                "result": state.game_result,
-                "is_check": state.is_check,
-            },
+        await bus.publish(Event.from_model(
+            EventType.CV_CAPTURE,
+            CvCaptureData(
+                fen=body.fen,
+                source="cv",
+                side_to_move=state.side_to_move,
+                result=state.game_result,
+                is_check=state.is_check,
+            ),
         ))
         await _publish_best_move_from_suggestion(body.fen)
         await relay.send_ai_move(DEFAULT_AI_DIFFICULTY)
@@ -388,15 +568,15 @@ async def post_fen(body: FenPayload):
         }
 
     state.apply_fen(body.fen, source=body.source)
-    await bus.publish(Event(
-        type=EventType.FEN_UPDATE,
-        data={
-            "fen": body.fen,
-            "source": body.source,
-            "side_to_move": state.side_to_move,
-            "result": state.game_result,
-            "is_check": state.is_check,
-        },
+    await bus.publish(Event.from_model(
+        EventType.FEN_UPDATE,
+        FenUpdateData(
+            fen=body.fen,
+            source=body.source,
+            side_to_move=state.side_to_move,
+            result=state.game_result,
+            is_check=state.is_check,
+        ),
     ))
     return {"status": "FEN updated", "source": body.source}
 
@@ -404,10 +584,14 @@ async def post_fen(body: FenPayload):
 @app.post("/state/move")
 async def post_move(body: MovePayload):
     rec = state.apply_move(body.from_sq, body.to_sq, piece=body.piece)
-    await bus.publish(Event(
-        type=EventType.MOVE_MADE,
-        data={"from": rec.from_sq, "to": rec.to_sq, "piece": rec.piece,
-              "source": "bridge"},
+    await bus.publish(Event.from_model(
+        EventType.MOVE_MADE,
+        MoveMadeData.model_validate({
+            "from": rec.from_sq,
+            "to": rec.to_sq,
+            "piece": rec.piece,
+            "source": "bridge",
+        }),
     ))
     return {"status": "Move recorded"}
 
@@ -423,9 +607,9 @@ async def post_select(body: SelectPayload):
 
     targets = result.get("targets", [])
     state.set_selection(body.square, targets)
-    await bus.publish(Event(
-        type=EventType.PIECE_SELECTED,
-        data={"square": body.square, "targets": targets},
+    await bus.publish(Event.from_model(
+        EventType.PIECE_SELECTED,
+        PieceSelectedData(square=body.square, targets=list(targets)),
     ))
     return {"status": "Selection forwarded to engine", "targets": targets}
 
@@ -433,9 +617,9 @@ async def post_select(body: SelectPayload):
 @app.post("/state/best-move")
 async def post_best_move(body: BestMovePayload):
     state.set_best_move(body.from_sq, body.to_sq)
-    await bus.publish(Event(
-        type=EventType.BEST_MOVE,
-        data={"from": body.from_sq, "to": body.to_sq},
+    await bus.publish(Event.from_model(
+        EventType.BEST_MOVE,
+        BestMoveData.model_validate({"from": body.from_sq, "to": body.to_sq}),
     ))
     return {"status": "Best move set"}
 
@@ -444,6 +628,63 @@ async def post_best_move(body: BestMovePayload):
 async def post_led_command(body: LedCommandPayload):
     await _publish_led_command(body.command)
     return {"status": f"LED command '{body.command}' published"}
+
+
+@app.post("/capture")
+async def capture_board():
+    await bus.publish(Event.from_model(
+        EventType.CV_CAPTURE_REQUESTED,
+        CvCaptureRequestedData(
+            source="bridge",
+            endpoint="/capture",
+            cv_service_url=CV_SERVICE_URL,
+        ),
+    ))
+    try:
+        status_code, payload = await _request_cv_capture()
+    except (urllib.error.URLError, OSError, TimeoutError) as exc:
+        logger.warning("CV capture request failed: %s", exc)
+        await bus.publish(Event.from_model(
+            EventType.CV_CAPTURE_RESULT,
+            CvCaptureResultData(
+                status="unavailable",
+                fen=None,
+                issues=[str(exc)],
+                source="cv",
+            ),
+        ))
+        return JSONResponse(
+            {
+                "error": "CV capture service unavailable",
+                "cv_service_url": CV_SERVICE_URL,
+                "detail": str(exc),
+            },
+            status_code=503,
+        )
+
+    try:
+        validated = CvCaptureResult.model_validate(payload)
+    except Exception as exc:
+        logger.warning("CV capture returned malformed payload: %s", exc)
+        await bus.publish(Event.from_model(
+            EventType.CV_CAPTURE_RESULT,
+            CvCaptureResultData(
+                status="malformed",
+                fen=None,
+                issues=[f"malformed CV response: {exc}"],
+                source="cv",
+            ),
+        ))
+        return JSONResponse(
+            {"error": "CV service returned an unexpected payload shape"},
+            status_code=502,
+        )
+
+    await bus.publish(Event.from_model(
+        EventType.CV_CAPTURE_RESULT,
+        CvCaptureResultData(**validated.model_dump(), source="cv"),
+    ))
+    return JSONResponse(payload, status_code=status_code)
 
 
 # ── LED-server-compatible endpoints ──────────────────────────────────
@@ -463,11 +704,17 @@ async def compat_opponent(body: OpponentMovePayload):
     from_sq = f"{chr(ord('a') + body.from_c)}{body.from_r}"
     to_sq = f"{chr(ord('a') + body.to_c)}{body.to_r}"
     rec = state.apply_move(from_sq, to_sq)
-    await bus.publish(Event(
-        type=EventType.MOVE_MADE,
-        data={"from": rec.from_sq, "to": rec.to_sq, "source": "opponent",
-              "from_r": body.from_r, "from_c": body.from_c,
-              "to_r": body.to_r, "to_c": body.to_c},
+    await bus.publish(Event.from_model(
+        EventType.MOVE_MADE,
+        MoveMadeData.model_validate({
+            "from": rec.from_sq,
+            "to": rec.to_sq,
+            "source": "opponent",
+            "from_r": body.from_r,
+            "from_c": body.from_c,
+            "to_r": body.to_r,
+            "to_c": body.to_c,
+        }),
     ))
     return {"status": "Opponent move displayed"}
 
@@ -707,6 +954,83 @@ async def engine_puzzle_detect(body: DetectPuzzlePayload):
 
 
 # =====================================================================
+# Kibo animation trigger
+# =====================================================================
+
+# Connected Kibo WebSocket clients
+_kibo_clients: list[WebSocket] = []
+
+
+@app.post("/kibo/trigger")
+async def post_kibo_trigger(body: KiboTriggerPayload):
+    """Publish a Kibo animation trigger to the event bus.
+
+    The coaching agent (or any other service) calls this endpoint to
+    drive a Kibo reaction without needing a direct WebSocket connection.
+    The trigger is broadcast to all connected Kibo clients via /ws/kibo.
+    """
+    if body.trigger not in _VALID_KIBO_TRIGGERS:
+        return JSONResponse(
+            {"error": f"Unknown trigger '{body.trigger}'. Valid triggers: {sorted(_VALID_KIBO_TRIGGERS)}"},
+            status_code=422,
+        )
+    await bus.publish(Event.from_model(
+        EventType.KIBO_TRIGGER,
+        KiboTriggerData(trigger=body.trigger, duration=body.duration),
+    ))
+    return {"status": "trigger published", "trigger": body.trigger}
+
+
+@app.websocket("/ws/kibo")
+async def kibo_ws(websocket: WebSocket):
+    """WebSocket endpoint for the Kibo 3D character viewer.
+
+    Subscribes to KIBO_TRIGGER events on the bus and forwards them as
+    KiboCommand JSON to the connected browser client.
+    """
+    if not await _authorize_websocket(websocket):
+        return
+    await websocket.accept()
+    _kibo_clients.append(websocket)
+    logger.info("Kibo client connected (%d total)", len(_kibo_clients))
+
+    q = bus.subscribe()
+    try:
+        while True:
+            try:
+                event = await asyncio.wait_for(q.get(), timeout=25.0)
+            except asyncio.TimeoutError:
+                # Send a keepalive ping so the connection stays alive through
+                # proxies/load-balancers that close idle WebSocket connections
+                try:
+                    await websocket.send_json({"type": "ping"})
+                except Exception:
+                    break
+                continue
+
+            if event.type == EventType.KIBO_TRIGGER:
+                cmd: dict = {
+                    "type": "playTrigger",
+                    "trigger": event.data["trigger"],
+                }
+                if event.data.get("duration") is not None:
+                    cmd["duration"] = event.data["duration"]
+                try:
+                    await websocket.send_json(cmd)
+                except Exception:
+                    break  # client disconnected
+    except WebSocketDisconnect:
+        pass
+    finally:
+        bus.unsubscribe(q)
+        try:
+            _kibo_clients.remove(websocket)
+        except ValueError:
+            pass
+        logger.info("Kibo client disconnected (%d remaining)", len(_kibo_clients))
+
+
+# =====================================================================
 # SSE — real-time event stream
 # =====================================================================
 
@@ -728,11 +1052,12 @@ async def sse_events(request: Request):
 
     async def generate():
         if filter_types is None or EventType.STATE_SYNC in filter_types:
-            yield Event(
-                type=EventType.STATE_SYNC,
-                data=state.to_dict(),
-                sequence=bus.last_sequence,
-            ).to_sse()
+            seed = Event.from_model(
+                EventType.STATE_SYNC,
+                StateSyncData.model_validate(state.to_dict()),
+            )
+            seed.sequence = bus.last_sequence
+            yield seed.to_sse()
         async for event in bus.stream(filter_types):
             if await request.is_disconnected():
                 break
@@ -751,6 +1076,8 @@ async def sse_events(request: Request):
 
 @app.websocket("/ws")
 async def bridge_ws(websocket: WebSocket):
+    if not await _authorize_websocket(websocket):
+        return
     await websocket.accept()
     await websocket.send_json(_bridge_state_message())
 

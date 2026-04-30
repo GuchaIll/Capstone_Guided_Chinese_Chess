@@ -100,7 +100,11 @@ class FakeEngineServer:
 @pytest.fixture
 async def running_relay(monkeypatch):
     server = FakeEngineServer()
-    monkeypatch.setattr(relay_module.websockets, "connect", lambda _url: FakeConnect(server))
+    monkeypatch.setattr(
+        relay_module.websockets,
+        "connect",
+        lambda _url, *args, **kwargs: FakeConnect(server),
+    )
     monkeypatch.setattr(relay_module, "ENGINE_WS_URL", "ws://fake-engine/ws")
     monkeypatch.setattr(relay_module, "RECONNECT_DELAY", 0.05)
     monkeypatch.setattr(relay_module, "MAX_RECONNECT_DELAY", 0.1)
@@ -214,6 +218,92 @@ async def test_relay_request_response_helpers_cover_analyze_suggest_validate_and
         "result": "in_progress",
         "is_check": False,
     }
+
+
+@pytest.mark.asyncio
+async def test_send_move_and_wait_can_be_satisfied_by_observer_move_result(running_relay):
+    relay, state, bus, server = running_relay
+    queue = bus.subscribe()
+
+    try:
+        move_task = asyncio.create_task(
+            relay.send_move_and_wait("a0a1", command_id="cmd-bridge", timeout=1.0)
+        )
+        assert await server.next_message() == {
+            "type": "move",
+            "move": "a0a1",
+            "command_id": "cmd-bridge",
+        }
+
+        await server.send_observer(
+            {
+                "type": "move_result",
+                "valid": True,
+                "move": "a0a1",
+                "fen": "fen-after-observer",
+                "result": "in_progress",
+                "is_check": False,
+                "seq": 1,
+                "command_id": "cmd-bridge",
+            }
+        )
+
+        result = await asyncio.wait_for(move_task, 1.0)
+        event = await _read_event(queue)
+    finally:
+        bus.unsubscribe(queue)
+
+    assert result == {
+        "type": "move_result",
+        "valid": True,
+        "move": "a0a1",
+        "fen": "fen-after-observer",
+        "result": "in_progress",
+        "is_check": False,
+        "seq": 1,
+        "command_id": "cmd-bridge",
+    }
+    assert event.type.value == "move_made"
+    assert state.fen == "fen-after-observer"
+
+
+@pytest.mark.asyncio
+async def test_send_ai_move_and_wait_can_be_satisfied_by_observer_event(running_relay):
+    relay, state, bus, server = running_relay
+    queue = bus.subscribe()
+
+    try:
+        ai_task = asyncio.create_task(relay.send_ai_move_and_wait(4, timeout=1.0))
+        assert await server.next_message() == {"type": "ai_move", "difficulty": 4}
+
+        await server.send_observer(
+            {
+                "type": "ai_move",
+                "move": "b2b3",
+                "fen": "fen-after-ai-observer",
+                "score": 42,
+                "result": "in_progress",
+                "is_check": True,
+                "seq": 1,
+            }
+        )
+
+        result = await asyncio.wait_for(ai_task, 1.0)
+        event = await _read_event(queue)
+    finally:
+        bus.unsubscribe(queue)
+
+    assert result == {
+        "type": "ai_move",
+        "move": "b2b3",
+        "fen": "fen-after-ai-observer",
+        "score": 42,
+        "result": "in_progress",
+        "is_check": True,
+        "seq": 1,
+    }
+    assert event.type.value == "move_made"
+    assert state.fen == "fen-after-ai-observer"
 
 
 @pytest.mark.asyncio

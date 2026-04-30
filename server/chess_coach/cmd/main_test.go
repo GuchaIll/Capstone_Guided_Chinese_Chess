@@ -145,6 +145,50 @@ func TestMakeChatHandlerPreservesSessionContextAcrossFollowups(t *testing.T) {
 	}
 }
 
+func TestMakeChatHandlerClearsStaleMoveWhenFreshFenArrivesWithoutMove(t *testing.T) {
+	graph := newChatHandlerTestGraph(t, &engine.MockEngine{}, llm.Models{
+		Analysis:      &llm.MockLLM{Response: "Use the updated position context."},
+		Orchestration: &llm.MockLLM{Response: "EXPLAIN"},
+	})
+	store := core.NewMemStore()
+	handler := makeChatHandler(graph, store)
+	sessionID := "chat-reset-move-session"
+
+	firstBody, _ := json.Marshal(map[string]interface{}{
+		"message":    "Comment on this move.",
+		"session_id": sessionID,
+		"fen":        testHandlerFEN,
+		"move":       "b0c2",
+	})
+	firstReq := httptest.NewRequest(http.MethodPost, "/dashboard/chat", bytes.NewReader(firstBody))
+	firstReq.Header.Set("Content-Type", "application/json")
+	firstRR := httptest.NewRecorder()
+	handler(firstRR, firstReq)
+
+	if firstRR.Code != http.StatusOK {
+		t.Fatalf("first request unexpected status %d: %s", firstRR.Code, firstRR.Body.String())
+	}
+
+	secondBody, _ := json.Marshal(map[string]interface{}{
+		"message":    "Analyze this updated position.",
+		"session_id": sessionID,
+		"fen":        "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C4/9/RNBAKABNR w - - 0 1",
+	})
+	secondReq := httptest.NewRequest(http.MethodPost, "/dashboard/chat", bytes.NewReader(secondBody))
+	secondReq.Header.Set("Content-Type", "application/json")
+	secondRR := httptest.NewRecorder()
+	handler(secondRR, secondReq)
+
+	if secondRR.Code != http.StatusOK {
+		t.Fatalf("second request unexpected status %d: %s", secondRR.Code, secondRR.Body.String())
+	}
+
+	resp := decodeChatResponse(t, secondRR.Body.Bytes())
+	if got, exists := resp.State["move"]; exists && got != "" {
+		t.Fatalf("stale move should be cleared when a fresh fen arrives without move, got %v", got)
+	}
+}
+
 func TestMakeAnalyzeHandlerReturnsMetricsAndExplanation(t *testing.T) {
 	graph := newChatHandlerTestGraph(t, &engine.MockEngine{}, llm.Models{
 		Analysis:      &llm.MockLLM{Response: "Play b0c2 to control the center before attacking."},

@@ -335,6 +335,24 @@ class EngineRelay:
             self._pending.pop(expect_type, None)
         return item
 
+    def _resolve_pending_from_authoritative(self, msg_type: str | None, msg: dict) -> None:
+        if msg_type is None:
+            return
+        queue = self._pending.get(msg_type)
+        if not queue:
+            return
+
+        pending = queue[0]
+        # Helper/snapshot requests must wait for the command-channel reply;
+        # only live gameplay commands should be satisfied by observer events.
+        if pending.suppress_side_effects:
+            return
+
+        pending = self._pop_pending(msg_type)
+        if pending is None or pending.future is None or pending.future.done():
+            return
+        pending.future.set_result(msg)
+
     async def _restore_engine_session(self) -> None:
         if self.state.fen == STARTING_FEN and self.state.event_seq == 0:
             return
@@ -474,10 +492,12 @@ class EngineRelay:
                 return
 
         if msg_type == "state":
+            self._resolve_pending_from_authoritative(msg_type, msg)
             await self._apply_state_message(msg, publish_event=True)
 
         elif msg_type == "move_result":
             if msg.get("valid"):
+                self._resolve_pending_from_authoritative(msg_type, msg)
                 move_str = msg.get("move", "")
                 fen = msg["fen"]
                 seq = self._authoritative_seq(msg)
@@ -502,6 +522,7 @@ class EngineRelay:
                 ))
 
         elif msg_type == "ai_move":
+            self._resolve_pending_from_authoritative(msg_type, msg)
             move_str = msg.get("move", "")
             fen = msg["fen"]
             seq = self._authoritative_seq(msg)

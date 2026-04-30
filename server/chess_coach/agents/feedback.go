@@ -100,7 +100,7 @@ func writeEngineSection(sb *strings.Builder, state map[string]interface{}) {
 	}
 
 	if pv, ok := state["principal_variation"].(map[string]interface{}); ok {
-		if bestLine := fmt.Sprint(pv["pv"]); bestLine != "" && bestLine != "<nil>" {
+		if bestLine := formatPrincipalVariation(pv["pv"]); bestLine != "" {
 			sb.WriteString(fmt.Sprintf("Best line: %s\n", bestLine))
 		}
 	}
@@ -131,8 +131,7 @@ func writeCoachSection(sb *strings.Builder, state map[string]interface{}) {
 	if !approved {
 		return
 	}
-	trigger, _ := state["coach_trigger"].(string)
-	sb.WriteString(fmt.Sprintf("\nCoaching advice [%s]:\n%s\n", trigger, truncateWords(advice, 320)))
+	sb.WriteString(fmt.Sprintf("\nCoaching advice:\n%s\n", truncateWords(cleanHumanText(advice), 320)))
 }
 
 func writeRAGSection(sb *strings.Builder, state map[string]interface{}) {
@@ -167,7 +166,7 @@ func writeRAGSection(sb *strings.Builder, state map[string]interface{}) {
 }
 
 func summarizeRAGText(text string) string {
-	text = strings.Join(strings.Fields(strings.TrimSpace(text)), " ")
+	text = cleanHumanText(text)
 	if text == "" {
 		return ""
 	}
@@ -189,4 +188,48 @@ func truncateWords(text string, maxWords int) string {
 		return strings.Join(words, " ")
 	}
 	return strings.Join(words[:maxWords], " ") + "..."
+}
+
+func cleanHumanText(text string) string {
+	text = strings.TrimSpace(text)
+	replacements := []string{
+		"Context:", "",
+		"context:", "",
+		"Explicit:", "",
+		"explicit:", "",
+	}
+	for i := 0; i < len(replacements); i += 2 {
+		text = strings.ReplaceAll(text, replacements[i], replacements[i+1])
+	}
+	text = strings.Join(strings.Fields(text), " ")
+	return strings.TrimSpace(text)
+}
+
+func formatPrincipalVariation(raw interface{}) string {
+	switch pv := raw.(type) {
+	case []interface{}:
+		parts := make([]string, 0, len(pv))
+		for _, item := range pv {
+			text := strings.TrimSpace(fmt.Sprint(item))
+			if text != "" && text != "<nil>" {
+				parts = append(parts, text)
+			}
+		}
+		return strings.Join(parts, " -> ")
+	case []string:
+		parts := make([]string, 0, len(pv))
+		for _, item := range pv {
+			text := strings.TrimSpace(item)
+			if text != "" {
+				parts = append(parts, text)
+			}
+		}
+		return strings.Join(parts, " -> ")
+	default:
+		text := strings.TrimSpace(fmt.Sprint(raw))
+		if text == "" || text == "<nil>" {
+			return ""
+		}
+		return text
+	}
 }

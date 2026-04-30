@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	chess "chess_coach"
@@ -21,6 +23,7 @@ import (
 
 func main() {
 	envutil.Load(".env")
+	envutil.Load(".ENV")
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 	eng := buildEngineClient(logger)
@@ -72,21 +75,66 @@ func main() {
 }
 
 func buildModels(logger *slog.Logger) llm.Models {
-	apiKey := os.Getenv("OPENROUTER_API_KEY")
-	if apiKey != "" {
-		logger.Info("using OpenRouter LLMs")
+	provider := strings.ToLower(strings.TrimSpace(firstNonEmptyEnv("LLM_PROVIDER")))
+	switch provider {
+	case "", "openrouter":
+		apiKey := os.Getenv("OPENROUTER_API_KEY")
+		if apiKey == "" {
+			break
+		}
+		analysisModel := firstNonEmptyEnv(
+			"OPENROUTER_ANALYSIS_MODEL",
+			"OPENROUTER_MODEL",
+		)
+		if analysisModel == "" {
+			analysisModel = "z-ai/glm-4.5-air:free"
+		}
+		orchestrationModel := firstNonEmptyEnv(
+			"OPENROUTER_ORCHESTRATION_MODEL",
+			"OPENROUTER_FAST_MODEL",
+			"OPENROUTER_MODEL",
+		)
+		if orchestrationModel == "" {
+			orchestrationModel = "liquid/lfm-2.5-1.2b-instruct:free"
+		}
+		baseURL := os.Getenv("OPENROUTER_BASE_URL")
+		timeout := envDurationSeconds("OPENROUTER_TIMEOUT_SECONDS", 45*time.Second)
+		appName := firstNonEmptyEnv("OPENROUTER_APP_NAME")
+		if appName == "" {
+			appName = "GuidedChineseChess"
+		}
+		appURL := firstNonEmptyEnv("OPENROUTER_APP_URL")
+		httpClient := &http.Client{Timeout: timeout}
+
+		logger.Info("using OpenRouter LLMs",
+			"analysis_model", analysisModel,
+			"orchestration_model", orchestrationModel,
+			"timeout_seconds", int(timeout.Seconds()),
+			"base_url", firstNonEmptyString(baseURL, "default"),
+		)
 		analysis := observability.InstrumentLLM(
-			&llm.OpenRouterClient{APIKey: apiKey, ModelName: "z-ai/glm-4.5-air:free"},
+			&llm.OpenRouterClient{
+				APIKey: apiKey, ModelName: analysisModel, BaseURL: baseURL,
+				AppName: appName, AppURL: appURL, HTTPClient: httpClient,
+			},
 			observability.LLMOptions{},
 		)
 		orchestration := observability.InstrumentLLM(
-			&llm.OpenRouterClient{APIKey: apiKey, ModelName: "liquid/lfm-2.5-1.2b-instruct:free"},
+			&llm.OpenRouterClient{
+				APIKey: apiKey, ModelName: orchestrationModel, BaseURL: baseURL,
+				AppName: appName, AppURL: appURL, HTTPClient: httpClient,
+			},
 			observability.LLMOptions{},
 		)
 		return llm.Models{Analysis: analysis, Orchestration: orchestration}
+	case "modal", "vllm", "openai":
+		models, ok := buildOpenAICompatibleModels(logger, provider)
+		if ok {
+			return models
+		}
 	}
 
-	logger.Info("OPENROUTER_API_KEY not set, using mock LLMs")
+	logger.Info("LLM backend unavailable, using mock LLMs", "provider", provider)
 	mock := observability.InstrumentLLM(&llm.MockLLM{
 		Response:     "Consider controlling the centre with pawns and developing your knights early.",
 		ProviderName: "mock",
@@ -134,6 +182,126 @@ func registerTools(toolReg *core.ToolRegistry, eng engine.EngineClient, logger *
 	}
 }
 
+func firstNonEmptyEnv(keys ...string) string {
+	for _, key := range keys {
+		if value := os.Getenv(key); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func envDurationSeconds(key string, fallback time.Duration) time.Duration {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return fallback
+	}
+	seconds, err := strconv.Atoi(raw)
+	if err != nil || seconds <= 0 {
+		return fallback
+	}
+	return time.Duration(seconds) * time.Second
+}
+
+func buildOpenAICompatibleModels(logger *slog.Logger, provider string) (llm.Models, bool) {
+	config := openAICompatibleConfig(provider)
+	baseURL := firstNonEmptyEnv(config.baseURLKeys...)
+	if baseURL == "" {
+		logger.Warn("LLM provider configured but base URL missing", "provider", provider)
+		return llm.Models{}, false
+	}
+
+	apiKey := firstNonEmptyEnv(config.apiKeyKeys...)
+	analysisModel := firstNonEmptyEnv(config.analysisModelKeys...)
+	if analysisModel == "" {
+		analysisModel = firstNonEmptyEnv(config.modelKeys...)
+	}
+	if analysisModel == "" {
+		logger.Warn("LLM provider configured but analysis model missing", "provider", provider)
+		return llm.Models{}, false
+	}
+	orchestrationModel := firstNonEmptyEnv(config.orchestrationModelKeys...)
+	if orchestrationModel == "" {
+		orchestrationModel = firstNonEmptyEnv(config.modelKeys...)
+	}
+	if orchestrationModel == "" {
+		orchestrationModel = analysisModel
+	}
+
+	timeout := envDurationSeconds("LLM_TIMEOUT_SECONDS", 45*time.Second)
+	httpClient := &http.Client{Timeout: timeout}
+
+	logger.Info("using OpenAI-compatible LLM backend",
+		"provider", provider,
+		"analysis_model", analysisModel,
+		"orchestration_model", orchestrationModel,
+		"base_url", baseURL,
+		"timeout_seconds", int(timeout.Seconds()),
+	)
+
+	analysis := observability.InstrumentLLM(
+		&llm.OpenAICompatibleClient{
+			APIKey: apiKey, ModelName: analysisModel, BaseURL: baseURL,
+			ProviderName: provider, HTTPClient: httpClient,
+		},
+		observability.LLMOptions{},
+	)
+	orchestration := observability.InstrumentLLM(
+		&llm.OpenAICompatibleClient{
+			APIKey: apiKey, ModelName: orchestrationModel, BaseURL: baseURL,
+			ProviderName: provider, HTTPClient: httpClient,
+		},
+		observability.LLMOptions{},
+	)
+	return llm.Models{Analysis: analysis, Orchestration: orchestration}, true
+}
+
+type llmProviderConfig struct {
+	baseURLKeys            []string
+	apiKeyKeys             []string
+	modelKeys              []string
+	analysisModelKeys      []string
+	orchestrationModelKeys []string
+}
+
+func openAICompatibleConfig(provider string) llmProviderConfig {
+	switch provider {
+	case "modal":
+		return llmProviderConfig{
+			baseURLKeys:            []string{"MODAL_LLM_BASE_URL", "VLLM_BASE_URL", "OPENAI_BASE_URL"},
+			apiKeyKeys:             []string{"MODAL_LLM_API_KEY", "VLLM_API_KEY", "OPENAI_API_KEY"},
+			modelKeys:              []string{"MODAL_LLM_MODEL", "VLLM_MODEL", "OPENAI_MODEL"},
+			analysisModelKeys:      []string{"MODAL_LLM_ANALYSIS_MODEL", "VLLM_ANALYSIS_MODEL", "OPENAI_ANALYSIS_MODEL"},
+			orchestrationModelKeys: []string{"MODAL_LLM_ORCHESTRATION_MODEL", "VLLM_ORCHESTRATION_MODEL", "OPENAI_ORCHESTRATION_MODEL"},
+		}
+	case "vllm":
+		return llmProviderConfig{
+			baseURLKeys:            []string{"VLLM_BASE_URL", "MODAL_LLM_BASE_URL", "OPENAI_BASE_URL"},
+			apiKeyKeys:             []string{"VLLM_API_KEY", "MODAL_LLM_API_KEY", "OPENAI_API_KEY"},
+			modelKeys:              []string{"VLLM_MODEL", "MODAL_LLM_MODEL", "OPENAI_MODEL"},
+			analysisModelKeys:      []string{"VLLM_ANALYSIS_MODEL", "MODAL_LLM_ANALYSIS_MODEL", "OPENAI_ANALYSIS_MODEL"},
+			orchestrationModelKeys: []string{"VLLM_ORCHESTRATION_MODEL", "MODAL_LLM_ORCHESTRATION_MODEL", "OPENAI_ORCHESTRATION_MODEL"},
+		}
+	default:
+		return llmProviderConfig{
+			baseURLKeys:            []string{"OPENAI_BASE_URL", "VLLM_BASE_URL", "MODAL_LLM_BASE_URL"},
+			apiKeyKeys:             []string{"OPENAI_API_KEY", "VLLM_API_KEY", "MODAL_LLM_API_KEY"},
+			modelKeys:              []string{"OPENAI_MODEL", "VLLM_MODEL", "MODAL_LLM_MODEL"},
+			analysisModelKeys:      []string{"OPENAI_ANALYSIS_MODEL", "VLLM_ANALYSIS_MODEL", "MODAL_LLM_ANALYSIS_MODEL"},
+			orchestrationModelKeys: []string{"OPENAI_ORCHESTRATION_MODEL", "VLLM_ORCHESTRATION_MODEL", "MODAL_LLM_ORCHESTRATION_MODEL"},
+		}
+	}
+}
+
 func makeChatHandler(graph *core.Graph, store core.StateStore) observability.ChatHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var body struct {
@@ -171,6 +339,9 @@ func makeChatHandler(graph *core.Graph, store core.StateStore) observability.Cha
 		session.State["question"] = body.Message
 		if body.FEN != "" {
 			session.State["fen"] = body.FEN
+			if body.Move == "" {
+				delete(session.State, "move")
+			}
 		}
 		if body.Move != "" {
 			session.State["move"] = body.Move

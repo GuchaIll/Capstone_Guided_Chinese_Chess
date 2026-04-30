@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,12 @@ LED_ROOT = REPO_ROOT / "ledsystem"
 for path in (str(STATE_BRIDGE_ROOT), str(LED_ROOT), str(REPO_ROOT)):
     if path not in sys.path:
         sys.path.insert(0, path)
+
+# Set the auth token before importing the bridge so the module-level
+# constant picks it up during import.
+TEST_BRIDGE_TOKEN = "test-bridge-token-for-pytest"
+os.environ["STATE_BRIDGE_TOKEN"] = TEST_BRIDGE_TOKEN
+TEST_AUTH_HEADERS = {"Authorization": f"Bearer {TEST_BRIDGE_TOKEN}"}
 
 
 from events import EventBus  # noqa: E402
@@ -164,12 +171,16 @@ def bridge_testbed(monkeypatch):
 @pytest.fixture
 def client(bridge_testbed):
     app_module, _, _, relay = bridge_testbed
-    with TestClient(app_module.app) as test_client:
+    with TestClient(app_module.app, headers=TEST_AUTH_HEADERS) as test_client:
         yield test_client
     relay.stop()
 
 
 class _ConnectedRequest:
+    """Stand-in for FastAPI's Request used when invoking handler functions
+    directly (bypassing the HTTP middleware in async unit tests)."""
+
+    headers: dict[str, str] = TEST_AUTH_HEADERS
     query_params: dict[str, str] = {}
 
     async def is_disconnected(self) -> bool:

@@ -3,6 +3,9 @@ from __future__ import annotations
 import asyncio
 import json
 
+from fastapi.testclient import TestClient
+
+from conftest import TEST_BRIDGE_TOKEN
 from state import STARTING_FEN
 
 
@@ -13,12 +16,38 @@ AMBIGUOUS_CV_FEN = "9/4k4/9/9/9/9/9/9/R8/4K4 b - - 0 2"
 ILLEGAL_CV_FEN = "4k4/9/9/9/9/9/9/9/9/4KR3 b - - 0 2"
 
 
+def test_health_endpoint_is_unauthenticated(bridge_testbed):
+    app_module, _, _, _ = bridge_testbed
+    with TestClient(app_module.app) as anonymous_client:
+        response = anonymous_client.get("/health")
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
+
+
+def test_unauthenticated_request_to_gated_route_rejected(bridge_testbed):
+    app_module, _, _, _ = bridge_testbed
+    with TestClient(app_module.app) as anonymous_client:
+        response = anonymous_client.get("/state")
+    assert response.status_code == 401
+    assert response.json() == {"error": "Unauthorized"}
+
+
+def test_request_authenticated_via_query_token(bridge_testbed):
+    app_module, _, _, _ = bridge_testbed
+    with TestClient(app_module.app) as anonymous_client:
+        response = anonymous_client.get(f"/state?token={TEST_BRIDGE_TOKEN}")
+    assert response.status_code == 200
+    assert response.json()["fen"] == STARTING_FEN
+
+
 def test_health_and_initial_state(client):
     health = client.get("/health")
     assert health.status_code == 200
     health_body = health.json()
     assert health_body["status"] == "ok"
     assert "authoritative_bundle_healthy" in health_body
+    assert "cv_service_healthy" in health_body
+    assert "cv_service" in health_body
     assert "relay" in health_body
     assert health_body["snapshot"]["fen"] == STARTING_FEN
     assert health_body["snapshot"]["event_seq"] == 0
@@ -62,7 +91,7 @@ async def test_post_engine_fen_updates_state_and_emits_fen_update(client, bridge
     assert state.cv_fen is None
 
 
-async def test_post_cv_fen_accepts_valid_move_and_emits_led_resume_then_fen_update_and_best_move(
+async def test_post_cv_fen_accepts_valid_move_and_emits_led_resume_then_cv_capture_and_best_move(
     client,
     bridge_testbed,
     capture_sse_events,
@@ -82,7 +111,7 @@ async def test_post_cv_fen_accepts_valid_move_and_emits_led_resume_then_fen_upda
     }
 
     events = await asyncio.wait_for(task, 2.0)
-    assert [event["type"] for event in events] == ["led_command", "fen_update", "best_move"]
+    assert [event["type"] for event in events] == ["led_command", "cv_capture", "best_move"]
     assert events[0]["data"] == {"command": "on"}
     assert events[1]["data"]["fen"] == CV_SUCCESS_FEN
     assert events[1]["data"]["source"] == "cv"
@@ -115,6 +144,93 @@ def test_post_cv_fen_ignores_duplicate_capture_within_short_window(client):
         "source": "cv",
         "status": "Duplicate CV capture ignored",
     }
+
+
+async def test_capture_endpoint_proxies_cv_capture_result(client, monkeypatch, capture_sse_events):
+    task = await capture_sse_events(expected=2)
+
+    async def fake_capture():
+        return 200, {
+            "status": "ok",
+            "fen": CV_SUCCESS_FEN,
+            "image_path": "cv/output/http_capture.jpg",
+            "image_mime": "image/jpeg",
+            "image_base64": "ZmFrZQ==",
+            "capture_id": 3,
+        }
+
+    monkeypatch.setattr("app._request_cv_capture", fake_capture)
+
+    response = client.post("/capture")
+
+    assert response.status_code == 200
+    events = await asyncio.wait_for(task, 2.0)
+    assert events[0]["type"] == "cv_capture_requested"
+    assert events[0]["data"]["endpoint"] == "/capture"
+    assert events[1]["type"] == "cv_capture_result"
+    assert events[1]["data"]["fen"] == CV_SUCCESS_FEN
+    assert response.json() == {
+        "status": "ok",
+        "fen": CV_SUCCESS_FEN,
+        "image_path": "cv/output/http_capture.jpg",
+        "image_mime": "image/jpeg",
+        "image_base64": "ZmFrZQ==",
+        "capture_id": 3,
+    }
+
+
+def test_event_from_model_rejects_malformed_payload():
+    """Publishing through Event.from_model must validate at the boundary."""
+    import pytest as _pytest
+    from event_models import LedCommandData
+    from events import Event, EventType
+
+    # `command` is a required string; passing a bool fails validation
+    # at the model boundary rather than emitting a malformed wire frame.
+    with _pytest.raises(Exception):
+        Event.from_model(EventType.LED_COMMAND, LedCommandData(command=False))  # type: ignore[arg-type]
+
+
+async def test_capture_endpoint_rejects_malformed_cv_payload(client, monkeypatch, capture_sse_events):
+    task = await capture_sse_events(expected=2)
+
+    async def fake_capture():
+        # `fen` should be string-or-null; sending a list breaks the contract
+        # and the bridge should refuse to republish it as an authoritative
+        # event rather than passing the malformed shape through.
+        return 200, {"status": "ok", "fen": ["not-a-fen"]}
+
+    monkeypatch.setattr("app._request_cv_capture", fake_capture)
+
+    response = client.post("/capture")
+
+    assert response.status_code == 502
+    assert response.json() == {"error": "CV service returned an unexpected payload shape"}
+    events = await asyncio.wait_for(task, 2.0)
+    assert events[0]["type"] == "cv_capture_requested"
+    assert events[1]["type"] == "cv_capture_result"
+    assert events[1]["data"]["status"] == "malformed"
+    # Outbound payloads omit None-valued optional fields, so `fen` simply
+    # isn't present rather than `null` on the wire.
+    assert events[1]["data"].get("fen") is None
+
+
+async def test_capture_endpoint_returns_503_when_cv_service_is_unavailable(client, monkeypatch, capture_sse_events):
+    task = await capture_sse_events(expected=2)
+
+    async def fake_capture():
+        raise OSError("camera offline")
+
+    monkeypatch.setattr("app._request_cv_capture", fake_capture)
+
+    response = client.post("/capture")
+
+    assert response.status_code == 503
+    events = await asyncio.wait_for(task, 2.0)
+    assert events[0]["type"] == "cv_capture_requested"
+    assert events[1]["type"] == "cv_capture_result"
+    assert events[1]["data"]["status"] == "unavailable"
+    assert response.json()["error"] == "CV capture service unavailable"
 
 
 async def test_post_cv_fen_rejects_malformed_fen_and_emits_validation_error_and_led_restore(
@@ -404,7 +520,7 @@ async def test_engine_reset_restores_starting_state_and_emits_game_reset(client,
     assert isinstance(response_body["command_id"], str)
     events = await asyncio.wait_for(task, 2.0)
 
-    assert relay.calls == [("reset", response_body["command_id"])]
+    assert relay.calls == [("reset_and_wait", response_body["command_id"], 15.0)]
     assert events[0]["type"] == "game_reset"
     assert state.fen == STARTING_FEN
     assert state.last_move is None

@@ -259,9 +259,6 @@ func buildFallbackCoachAdvice(state map[string]interface{}, trigger string) stri
 	if knowledge := coachKnowledgeText(state); knowledge != "" {
 		parts = append(parts, knowledge)
 	}
-	if trigger != "" && trigger != "none" {
-		parts = append(parts, fmt.Sprintf("This longer explanation was triggered by %s.", trigger))
-	}
 	return strings.Join(parts, " ")
 }
 
@@ -327,7 +324,20 @@ func coachKnowledgeText(state map[string]interface{}) string {
 		if summary == "" {
 			continue
 		}
-		return fmt.Sprintf("%s guidance: %s", key, summary)
+		switch key {
+		case "opening":
+			return fmt.Sprintf("A useful opening principle here is: %s", summary)
+		case "middlegame":
+			return fmt.Sprintf("A useful middlegame idea here is: %s", summary)
+		case "endgame":
+			return fmt.Sprintf("A useful endgame idea here is: %s", summary)
+		case "tactic":
+			return fmt.Sprintf("A useful tactical idea here is: %s", summary)
+		case "puzzle":
+			return fmt.Sprintf("A useful training idea here is: %s", summary)
+		default:
+			return fmt.Sprintf("A useful principle here is: %s", summary)
+		}
 	}
 	return ""
 }
