@@ -59,15 +59,17 @@ Our Go-based pipeline processes every move through three paths:
 
 ```mermaid
 graph TD
-    subgraph Hardware["Physical Hardware (Raspberry Pi)"]
-        Button[End Turn Button<br/>GPIO]
-        Camera[USB/CSI Camera]
-        LEDStrip[NeoPixel LED Strip<br/>GPIO D18]
+    subgraph Physical["Physical Hardware"]
         Board[Wooden Xiangqi Board<br/>with ArUco markers]
+        LEDStrip[NeoPixel LED Strip<br/>GPIO D18]
     end
 
-    subgraph PiSoftware["On-Pi Software"]
+    subgraph CVLaptop["CV Laptop"]
+        Camera[USB Camera]
         CV[CV Pipeline<br/>YOLO v8 + OpenCV]
+    end
+
+    subgraph Pi["Raspberry Pi"]
         LEDServer[LED Server<br/>Flask :5000]
         BridgeSub[Bridge Subscriber<br/>SSE → LED commands]
     end
@@ -76,14 +78,13 @@ graph TD
         StateBridge[State Bridge<br/>FastAPI + SSE :5003]
         RustEngine[Rust Engine<br/>Warp WS :8080]
         GoCoach[Go Coach<br/>9-agent LLM :5002]
-        ReactUI[React Frontend<br/>Next.js :3000]
+        ReactUI[React Frontend<br/>:3000]
         Kibo3D[Kibo 3D Avatar<br/>Three.js :3001]
         ChromaDB[(ChromaDB<br/>RAG Knowledge)]
     end
 
-    Button -->|press event| CV
     Camera -->|frame capture| CV
-    CV -->|FEN string| StateBridge
+    CV -->|POST /state/fen| StateBridge
     StateBridge -->|validate move| RustEngine
     RustEngine -->|legal moves / AI move| StateBridge
     StateBridge -->|analysis request| GoCoach
@@ -93,7 +94,7 @@ graph TD
     StateBridge -->|SSE: LED commands| BridgeSub
     BridgeSub -->|HTTP POST| LEDServer
     LEDServer -->|NeoPixel colors| LEDStrip
-    ReactUI -->|animation commands| Kibo3D
+    ReactUI -->|WebSocket: animation trigger| Kibo3D
 ```
 
 ### System Architecture (as Built)
@@ -102,19 +103,20 @@ Kibo is a physical-digital hybrid with four logical layers:
 
 | Layer | Components | Deployment |
 |---|---|---|
-| **Physical Input** | Camera, End Turn button, wooden board with ArUco markers | Raspberry Pi 4 |
-| **On-Pi Processing** | YOLO v8 CV pipeline + LED server + bridge subscriber | Raspberry Pi 4 |
+| **CV Input** | USB camera + YOLO v8 pipeline, wooden board with ArUco markers | CV Laptop |
+| **LED Control** | LED server + bridge subscriber, NeoPixel strip | Raspberry Pi 4 |
 | **Game & Coaching Core** | Rust engine (rules, AI), FastAPI state bridge, Go 9-agent coach, ChromaDB RAG | Docker on main machine |
 | **User Interface** | React game board, Three.js Kibo avatar, voice control | Docker on main machine |
 
 Critical data flow:
 
-1. User moves piece → presses physical button.
-2. Pi captures image → YOLO v8 detects pieces (ArUco markers enable perspective correction for accurate piece mapping) → FEN string sent to State Bridge.
-3. State Bridge validates FEN against Rust Engine. If illegal → Pi LEDs flash red + frontend modal.
-4. If legal → update board → SSE to React UI and LED subscriber on Pi.
-5. LED subscriber calls Pi's LED server to light up legal moves / best move / AI response.
-6. Go Coach analyzes position (blunder check, tactical patterns, RAG retrieval) → returns advice to UI + Kibo animation commands.
+1. User moves piece on the physical board.
+2. CV laptop captures image → YOLO v8 detects pieces (ArUco markers enable perspective correction) → FEN string POSTed to State Bridge.
+3. User presses **End Turn** in the React UI.
+4. State Bridge validates FEN against Rust Engine. If illegal → LEDs flash red + frontend modal.
+5. If legal → board state updated → SSE broadcasts to React UI and Bridge Subscriber on Pi.
+6. Pi's Bridge Subscriber calls the local LED server to light up legal moves / best move / AI response.
+7. Go Coach analyzes position (blunder check, tactical patterns, RAG retrieval) → returns advice to UI + Kibo animation commands.
 
 > **Key architectural note:** The Rust Engine never directly controls LEDs. All LED commands flow through the **State Bridge → Bridge Subscriber → LED Server** sequence. This decoupling was added after initial design when we integrated the physical board.
 
@@ -131,7 +133,8 @@ Our initial design assumed the Rust Engine would speak directly to the LED board
 | **State Bridge** | Python / FastAPI | Central event hub & SSE broadcaster |
 | **Intelligence** | ChromaDB / RAG | Tactical knowledge & opening database |
 | **Interface** | React / Three.js | 3D avatar, voice UI, and game dashboard |
-| **Hardware** | Raspberry Pi / CV | LED control & YOLO v8 piece detection |
+| **CV Pipeline** | Python / YOLO v8 | Camera capture & FEN generation (CV laptop) |
+| **LED Control** | Raspberry Pi / Flask | NeoPixel strip driven by SSE bridge events |
 
 ---
 
@@ -219,4 +222,6 @@ Player moves piece → presses End Turn
 | [docs/agents_flow.md](docs/agents_flow.md) | 9-agent coaching pipeline: per-agent state, bridge calls, tool registry |
 | [docs/led_controller_manual.md](docs/led_controller_manual.md) | LED color guide, step-by-step game sequences, troubleshooting |
 | [docs/local_dev.md](docs/local_dev.md) | Running services outside Docker: Rust, Go coach, state bridge, React client |
+| [docs/ports.md](docs/ports.md) | Full port mapping and all service endpoints |
+| [docs/project_structure.md](docs/project_structure.md) | Full directory tree and key entry points per component |
 

@@ -69,15 +69,25 @@ services:
       start_period: 120s
 
   # ---- React Frontend ----
-  # Board UI, chat panel, served via nginx with WS proxy
+  # Next.js (App Router) board UI, chat panel, hardware/agents pages.
+  # Serves via the Next standalone server; HTTP rewrites proxy
+  # /bridge, /api, /dashboard, /coach into the compose network.
   client:
     build:
       context: ./client/Interface
       dockerfile: Dockerfile
+      args:
+        # Next.js inlines this at build time. Must match the value the
+        # state-bridge container reads from STATE_BRIDGE_TOKEN, otherwise
+        # the auth-gated WS handshake closes with 1008 and the browser
+        # surfaces it as a 1006 disconnect.
+        STATE_BRIDGE_TOKEN: ${STATE_BRIDGE_TOKEN:-integration-bridge-token}
+        STATE_BRIDGE_INTERNAL_URL: http://state-bridge:5003
+        COACHING_INTERNAL_URL: http://coaching:5000
+        DASHBOARD_INTERNAL_URL: http://go-coaching:8080
     container_name: chess-client
     ports:
       - "3000:3000"
-      - "80:3000"
     depends_on:
       state-bridge:
         condition: service_healthy
@@ -86,16 +96,18 @@ services:
     restart: unless-stopped
 
   # ---- Kibo Agent Viewer ----
-  # 3D character display controlled by the orchestration engine
+  # 3D character display controlled by the state bridge (/ws/kibo)
   kibo:
     build:
       context: ./Kibo
       dockerfile: Dockerfile
+      args:
+        STATE_BRIDGE_TOKEN: ${STATE_BRIDGE_TOKEN:-integration-bridge-token}
     container_name: kibo-viewer
     ports:
       - "3001:3001"
     depends_on:
-      coaching:
+      state-bridge:
         condition: service_healthy
     restart: unless-stopped
 
@@ -110,10 +122,34 @@ services:
       - "5002:8080"
     environment:
       - BRIDGE_URL=http://state-bridge:5003
+      - STATE_BRIDGE_TOKEN=${STATE_BRIDGE_TOKEN:-integration-bridge-token}
       - CHROMADB_URL=http://chromadb:8000
       - EMBEDDING_URL=http://embedding:8100
       - LLM_PROVIDER=${LLM_PROVIDER:-openrouter}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-}
+      - OPENROUTER_ANALYSIS_MODEL=${OPENROUTER_ANALYSIS_MODEL:-}
+      - OPENROUTER_ORCHESTRATION_MODEL=${OPENROUTER_ORCHESTRATION_MODEL:-}
+      - OPENROUTER_BASE_URL=${OPENROUTER_BASE_URL:-}
+      - OPENROUTER_TIMEOUT_SECONDS=${OPENROUTER_TIMEOUT_SECONDS:-}
+      - OPENROUTER_APP_NAME=${OPENROUTER_APP_NAME:-}
+      - OPENROUTER_APP_URL=${OPENROUTER_APP_URL:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-}
+      - OPENAI_ANALYSIS_MODEL=${OPENAI_ANALYSIS_MODEL:-}
+      - OPENAI_ORCHESTRATION_MODEL=${OPENAI_ORCHESTRATION_MODEL:-}
+      - VLLM_BASE_URL=${VLLM_BASE_URL:-}
+      - VLLM_API_KEY=${VLLM_API_KEY:-}
+      - VLLM_MODEL=${VLLM_MODEL:-}
+      - VLLM_ANALYSIS_MODEL=${VLLM_ANALYSIS_MODEL:-}
+      - VLLM_ORCHESTRATION_MODEL=${VLLM_ORCHESTRATION_MODEL:-}
+      - MODAL_LLM_BASE_URL=${MODAL_LLM_BASE_URL:-}
+      - MODAL_LLM_API_KEY=${MODAL_LLM_API_KEY:-}
+      - MODAL_LLM_MODEL=${MODAL_LLM_MODEL:-}
+      - MODAL_LLM_ANALYSIS_MODEL=${MODAL_LLM_ANALYSIS_MODEL:-}
+      - MODAL_LLM_ORCHESTRATION_MODEL=${MODAL_LLM_ORCHESTRATION_MODEL:-}
+      - LLM_TIMEOUT_SECONDS=${LLM_TIMEOUT_SECONDS:-45}
     depends_on:
       state-bridge:
         condition: service_healthy
@@ -182,9 +218,15 @@ services:
     environment:
       - ENGINE_WS_URL=ws://engine:8080/ws
       - BRIDGE_PORT=5003
+      - CV_SERVICE_URL=${CV_SERVICE_URL:-http://host.docker.internal:5005}
+      # Bearer token required by mutating routes, SSE, and WebSockets.
+      # Override via the host shell or .env to rotate the secret.
+      - STATE_BRIDGE_TOKEN=${STATE_BRIDGE_TOKEN:-integration-bridge-token}
     depends_on:
       engine:
         condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5003/health')\" || exit 1"]
