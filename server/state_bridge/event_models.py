@@ -80,6 +80,35 @@ class GameResetData(_EventDataBase):
 
 class LedCommandData(_EventDataBase):
     command: str
+    source: str | None = None
+
+
+class LedPlayerTurnData(_EventDataBase):
+    fen: str
+    side_to_move: str
+    selected_square: str | None = None
+    legal_targets: list[str] = []
+    best_move_from: str | None = None
+    best_move_to: str | None = None
+
+
+class LedEngineTurnData(_EventDataBase):
+    fen: str
+    side_to_move: str
+    from_: str = Field(alias="from")
+    to: str
+    result: str | None = None
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+
+class LedGameResultData(_EventDataBase):
+    result: str
+    winner: str | None = None
+
+
+class LedResetData(_EventDataBase):
+    reason: str = "reset"
 
 
 # ── CV pipeline ──────────────────────────────────────────────────────

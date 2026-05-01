@@ -28,6 +28,10 @@ class EventType(str, Enum):
     BEST_MOVE = "best_move"
     PIECE_SELECTED = "piece_selected"
     GAME_RESET = "game_reset"
+    LED_PLAYER_TURN = "led_player_turn"
+    LED_ENGINE_TURN = "led_engine_turn"
+    LED_GAME_RESULT = "led_game_result"
+    LED_RESET = "led_reset"
     STATE_SYNC = "state_sync"
     KIBO_TRIGGER = "kibo_trigger"
 

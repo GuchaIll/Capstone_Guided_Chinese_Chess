@@ -20,6 +20,7 @@ from dataclasses import dataclass
 import websockets
 from websockets.exceptions import ConnectionClosed
 
+from event_models import LedEngineTurnData, LedGameResultData, LedResetData
 from events import Event, EventBus, EventType
 from state import GameStateBridge, STARTING_FEN
 
@@ -446,6 +447,35 @@ class EngineRelay:
         logger.warning("Resyncing bridge snapshot: %s", reason)
         await self._refresh_snapshot_from_command(publish_sync=True)
 
+    async def _publish_led_engine_turn(self, *, fen: str, from_sq: str, to_sq: str, result: str | None) -> None:
+        await self.bus.publish(Event.from_model(
+            EventType.LED_ENGINE_TURN,
+            LedEngineTurnData(
+                fen=fen,
+                side_to_move=self.state.side_to_move,
+                from_=from_sq,
+                to=to_sq,
+                result=result,
+            ),
+        ))
+
+    async def _publish_led_game_result_if_terminal(self, result: str) -> None:
+        if result == "in_progress":
+            return
+        winner: str | None = None
+        if result == "red_wins":
+            winner = "red"
+        elif result == "black_wins":
+            winner = "black"
+        await self.bus.publish(Event.from_model(
+            EventType.LED_GAME_RESULT,
+            LedGameResultData(result=result, winner=winner),
+        ))
+        await self.bus.publish(Event.from_model(
+            EventType.LED_RESET,
+            LedResetData(reason="game_over"),
+        ))
+
     async def _apply_state_message(self, msg: dict, *, publish_event: bool) -> None:
         fen = msg["fen"]
         self.state.apply_fen(fen)
@@ -520,6 +550,7 @@ class EngineRelay:
                            "command_id": msg.get("command_id")},
                     sequence=self.state.event_seq,
                 ))
+                await self._publish_led_game_result_if_terminal(self.state.game_result)
 
         elif msg_type == "ai_move":
             self._resolve_pending_from_authoritative(msg_type, msg)
@@ -545,6 +576,14 @@ class EngineRelay:
                       "engine_seq": self.state.event_seq},
                 sequence=self.state.event_seq,
             ))
+            if from_sq and to_sq:
+                await self._publish_led_engine_turn(
+                    fen=fen,
+                    from_sq=from_sq,
+                    to_sq=to_sq,
+                    result=self.state.game_result,
+                )
+            await self._publish_led_game_result_if_terminal(self.state.game_result)
 
         elif msg_type == "legal_moves":
             square = msg.get("square", "")

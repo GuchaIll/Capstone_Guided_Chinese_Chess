@@ -18,10 +18,12 @@ import urllib.request
 from collections import deque
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
+from dotenv import load_dotenv
 from pydantic import BaseModel, field_validator
 
 from cv_validation import FenDiffError, derive_move_from_fen_diff
@@ -34,7 +36,11 @@ from event_models import (
     CvValidationErrorData,
     FenUpdateData,
     KiboTriggerData,
+    LedEngineTurnData,
     LedCommandData,
+    LedGameResultData,
+    LedPlayerTurnData,
+    LedResetData,
     MoveMadeData,
     PieceSelectedData,
     StateSyncData,
@@ -45,6 +51,50 @@ from engine_relay import EngineRelay
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(name)s %(levelname)s  %(message)s")
 logger = logging.getLogger("state_bridge")
+
+
+def _load_local_env_files() -> None:
+    """Load repo-local env files for standalone bridge runs."""
+    file_path = Path(__file__).resolve()
+    search_roots = [file_path.parent, *file_path.parents]
+    seen: set[Path] = set()
+    for root in search_roots:
+        if root in seen:
+            continue
+        seen.add(root)
+        for candidate in (root / ".env", root / ".ENV"):
+            if candidate.exists():
+                load_dotenv(candidate, override=False)
+
+
+def _resolve_led_server_url(env: dict[str, str] | None = None) -> str:
+    """Resolve the direct LED control base URL from explicit URL or Pi host."""
+    env_map = os.environ if env is None else env
+
+    explicit_url = (
+        env_map.get("LED_SERVER_URL")
+        or env_map.get("LED_URL")
+        or ""
+    ).strip()
+    if explicit_url:
+        return explicit_url.rstrip("/")
+
+    pi_host = (
+        env_map.get("RASPBERRY_PI_IP")
+        or env_map.get("RASPBERY_PI_IP")
+        or ""
+    ).strip()
+    if not pi_host:
+        return ""
+
+    if "://" in pi_host:
+        return pi_host.rstrip("/")
+
+    led_port = (env_map.get("LED_SERVER_PORT") or "5000").strip() or "5000"
+    return f"http://{pi_host}:{led_port}".rstrip("/")
+
+
+_load_local_env_files()
 
 # ── Shared singletons ────────────────────────────────────────────────
 state = GameStateBridge()
@@ -57,6 +107,9 @@ CV_DEDUP_WINDOW_SECONDS = 0.5
 CV_SERVICE_URL = os.getenv("CV_SERVICE_URL", "http://localhost:5005").rstrip("/")
 CV_CAPTURE_TIMEOUT_SECONDS = float(os.getenv("CV_CAPTURE_TIMEOUT_SECONDS", "20"))
 CV_HEALTH_TIMEOUT_SECONDS = float(os.getenv("CV_HEALTH_TIMEOUT_SECONDS", "3"))
+CV_LED_BLACKOUT_SECONDS = float(os.getenv("CV_LED_BLACKOUT_SECONDS", "0.2"))
+LED_SERVER_URL = _resolve_led_server_url()
+LED_CONTROL_TIMEOUT_SECONDS = float(os.getenv("LED_CONTROL_TIMEOUT_SECONDS", "1.5"))
 _seen_command_ids: set[str] = set()
 _seen_command_order: deque[str] = deque()
 _recent_cv_fens: dict[str, float] = {}
@@ -121,6 +174,36 @@ async def _authorize_websocket(websocket: WebSocket) -> bool:
     return True
 
 
+_CV_TO_ENGINE_FEN_TRANSLATION = str.maketrans(
+    {
+        "H": "N",
+        "h": "n",
+        "E": "B",
+        "e": "b",
+        "G": "K",
+        "g": "k",
+        "S": "P",
+        "s": "p",
+    }
+)
+
+
+def _normalize_xiangqi_fen(fen: str) -> str:
+    parts = fen.strip().split()
+    if not parts:
+        return fen.strip()
+    parts[0] = parts[0].translate(_CV_TO_ENGINE_FEN_TRANSLATION)
+    return " ".join(parts)
+
+
+def _fen_placements_equal(left_fen: str, right_fen: str) -> bool:
+    left_parts = _normalize_xiangqi_fen(left_fen).split()
+    right_parts = _normalize_xiangqi_fen(right_fen).split()
+    if not left_parts or not right_parts:
+        return False
+    return left_parts[0] == right_parts[0]
+
+
 def _looks_like_xiangqi_fen(fen: str) -> bool:
     """Best-effort FEN format validation before delegating to the engine.
 
@@ -128,7 +211,7 @@ def _looks_like_xiangqi_fen(fen: str) -> bool:
     input by producing an empty/default board. The bridge should reject clearly
     invalid payloads up front so downstream services get a reliable contract.
     """
-    parts = fen.split()
+    parts = _normalize_xiangqi_fen(fen).split()
     if len(parts) < 2:
         return False
 
@@ -336,6 +419,22 @@ def _bridge_state_message() -> dict[str, object]:
     }
 
 
+def _normalize_suggestion_message(result: dict[str, object]) -> dict[str, object]:
+    """Return the browser-facing suggestion shape.
+
+    The engine relay commonly returns {"type":"suggestion","move":"b0c2"} while
+    the React client expects explicit `from` / `to` fields. Keep the original
+    payload fields when present, but always derive the split squares when we can.
+    """
+    normalized = dict(result)
+    move = str(normalized.get("move", "") or "")
+    if "from" not in normalized and len(move) >= 4:
+        normalized["from"] = move[:2]
+    if "to" not in normalized and len(move) >= 4:
+        normalized["to"] = move[2:4]
+    return normalized
+
+
 # =====================================================================
 # GET — state snapshot
 # =====================================================================
@@ -396,11 +495,80 @@ def _is_duplicate_cv_capture(fen: str) -> bool:
     return previous is not None and now - previous <= CV_DEDUP_WINDOW_SECONDS
 
 
-async def _publish_led_command(command: str) -> None:
+async def _publish_led_command(command: str, *, source: str | None = None) -> None:
     state.leds_off = command == "off"
     await bus.publish(Event.from_model(
         EventType.LED_COMMAND,
-        LedCommandData(command=command),
+        LedCommandData(command=command, source=source),
+    ))
+
+
+async def _publish_led_player_turn() -> None:
+    await bus.publish(Event.from_model(
+        EventType.LED_PLAYER_TURN,
+        LedPlayerTurnData(
+            fen=state.fen,
+            side_to_move=state.side_to_move,
+            selected_square=state.selected_square,
+            legal_targets=list(state.legal_moves),
+            best_move_from=state.best_move_from,
+            best_move_to=state.best_move_to,
+        ),
+    ))
+
+
+async def _store_selection(square: str, targets: list[str]) -> None:
+    state.set_selection(square, targets)
+    await bus.publish(Event.from_model(
+        EventType.PIECE_SELECTED,
+        PieceSelectedData(square=square, targets=list(targets)),
+    ))
+    await _publish_led_player_turn()
+
+
+async def _clear_selection() -> None:
+    state.set_selection(None, [])
+    await _publish_led_player_turn()
+
+
+async def _store_best_move(from_sq: str, to_sq: str) -> None:
+    state.set_best_move(from_sq, to_sq)
+    await bus.publish(Event.from_model(
+        EventType.BEST_MOVE,
+        BestMoveData.model_validate({"from": from_sq, "to": to_sq}),
+    ))
+    await _publish_led_player_turn()
+
+
+async def _publish_led_game_result(result: str) -> None:
+    winner: str | None = None
+    if result == "red_wins":
+        winner = "red"
+    elif result == "black_wins":
+        winner = "black"
+    await bus.publish(Event.from_model(
+        EventType.LED_GAME_RESULT,
+        LedGameResultData(result=result, winner=winner),
+    ))
+
+
+async def _publish_led_reset(reason: str = "reset") -> None:
+    await bus.publish(Event.from_model(
+        EventType.LED_RESET,
+        LedResetData(reason=reason),
+    ))
+
+
+async def _publish_led_engine_turn(from_sq: str, to_sq: str, *, fen: str, result: str | None = None) -> None:
+    await bus.publish(Event.from_model(
+        EventType.LED_ENGINE_TURN,
+        LedEngineTurnData(
+            fen=fen,
+            side_to_move=state.side_to_move,
+            from_=from_sq,
+            to=to_sq,
+            result=result,
+        ),
     ))
 
 
@@ -438,11 +606,7 @@ async def _publish_best_move_from_suggestion(fen: str) -> None:
 
     from_sq = move[:2]
     to_sq = move[2:4]
-    state.set_best_move(from_sq, to_sq)
-    await bus.publish(Event.from_model(
-        EventType.BEST_MOVE,
-        BestMoveData.model_validate({"from": from_sq, "to": to_sq}),
-    ))
+    await _store_best_move(from_sq, to_sq)
 
 
 def _engine_bundle_unavailable_response() -> JSONResponse:
@@ -491,6 +655,29 @@ async def _request_cv_capture() -> tuple[int, dict[str, object]]:
     )
 
 
+async def _call_led_server(path: str) -> bool:
+    """Best-effort direct LED control for timing-critical capture blackout."""
+    if not LED_SERVER_URL:
+        return False
+    try:
+        status_code, payload = await asyncio.to_thread(
+            _blocking_json_request,
+            f"{LED_SERVER_URL}{path}",
+            method="POST",
+            body={},
+            timeout=LED_CONTROL_TIMEOUT_SECONDS,
+        )
+    except (urllib.error.URLError, OSError, TimeoutError) as exc:
+        logger.warning("Direct LED control failed for %s: %s", path, exc)
+        return False
+
+    if 200 <= status_code < 300:
+        return True
+
+    logger.warning("Direct LED control returned %s for %s: %s", status_code, path, payload)
+    return False
+
+
 async def _check_cv_service_health() -> tuple[bool, dict[str, object]]:
     try:
         status_code, payload = await asyncio.to_thread(
@@ -515,26 +702,27 @@ async def post_fen(body: FenPayload):
     if body.source == "cv":
         if not relay.connected:
             return _engine_bundle_unavailable_response()
-        state.apply_fen(body.fen, source="cv")
-        if _is_duplicate_cv_capture(body.fen):
+        normalized_cv_fen = _normalize_xiangqi_fen(body.fen)
+        state.apply_fen(normalized_cv_fen, source="cv")
+        if _is_duplicate_cv_capture(normalized_cv_fen):
             return {
                 "accepted": True,
                 "duplicate": True,
                 "source": body.source,
                 "status": "Duplicate CV capture ignored",
             }
-        if not _looks_like_xiangqi_fen(body.fen):
+        if not _looks_like_xiangqi_fen(normalized_cv_fen):
             return await _publish_cv_validation_error(
-                body.fen,
+                normalized_cv_fen,
                 "malformed FEN",
                 status_code=400,
             )
 
         try:
-            derived_move = derive_move_from_fen_diff(state.fen, body.fen)
+            derived_move = derive_move_from_fen_diff(state.fen, normalized_cv_fen)
         except FenDiffError as exc:
             return await _publish_cv_validation_error(
-                body.fen,
+                normalized_cv_fen,
                 str(exc),
                 status_code=422,
             )
@@ -546,8 +734,27 @@ async def post_fen(body: FenPayload):
 
         if derived_move.to_sq not in legal.get("targets", []):
             return await _publish_cv_validation_error(
-                body.fen,
+                normalized_cv_fen,
                 "move not in legal moves",
+                status_code=422,
+            )
+
+        try:
+            move_result = await relay.send_make_move(state.fen, derived_move.move)
+        except asyncio.TimeoutError:
+            return JSONResponse({"error": "Engine timeout"}, status_code=504)
+
+        authoritative_fen = move_result.get("fen")
+        if move_result.get("valid") is not True or not isinstance(authoritative_fen, str):
+            return await _publish_cv_validation_error(
+                normalized_cv_fen,
+                "engine could not materialize derived move",
+                status_code=502,
+            )
+        if not _fen_placements_equal(normalized_cv_fen, authoritative_fen):
+            return await _publish_cv_validation_error(
+                normalized_cv_fen,
+                "captured board does not match authoritative post-move position",
                 status_code=422,
             )
 
@@ -555,20 +762,21 @@ async def post_fen(body: FenPayload):
             derived_move.from_sq,
             derived_move.to_sq,
             piece=derived_move.piece,
-            fen_after=body.fen,
+            fen_after=authoritative_fen,
         )
+        state.apply_fen(authoritative_fen, source="cv")
         await _publish_led_command("on")
         await bus.publish(Event.from_model(
             EventType.CV_CAPTURE,
             CvCaptureData(
-                fen=body.fen,
+                fen=authoritative_fen,
                 source="cv",
                 side_to_move=state.side_to_move,
                 result=state.game_result,
                 is_check=state.is_check,
             ),
         ))
-        await _publish_best_move_from_suggestion(body.fen)
+        await _publish_best_move_from_suggestion(authoritative_fen)
         await relay.send_ai_move(DEFAULT_AI_DIFFICULTY)
         return {
             "accepted": True,
@@ -616,21 +824,19 @@ async def post_select(body: SelectPayload):
         return JSONResponse({"error": "Engine timeout"}, status_code=504)
 
     targets = result.get("targets", [])
-    state.set_selection(body.square, targets)
-    await bus.publish(Event.from_model(
-        EventType.PIECE_SELECTED,
-        PieceSelectedData(square=body.square, targets=list(targets)),
-    ))
+    await _store_selection(body.square, list(targets))
     return {"status": "Selection forwarded to engine", "targets": targets}
+
+
+@app.post("/state/deselect")
+async def post_deselect():
+    await _clear_selection()
+    return {"status": "Selection cleared"}
 
 
 @app.post("/state/best-move")
 async def post_best_move(body: BestMovePayload):
-    state.set_best_move(body.from_sq, body.to_sq)
-    await bus.publish(Event.from_model(
-        EventType.BEST_MOVE,
-        BestMoveData.model_validate({"from": body.from_sq, "to": body.to_sq}),
-    ))
+    await _store_best_move(body.from_sq, body.to_sq)
     return {"status": "Best move set"}
 
 
@@ -642,6 +848,14 @@ async def post_led_command(body: LedCommandPayload):
 
 @app.post("/capture")
 async def capture_board():
+    led_paused_directly = await _call_led_server("/cv_pause")
+    await _publish_led_command(
+        "off",
+        source="bridge_direct_http" if led_paused_directly else "event_bus_fallback",
+    )
+    if CV_LED_BLACKOUT_SECONDS > 0:
+        await asyncio.sleep(CV_LED_BLACKOUT_SECONDS)
+
     await bus.publish(Event.from_model(
         EventType.CV_CAPTURE_REQUESTED,
         CvCaptureRequestedData(
@@ -651,50 +865,63 @@ async def capture_board():
         ),
     ))
     try:
-        status_code, payload = await _request_cv_capture()
-    except (urllib.error.URLError, OSError, TimeoutError) as exc:
-        logger.warning("CV capture request failed: %s", exc)
+        try:
+            status_code, payload = await _request_cv_capture()
+        except (urllib.error.URLError, OSError, TimeoutError) as exc:
+            logger.warning("CV capture request failed: %s", exc)
+            await bus.publish(Event.from_model(
+                EventType.CV_CAPTURE_RESULT,
+                CvCaptureResultData(
+                    status="unavailable",
+                    fen=None,
+                    issues=[str(exc)],
+                    source="cv",
+                ),
+            ))
+            return JSONResponse(
+                {
+                    "error": "CV capture service unavailable",
+                    "cv_service_url": CV_SERVICE_URL,
+                    "detail": str(exc),
+                },
+                status_code=503,
+            )
+
+        try:
+            validated = CvCaptureResult.model_validate(payload)
+        except Exception as exc:
+            logger.warning("CV capture returned malformed payload: %s", exc)
+            await bus.publish(Event.from_model(
+                EventType.CV_CAPTURE_RESULT,
+                CvCaptureResultData(
+                    status="malformed",
+                    fen=None,
+                    issues=[f"malformed CV response: {exc}"],
+                    source="cv",
+                ),
+            ))
+            return JSONResponse(
+                {"error": "CV service returned an unexpected payload shape"},
+                status_code=502,
+            )
+
+        normalized_capture = validated.model_copy(
+            update={
+                "fen": _normalize_xiangqi_fen(validated.fen) if validated.fen else None,
+            }
+        )
         await bus.publish(Event.from_model(
             EventType.CV_CAPTURE_RESULT,
-            CvCaptureResultData(
-                status="unavailable",
-                fen=None,
-                issues=[str(exc)],
-                source="cv",
-            ),
+            CvCaptureResultData(**normalized_capture.model_dump(), source="cv"),
         ))
-        return JSONResponse(
-            {
-                "error": "CV capture service unavailable",
-                "cv_service_url": CV_SERVICE_URL,
-                "detail": str(exc),
-            },
-            status_code=503,
+        return JSONResponse(normalized_capture.model_dump(exclude_none=True), status_code=status_code)
+    finally:
+        if led_paused_directly:
+            await _call_led_server("/cv_resume")
+        await _publish_led_command(
+            "on",
+            source="bridge_direct_http" if led_paused_directly else "event_bus_fallback",
         )
-
-    try:
-        validated = CvCaptureResult.model_validate(payload)
-    except Exception as exc:
-        logger.warning("CV capture returned malformed payload: %s", exc)
-        await bus.publish(Event.from_model(
-            EventType.CV_CAPTURE_RESULT,
-            CvCaptureResultData(
-                status="malformed",
-                fen=None,
-                issues=[f"malformed CV response: {exc}"],
-                source="cv",
-            ),
-        ))
-        return JSONResponse(
-            {"error": "CV service returned an unexpected payload shape"},
-            status_code=502,
-        )
-
-    await bus.publish(Event.from_model(
-        EventType.CV_CAPTURE_RESULT,
-        CvCaptureResultData(**validated.model_dump(), source="cv"),
-    ))
-    return JSONResponse(validated.model_dump(exclude_none=True), status_code=status_code)
 
 
 # ── LED-server-compatible endpoints ──────────────────────────────────
@@ -726,6 +953,12 @@ async def compat_opponent(body: OpponentMovePayload):
             "to_c": body.to_c,
         }),
     ))
+    await _publish_led_engine_turn(
+        from_sq=from_sq,
+        to_sq=to_sq,
+        fen=state.fen,
+        result=state.game_result,
+    )
     return {"status": "Opponent move displayed"}
 
 
@@ -773,6 +1006,7 @@ async def engine_reset(body: ResetPayload | None = None):
     await relay.send_reset_and_wait(command_id=command_id)
     state.reset()
     await bus.publish(Event(type=EventType.GAME_RESET, data={}))
+    await _publish_led_reset("engine_reset")
     return {"status": "Game reset", "command_id": command_id}
 
 
@@ -780,7 +1014,7 @@ async def engine_reset(body: ResetPayload | None = None):
 async def engine_set_position(body: FenPayload):
     if not relay.connected:
         return _engine_bundle_unavailable_response()
-    await relay.send_set_position(body.fen)
+    await relay.send_set_position(_normalize_xiangqi_fen(body.fen))
     return {"status": "Position forwarded to engine"}
 
 
@@ -797,7 +1031,7 @@ async def engine_analyze(body: AnalyzePayload):
     if not relay.connected:
         return _engine_bundle_unavailable_response()
     try:
-        result = await relay.send_analyze(body.fen, body.depth)
+        result = await relay.send_analyze(_normalize_xiangqi_fen(body.fen), body.depth)
         # Unwrap envelope: return the features object directly so Go can
         # decode top-level fields (search_score, phase_name, material, …).
         if isinstance(result, dict) and "features" in result:
@@ -833,7 +1067,7 @@ async def engine_suggest(body: SuggestPayload):
     if not relay.connected:
         return _engine_bundle_unavailable_response()
     try:
-        result = await relay.send_suggest(body.fen, body.depth)
+        result = await relay.send_suggest(_normalize_xiangqi_fen(body.fen), body.depth)
         return JSONResponse(result)
     except asyncio.TimeoutError:
         return JSONResponse({"error": "Engine timeout"}, status_code=504)
@@ -842,7 +1076,8 @@ async def engine_suggest(body: SuggestPayload):
 @app.post("/engine/validate-fen")
 async def engine_validate_fen(body: ValidateFenPayload):
     """Validate a FEN string via the engine."""
-    if not _looks_like_xiangqi_fen(body.fen):
+    normalized_fen = _normalize_xiangqi_fen(body.fen)
+    if not _looks_like_xiangqi_fen(normalized_fen):
         return {
             "valid": False,
             "detail": {"type": "error", "message": "Invalid Xiangqi FEN format"},
@@ -850,7 +1085,7 @@ async def engine_validate_fen(body: ValidateFenPayload):
     if not relay.connected:
         return _engine_bundle_unavailable_response()
     try:
-        result = await relay.send_validate_fen(body.fen)
+        result = await relay.send_validate_fen(normalized_fen)
         valid = result.get("valid", False)
         return {"valid": valid, "detail": result}
     except asyncio.TimeoutError:
@@ -894,16 +1129,17 @@ async def engine_legal_moves(body: LegalMovesPayload):
     """Get legal moves for a square (or all squares) at a given FEN."""
     if not relay.connected:
         return _engine_bundle_unavailable_response()
+    normalized_fen = _normalize_xiangqi_fen(body.fen)
     try:
         if body.square:
-            result = await relay.send_legal_moves_for_square(body.fen, body.square)
+            result = await relay.send_legal_moves_for_square(normalized_fen, body.square)
             return JSONResponse(result)
         else:
             # Only iterate squares with pieces of the side-to-move (~16 vs 90)
             all_moves: list[str] = []
-            for sq in _moving_side_squares(body.fen):
+            for sq in _moving_side_squares(normalized_fen):
                 try:
-                    result = await relay.send_legal_moves_for_square(body.fen, sq)
+                    result = await relay.send_legal_moves_for_square(normalized_fen, sq)
                     targets = result.get("targets", [])
                     for t in targets:
                         all_moves.append(f"{sq}{t}")
@@ -920,7 +1156,7 @@ async def engine_make_move(body: MakeMovePayload):
     if not relay.connected:
         return _engine_bundle_unavailable_response()
     try:
-        result = await relay.send_make_move(body.fen, body.move)
+        result = await relay.send_make_move(_normalize_xiangqi_fen(body.fen), body.move)
         return JSONResponse(result)
     except asyncio.TimeoutError:
         return JSONResponse({"error": "Engine timeout"}, status_code=504)
@@ -935,8 +1171,9 @@ async def engine_is_move_legal(body: IsMoveLegalPayload):
         return _engine_bundle_unavailable_response()
     from_sq = body.move[:2]
     to_sq = body.move[2:]
+    normalized_fen = _normalize_xiangqi_fen(body.fen)
     try:
-        result = await relay.send_legal_moves_for_square(body.fen, from_sq)
+        result = await relay.send_legal_moves_for_square(normalized_fen, from_sq)
         targets = result.get("targets", [])
         return {"legal": to_sq in targets, "targets": targets}
     except asyncio.TimeoutError:
@@ -954,7 +1191,7 @@ async def engine_puzzle_detect(body: DetectPuzzlePayload):
     if not relay.connected:
         return _engine_bundle_unavailable_response()
     try:
-        result = await relay.send_detect_puzzle(body.fen, body.depth)
+        result = await relay.send_detect_puzzle(_normalize_xiangqi_fen(body.fen), body.depth)
         # Unwrap envelope: {"type":"puzzle_detection","detection":{...}} → detection
         if isinstance(result, dict) and "detection" in result:
             return JSONResponse(result["detection"])
@@ -1115,16 +1352,25 @@ async def bridge_ws(websocket: WebSocket):
                     })
                     continue
 
-                if msg_type == "legal_moves":
+                if msg_type == "select" or msg_type == "legal_moves":
                     square = str(message.get("square", ""))
-                    await websocket.send_json(
-                        await relay.send_legal_moves_for_square(state.fen, square)
-                    )
+                    result = await relay.send_legal_moves_for_square(state.fen, square)
+                    targets = list(result.get("targets", []))
+                    await _store_selection(square, targets)
+                    await websocket.send_json(result)
+                elif msg_type == "deselect":
+                    await _clear_selection()
+                    await websocket.send_json({"type": "selection_cleared"})
                 elif msg_type == "suggest":
                     difficulty = message.get("difficulty", DEFAULT_AI_DIFFICULTY)
-                    await websocket.send_json(
+                    result = _normalize_suggestion_message(
                         await relay.send_suggest(state.fen, int(difficulty))
                     )
+                    from_sq = str(result.get("from", "") or "")
+                    to_sq = str(result.get("to", "") or "")
+                    if from_sq and to_sq:
+                        await _store_best_move(from_sq, to_sq)
+                    await websocket.send_json(result)
                 elif msg_type == "move":
                     move = str(message.get("move", ""))
                     command_id, accepted = _claim_command_id(message.get("command_id"))
@@ -1150,6 +1396,7 @@ async def bridge_ws(websocket: WebSocket):
                     response = await relay.send_reset_and_wait(command_id=command_id)
                     state.reset()
                     await bus.publish(Event(type=EventType.GAME_RESET, data={}))
+                    await _publish_led_reset("websocket_reset")
                     await websocket.send_json(response)
                 elif msg_type == "ai_move":
                     difficulty = message.get("difficulty")

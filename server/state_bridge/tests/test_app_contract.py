@@ -12,6 +12,8 @@ from state import STARTING_FEN
 ALT_FEN = "9/9/9/9/9/9/9/9/9/9 b - - 0 1"
 CV_BASE_FEN = "4k4/9/9/9/9/9/9/9/9/R3K4 w - - 0 1"
 CV_SUCCESS_FEN = "4k4/9/9/9/9/9/9/9/R8/4K4 b - - 0 2"
+CV_ALT_NOTATION_FEN = "rheagaehr/9/1c5c1/s1s1s1s1s/9/4S4/S1S3S1S/1C5C1/9/RHEAGAEHR w - - 0 1"
+CV_NORMALIZED_FEN = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/4P4/P1P3P1P/1C5C1/9/RNBAKABNR w - - 0 1"
 AMBIGUOUS_CV_FEN = "9/4k4/9/9/9/9/9/9/R8/4K4 b - - 0 2"
 ILLEGAL_CV_FEN = "4k4/9/9/9/9/9/9/9/9/4KR3 b - - 0 2"
 
@@ -98,6 +100,14 @@ async def test_post_cv_fen_accepts_valid_move_and_emits_led_resume_then_cv_captu
 ):
     _, state, _, relay = bridge_testbed
     state.apply_fen(CV_BASE_FEN, source="engine")
+    relay.make_move_results[(CV_BASE_FEN, "a0a1")] = {
+        "type": "move_result",
+        "valid": True,
+        "move": "a0a1",
+        "fen": CV_SUCCESS_FEN,
+        "result": "in_progress",
+        "is_check": False,
+    }
     task = await capture_sse_events(expected=3)
 
     response = client.post("/state/fen", json={"fen": CV_SUCCESS_FEN, "source": "cv"})
@@ -127,7 +137,49 @@ async def test_post_cv_fen_accepts_valid_move_and_emits_led_resume_then_cv_captu
     assert state.leds_off is False
     assert relay.calls == [
         ("legal_moves_for_square", CV_BASE_FEN, "a0"),
+        ("make_move", CV_BASE_FEN, "a0a1"),
         ("suggest", CV_SUCCESS_FEN, 5),
+        ("ai_move", 4),
+    ]
+
+
+async def test_post_cv_fen_normalizes_cv_piece_symbols_before_validation_and_state_update(
+    client,
+    bridge_testbed,
+    capture_sse_events,
+):
+    _, state, _, relay = bridge_testbed
+    relay.legal_moves_by_square["e3"] = ["e4"]
+    relay.make_move_results[(STARTING_FEN, "e3e4")] = {
+        "type": "move_result",
+        "valid": True,
+        "move": "e3e4",
+        "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/4P4/P1P3P1P/1C5C1/9/RNBAKABNR b - - 0 2",
+        "result": "in_progress",
+        "is_check": False,
+    }
+    task = await capture_sse_events(expected=3)
+
+    response = client.post("/state/fen", json={"fen": CV_ALT_NOTATION_FEN, "source": "cv"})
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "accepted": True,
+        "status": "FEN updated",
+        "source": "cv",
+        "move": "e3e4",
+    }
+
+    events = await asyncio.wait_for(task, 2.0)
+    assert [event["type"] for event in events] == ["led_command", "cv_capture", "best_move"]
+    assert events[1]["data"]["fen"] == "rnbakabnr/9/1c5c1/p1p1p1p1p/9/4P4/P1P3P1P/1C5C1/9/RNBAKABNR b - - 0 2"
+    assert state.fen == "rnbakabnr/9/1c5c1/p1p1p1p1p/9/4P4/P1P3P1P/1C5C1/9/RNBAKABNR b - - 0 2"
+    assert state.cv_fen == "rnbakabnr/9/1c5c1/p1p1p1p1p/9/4P4/P1P3P1P/1C5C1/9/RNBAKABNR b - - 0 2"
+    assert state.side_to_move == "black"
+    assert relay.calls == [
+        ("legal_moves_for_square", STARTING_FEN, "e3"),
+        ("make_move", STARTING_FEN, "e3e4"),
+        ("suggest", "rnbakabnr/9/1c5c1/p1p1p1p1p/9/4P4/P1P3P1P/1C5C1/9/RNBAKABNR b - - 0 2", 5),
         ("ai_move", 4),
     ]
 
@@ -147,7 +199,8 @@ def test_post_cv_fen_ignores_duplicate_capture_within_short_window(client):
 
 
 async def test_capture_endpoint_proxies_cv_capture_result(client, monkeypatch, capture_sse_events):
-    task = await capture_sse_events(expected=2)
+    task = await capture_sse_events(expected=4)
+    led_calls: list[str] = []
 
     async def fake_capture():
         return 200, {
@@ -159,28 +212,40 @@ async def test_capture_endpoint_proxies_cv_capture_result(client, monkeypatch, c
             "capture_id": 3,
         }
 
+    async def fake_led_call(path: str) -> bool:
+        led_calls.append(path)
+        return True
+
     monkeypatch.setattr("app._request_cv_capture", fake_capture)
+    monkeypatch.setattr("app._call_led_server", fake_led_call)
 
     response = client.post("/capture")
 
     assert response.status_code == 200
     events = await asyncio.wait_for(task, 2.0)
-    assert events[0]["type"] == "cv_capture_requested"
-    assert events[0]["data"]["endpoint"] == "/capture"
-    assert events[1]["type"] == "cv_capture_result"
-    assert events[1]["data"]["fen"] == CV_SUCCESS_FEN
+    assert [event["type"] for event in events] == [
+        "led_command",
+        "cv_capture_requested",
+        "cv_capture_result",
+        "led_command",
+    ]
+    assert events[0]["data"] == {"command": "off", "source": "bridge_direct_http"}
+    assert events[1]["data"]["endpoint"] == "/capture"
+    assert events[2]["data"]["fen"] == CV_SUCCESS_FEN
+    assert events[3]["data"] == {"command": "on", "source": "bridge_direct_http"}
+    assert led_calls == ["/cv_pause", "/cv_resume"]
     assert response.json() == {
         "status": "ok",
         "fen": CV_SUCCESS_FEN,
+        "issues": [],
         "image_path": "cv/output/http_capture.jpg",
         "image_mime": "image/jpeg",
-        "image_base64": "ZmFrZQ==",
         "capture_id": 3,
     }
 
 
 async def test_capture_endpoint_accepts_float_captured_at_from_cv(client, monkeypatch, capture_sse_events):
-    task = await capture_sse_events(expected=2)
+    task = await capture_sse_events(expected=4)
 
     async def fake_capture():
         return 200, {
@@ -193,6 +258,7 @@ async def test_capture_endpoint_accepts_float_captured_at_from_cv(client, monkey
         }
 
     monkeypatch.setattr("app._request_cv_capture", fake_capture)
+    monkeypatch.setattr("app._call_led_server", lambda path: asyncio.sleep(0, result=True))
 
     response = client.post("/capture")
 
@@ -204,8 +270,57 @@ async def test_capture_endpoint_accepts_float_captured_at_from_cv(client, monkey
     assert body["captured_at"].startswith("2026-")
 
     events = await asyncio.wait_for(task, 2.0)
-    assert events[1]["type"] == "cv_capture_result"
-    assert isinstance(events[1]["data"]["captured_at"], str)
+    assert events[2]["type"] == "cv_capture_result"
+    assert isinstance(events[2]["data"]["captured_at"], str)
+
+
+def test_engine_validate_fen_accepts_cv_piece_notation_and_normalizes_before_relay(client, bridge_testbed):
+    _, _, _, relay = bridge_testbed
+
+    response = client.post("/engine/validate-fen", json={"fen": CV_ALT_NOTATION_FEN})
+
+    assert response.status_code == 200
+    assert response.json()["valid"] is True
+    assert relay.calls == [("validate_fen", CV_NORMALIZED_FEN)]
+
+
+def test_resolve_led_server_url_prefers_explicit_url(bridge_testbed):
+    app_module, _, _, _ = bridge_testbed
+
+    resolved = app_module._resolve_led_server_url(
+        {
+            "LED_SERVER_URL": "http://led-host:5000/",
+            "RASPBERRY_PI_IP": "192.168.1.55",
+            "LED_SERVER_PORT": "5001",
+        }
+    )
+
+    assert resolved == "http://led-host:5000"
+
+
+def test_resolve_led_server_url_derives_from_raspberry_pi_ip(bridge_testbed):
+    app_module, _, _, _ = bridge_testbed
+
+    resolved = app_module._resolve_led_server_url(
+        {
+            "RASPBERRY_PI_IP": "192.168.1.55",
+            "LED_SERVER_PORT": "5001",
+        }
+    )
+
+    assert resolved == "http://192.168.1.55:5001"
+
+
+def test_resolve_led_server_url_accepts_legacy_raspbery_pi_ip_spelling(bridge_testbed):
+    app_module, _, _, _ = bridge_testbed
+
+    resolved = app_module._resolve_led_server_url(
+        {
+            "RASPBERY_PI_IP": "192.168.1.77",
+        }
+    )
+
+    assert resolved == "http://192.168.1.77:5000"
 
 
 def test_event_from_model_rejects_malformed_payload():
@@ -221,7 +336,7 @@ def test_event_from_model_rejects_malformed_payload():
 
 
 async def test_capture_endpoint_rejects_malformed_cv_payload(client, monkeypatch, capture_sse_events):
-    task = await capture_sse_events(expected=2)
+    task = await capture_sse_events(expected=4)
 
     async def fake_capture():
         # `fen` should be string-or-null; sending a list breaks the contract
@@ -230,36 +345,112 @@ async def test_capture_endpoint_rejects_malformed_cv_payload(client, monkeypatch
         return 200, {"status": "ok", "fen": ["not-a-fen"]}
 
     monkeypatch.setattr("app._request_cv_capture", fake_capture)
+    monkeypatch.setattr("app._call_led_server", lambda path: asyncio.sleep(0, result=True))
 
     response = client.post("/capture")
 
     assert response.status_code == 502
     assert response.json() == {"error": "CV service returned an unexpected payload shape"}
     events = await asyncio.wait_for(task, 2.0)
-    assert events[0]["type"] == "cv_capture_requested"
-    assert events[1]["type"] == "cv_capture_result"
-    assert events[1]["data"]["status"] == "malformed"
+    assert [event["type"] for event in events] == [
+        "led_command",
+        "cv_capture_requested",
+        "cv_capture_result",
+        "led_command",
+    ]
+    assert events[0]["data"] == {"command": "off", "source": "bridge_direct_http"}
+    assert events[2]["data"]["status"] == "malformed"
+    assert events[3]["data"] == {"command": "on", "source": "bridge_direct_http"}
     # Outbound payloads omit None-valued optional fields, so `fen` simply
     # isn't present rather than `null` on the wire.
-    assert events[1]["data"].get("fen") is None
+    assert events[2]["data"].get("fen") is None
 
 
 async def test_capture_endpoint_returns_503_when_cv_service_is_unavailable(client, monkeypatch, capture_sse_events):
-    task = await capture_sse_events(expected=2)
+    task = await capture_sse_events(expected=4)
 
     async def fake_capture():
         raise OSError("camera offline")
 
     monkeypatch.setattr("app._request_cv_capture", fake_capture)
+    monkeypatch.setattr("app._call_led_server", lambda path: asyncio.sleep(0, result=True))
 
     response = client.post("/capture")
 
     assert response.status_code == 503
     events = await asyncio.wait_for(task, 2.0)
-    assert events[0]["type"] == "cv_capture_requested"
-    assert events[1]["type"] == "cv_capture_result"
-    assert events[1]["data"]["status"] == "unavailable"
+    assert [event["type"] for event in events] == [
+        "led_command",
+        "cv_capture_requested",
+        "cv_capture_result",
+        "led_command",
+    ]
+    assert events[0]["data"] == {"command": "off", "source": "bridge_direct_http"}
+    assert events[2]["data"]["status"] == "unavailable"
+    assert events[3]["data"] == {"command": "on", "source": "bridge_direct_http"}
     assert response.json()["error"] == "CV capture service unavailable"
+
+
+async def test_capture_endpoint_waits_for_blackout_timer_before_led_resume(client, monkeypatch, capture_sse_events):
+    task = await capture_sse_events(expected=4)
+    monkeypatch.setattr("app.CV_LED_BLACKOUT_SECONDS", 0.05)
+    led_calls: list[str] = []
+
+    async def fake_capture():
+        return 200, {"status": "ok", "fen": CV_SUCCESS_FEN}
+
+    async def fake_led_call(path: str) -> bool:
+        led_calls.append(path)
+        return True
+
+    monkeypatch.setattr("app._request_cv_capture", fake_capture)
+    monkeypatch.setattr("app._call_led_server", fake_led_call)
+
+    started = asyncio.get_running_loop().time()
+    response = client.post("/capture")
+    elapsed = asyncio.get_running_loop().time() - started
+
+    assert response.status_code == 200
+    assert elapsed >= 0.045
+    assert led_calls == ["/cv_pause", "/cv_resume"]
+
+    events = await asyncio.wait_for(task, 2.0)
+    assert events[0]["data"] == {"command": "off", "source": "bridge_direct_http"}
+    assert events[3]["data"] == {"command": "on", "source": "bridge_direct_http"}
+
+
+async def test_capture_endpoint_still_publishes_blackout_events_when_direct_led_control_is_unavailable(
+    client,
+    monkeypatch,
+    capture_sse_events,
+):
+    task = await capture_sse_events(expected=4)
+    led_calls: list[str] = []
+
+    async def fake_capture():
+        return 200, {"status": "ok", "fen": CV_SUCCESS_FEN}
+
+    async def fake_led_call(path: str) -> bool:
+        led_calls.append(path)
+        return False
+
+    monkeypatch.setattr("app._request_cv_capture", fake_capture)
+    monkeypatch.setattr("app._call_led_server", fake_led_call)
+
+    response = client.post("/capture")
+
+    assert response.status_code == 200
+    assert led_calls == ["/cv_pause"]
+
+    events = await asyncio.wait_for(task, 2.0)
+    assert [event["type"] for event in events] == [
+        "led_command",
+        "cv_capture_requested",
+        "cv_capture_result",
+        "led_command",
+    ]
+    assert events[0]["data"] == {"command": "off", "source": "event_bus_fallback"}
+    assert events[3]["data"] == {"command": "on", "source": "event_bus_fallback"}
 
 
 async def test_post_cv_fen_rejects_malformed_fen_and_emits_validation_error_and_led_restore(
@@ -382,6 +573,26 @@ async def test_post_best_move_stores_recommendation_and_emits_event(client, brid
     assert state.best_move_to == "b3"
 
 
+async def test_post_best_move_also_emits_explicit_led_player_turn_event(client, bridge_testbed, capture_sse_events):
+    _, state, _, _ = bridge_testbed
+    state.set_selection("e3", ["e4"])
+    task = await capture_sse_events(expected=2)
+
+    response = client.post("/state/best-move", json={"from_sq": "b2", "to_sq": "b3"})
+
+    assert response.status_code == 200
+    events = await asyncio.wait_for(task, 2.0)
+    assert [event["type"] for event in events] == ["best_move", "led_player_turn"]
+    assert events[1]["data"] == {
+        "fen": STARTING_FEN,
+        "side_to_move": "red",
+        "selected_square": "e3",
+        "legal_targets": ["e4"],
+        "best_move_from": "b2",
+        "best_move_to": "b3",
+    }
+
+
 async def test_post_led_command_updates_state_and_emits_event(client, bridge_testbed, capture_sse_events):
     _, state, _, _ = bridge_testbed
     task = await capture_sse_events()
@@ -417,6 +628,47 @@ async def test_select_updates_selection_state_and_emits_piece_selected(client, b
     assert relay.calls == [("legal_moves_for_square", STARTING_FEN, "e3")]
 
 
+async def test_select_also_emits_explicit_led_player_turn_event(client, bridge_testbed, capture_sse_events):
+    _, _, _, relay = bridge_testbed
+    relay.legal_moves_by_square["e3"] = ["e4", "e5"]
+    task = await capture_sse_events(expected=2)
+
+    response = client.post("/state/select", json={"square": "e3"})
+
+    assert response.status_code == 200
+    events = await asyncio.wait_for(task, 2.0)
+    assert [event["type"] for event in events] == ["piece_selected", "led_player_turn"]
+    assert events[1]["data"] == {
+        "fen": STARTING_FEN,
+        "side_to_move": "red",
+        "selected_square": "e3",
+        "legal_targets": ["e4", "e5"],
+    }
+
+
+async def test_deselect_clears_selection_and_emits_led_player_turn(client, bridge_testbed, capture_sse_events):
+    _, state, _, _ = bridge_testbed
+    state.set_selection("e3", ["e4", "e5"])
+    state.set_best_move("b2", "b3")
+    task = await capture_sse_events()
+
+    response = client.post("/state/deselect", json={})
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "Selection cleared"}
+    events = await asyncio.wait_for(task, 2.0)
+    assert events[0]["type"] == "led_player_turn"
+    assert events[0]["data"] == {
+        "fen": STARTING_FEN,
+        "side_to_move": "red",
+        "legal_targets": [],
+        "best_move_from": "b2",
+        "best_move_to": "b3",
+    }
+    assert state.selected_square is None
+    assert state.legal_moves == []
+
+
 def test_engine_passthrough_endpoints_forward_to_relay(client, bridge_testbed):
     _, _, _, relay = bridge_testbed
 
@@ -449,9 +701,10 @@ def test_engine_move_rejects_duplicate_command_id(client, bridge_testbed):
     assert relay.calls == [("move", "a0a1", "dup-1")]
 
 
-def test_bridge_websocket_supports_state_and_helper_commands(client, bridge_testbed):
-    _, _, _, relay = bridge_testbed
+async def test_bridge_websocket_supports_state_and_helper_commands(client, bridge_testbed, capture_sse_events):
+    _, state, _, relay = bridge_testbed
     relay.legal_moves_by_square["e3"] = ["e4", "e5"]
+    task = await capture_sse_events(expected=5)
 
     with client.websocket_connect("/ws") as ws:
         # Bridge sends initial state snapshot on connect
@@ -464,7 +717,7 @@ def test_bridge_websocket_supports_state_and_helper_commands(client, bridge_test
         assert state_message["type"] == "state"
         assert state_message["fen"] == STARTING_FEN
 
-        ws.send_json({"type": "legal_moves", "square": "e3"})
+        ws.send_json({"type": "select", "square": "e3"})
         legal_moves = ws.receive_json()
         assert legal_moves == {
             "type": "legal_moves",
@@ -476,9 +729,47 @@ def test_bridge_websocket_supports_state_and_helper_commands(client, bridge_test
         suggestion = ws.receive_json()
         assert suggestion == {
             "type": "suggestion",
+            "from": "b0",
+            "to": "c2",
             "move": "b0c2",
             "score": 120,
         }
+
+        ws.send_json({"type": "deselect"})
+        assert ws.receive_json() == {"type": "selection_cleared"}
+
+    events = await asyncio.wait_for(task, 2.0)
+    assert [event["type"] for event in events] == [
+        "piece_selected",
+        "led_player_turn",
+        "best_move",
+        "led_player_turn",
+        "led_player_turn",
+    ]
+    assert events[1]["data"] == {
+        "fen": STARTING_FEN,
+        "side_to_move": "red",
+        "selected_square": "e3",
+        "legal_targets": ["e4", "e5"],
+    }
+    assert events[3]["data"] == {
+        "fen": STARTING_FEN,
+        "side_to_move": "red",
+        "selected_square": "e3",
+        "legal_targets": ["e4", "e5"],
+        "best_move_from": "b0",
+        "best_move_to": "c2",
+    }
+    assert events[4]["data"] == {
+        "fen": STARTING_FEN,
+        "side_to_move": "red",
+        "legal_targets": [],
+        "best_move_from": "b0",
+        "best_move_to": "c2",
+    }
+    assert state.selected_square is None
+    assert state.best_move_from == "b0"
+    assert state.best_move_to == "c2"
 
     assert relay.calls == [
         ("legal_moves_for_square", STARTING_FEN, "e3"),
@@ -562,6 +853,18 @@ async def test_engine_reset_restores_starting_state_and_emits_game_reset(client,
     assert state.leds_off is False
 
 
+async def test_engine_reset_also_emits_led_reset_event(client, bridge_testbed, capture_sse_events):
+    _, _, _, _ = bridge_testbed
+    task = await capture_sse_events(expected=2)
+
+    response = client.post("/engine/reset")
+
+    assert response.status_code == 200
+    events = await asyncio.wait_for(task, 2.0)
+    assert [event["type"] for event in events] == ["game_reset", "led_reset"]
+    assert events[1]["data"] == {"reason": "engine_reset"}
+
+
 async def test_compatibility_endpoints_match_bridge_contracts(client, bridge_testbed, capture_sse_events):
     _, state, _, _ = bridge_testbed
 
@@ -586,7 +889,7 @@ async def test_compatibility_endpoints_match_bridge_contracts(client, bridge_tes
 
 
 async def test_sse_stream_preserves_event_order_for_single_subscriber(client, capture_sse_events):
-    task = await capture_sse_events(expected=3)
+    task = await capture_sse_events(expected=4)
 
     client.post("/state/fen", json={"fen": ALT_FEN, "source": "engine"})
     client.post("/state/best-move", json={"from_sq": "a0", "to_sq": "a1"})
@@ -596,6 +899,7 @@ async def test_sse_stream_preserves_event_order_for_single_subscriber(client, ca
     assert [event["type"] for event in events] == [
         "fen_update",
         "best_move",
+        "led_player_turn",
         "led_command",
     ]
 

@@ -47,6 +47,7 @@ class FakeRelay:
             "move": "b0c2",
             "score": 120,
         }
+        self.make_move_results: dict[tuple[str, str], dict[str, Any]] = {}
 
     async def run(self) -> None:
         self.run_calls += 1
@@ -135,6 +136,28 @@ class FakeRelay:
     async def send_suggest(self, fen: str, depth: int) -> dict[str, Any]:
         self.calls.append(("suggest", fen, depth))
         return dict(self.suggestion_response)
+
+    async def send_validate_fen(self, fen: str) -> dict[str, Any]:
+        self.calls.append(("validate_fen", fen))
+        return {
+            "type": "validation",
+            "valid": True,
+            "normalized_fen": fen,
+            "reason": None,
+        }
+
+    async def send_make_move(self, fen: str, move: str) -> dict[str, Any]:
+        self.calls.append(("make_move", fen, move))
+        if (fen, move) in self.make_move_results:
+            return dict(self.make_move_results[(fen, move)])
+        return {
+            "type": "move_result",
+            "valid": True,
+            "move": move,
+            "fen": f"{fen}|{move}",
+            "result": "in_progress",
+            "is_check": False,
+        }
 
     def status(self) -> dict[str, Any]:
         return {

@@ -69,6 +69,10 @@ class GameStateBridge:
                          fen_after=fen_after)
         self.last_move = rec
         self.move_history.append(rec)
+        self.selected_square = None
+        self.legal_moves = []
+        self.best_move_from = None
+        self.best_move_to = None
         if fen_after:
             self.apply_fen(fen_after)
         return rec

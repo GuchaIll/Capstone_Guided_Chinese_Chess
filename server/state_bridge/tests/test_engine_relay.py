@@ -413,6 +413,10 @@ async def test_relay_translates_ai_move_and_legal_moves(running_relay):
         assert ai_event.type.value == "move_made"
         assert ai_event.data["source"] == "ai"
         assert ai_event.data["score"] == 42
+        led_event = await _read_event(queue)
+        assert led_event.type.value == "led_engine_turn"
+        assert led_event.data["from"] == "b2"
+        assert led_event.data["to"] == "b3"
 
         await server.send_observer({"type": "legal_moves", "square": "c3", "targets": ["c4", "c5"]})
         selection_event = await _read_event(queue)
@@ -423,6 +427,36 @@ async def test_relay_translates_ai_move_and_legal_moves(running_relay):
     assert selection_event.data == {"square": "c3", "targets": ["c4", "c5"]}
     assert state.selected_square == "c3"
     assert state.legal_moves == ["c4", "c5"]
+
+
+@pytest.mark.asyncio
+async def test_relay_publishes_led_result_and_reset_for_terminal_positions(running_relay):
+    _, _, bus, server = running_relay
+    queue = bus.subscribe()
+
+    try:
+        await server.send_observer(
+            {
+                "type": "move_result",
+                "valid": True,
+                "move": "a0a1",
+                "fen": "9/9/9/9/9/9/9/9/9/9 b - - 0 1",
+                "result": "red_wins",
+                "is_check": True,
+                "seq": 1,
+            }
+        )
+        move_event = await _read_event(queue)
+        result_event = await _read_event(queue)
+        reset_event = await _read_event(queue)
+    finally:
+        bus.unsubscribe(queue)
+
+    assert move_event.type.value == "move_made"
+    assert result_event.type.value == "led_game_result"
+    assert result_event.data == {"result": "red_wins", "winner": "red"}
+    assert reset_event.type.value == "led_reset"
+    assert reset_event.data == {"reason": "game_over"}
 
 
 @pytest.mark.asyncio
