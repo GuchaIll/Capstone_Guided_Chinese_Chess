@@ -74,6 +74,12 @@ class LEDBoard:
                 self.render_board()
             elif action == "show_moves":
                 self.show_moves("", payload["row"], payload["col"])
+            elif action == "show_player_turn":
+                self.show_player_turn(
+                    payload.get("selected"),
+                    payload.get("targets", []),
+                    payload.get("best_move"),
+                )
             elif action == "show_opponent_move":
                 self.show_opponent_move(
                     payload["from_r"],
@@ -85,8 +91,10 @@ class LEDBoard:
                 self.show_start_zones()
             elif action == "celebrate_win":
                 self.celebrate_win(payload["side"])
+            elif action == "celebrate_draw":
+                self.celebrate_draw()
         else:
-            self.render_board()
+            self.clear()
 
     def set_square(self, r, c, color):
         self.pixels[self.BOARD_LED_MAP[r][c]] = color
@@ -129,7 +137,7 @@ class LEDBoard:
         }
         return translation.get(piece, piece)
 
-    def set_fen(self, fen):
+    def set_fen(self, fen, *, render=True):
         rows = fen.split()[0].split("/")
         board = []
         for row in rows:
@@ -141,6 +149,8 @@ class LEDBoard:
                     expanded.append(self.normalize_piece(ch))
             board.append(expanded)
         self.board_state = board
+        if not render:
+            return
         if self.cv_mode:
             self._queue_display("render_board")
         else:
@@ -313,6 +323,52 @@ class LEDBoard:
         self.set_square(r,c,self.RED)
         self.pixels.show()
 
+    def show_player_turn(self, selected, targets, best_move):
+        if self.cv_mode:
+            self._queue_display(
+                "show_player_turn",
+                {
+                    "selected": selected,
+                    "targets": targets,
+                    "best_move": best_move,
+                },
+            )
+            return
+
+        self.clear()
+
+        best_from = None
+        best_to = None
+        if best_move is not None:
+            best_from = (best_move.get("from_r"), best_move.get("from_c"))
+            best_to = (best_move.get("to_r"), best_move.get("to_c"))
+
+        if best_from is not None and best_from[0] is not None and best_from[1] is not None:
+            self.set_square(best_from[0], best_from[1], self.GREEN)
+        if best_to is not None and best_to[0] is not None and best_to[1] is not None:
+            self.set_square(best_to[0], best_to[1], self.GREEN)
+
+        for target in targets:
+            tr = target.get("row")
+            tc = target.get("col")
+            if tr is None or tc is None or not self.in_bounds(tr, tc):
+                continue
+            is_best_destination = best_to == (tr, tc)
+            if is_best_destination:
+                self.set_square(tr, tc, self.GREEN)
+            elif self.is_empty(tr, tc):
+                self.set_square(tr, tc, self.WHITE)
+            else:
+                self.set_square(tr, tc, self.ORANGE)
+
+        if selected is not None:
+            sr = selected.get("row")
+            sc = selected.get("col")
+            if sr is not None and sc is not None and self.in_bounds(sr, sc):
+                self.set_square(sr, sc, self.RED)
+
+        self.pixels.show()
+
     def show_opponent_move(self, fr, fc, tr, tc):
         if self.cv_mode:
             self._queue_display(
@@ -370,6 +426,24 @@ class LEDBoard:
             for r in rows:
                 for c in range(self.COLS):
                     self.set_square(r,c,color)
+            self.pixels.show()
+            time.sleep(0.15)
+
+        self.clear()
+
+    def celebrate_draw(self):
+        if self.cv_mode:
+            self._queue_display("celebrate_draw")
+            return
+
+        start = time.time()
+        palette = [self.CYAN, self.YELLOW, self.WHITE, self.PURPLE]
+
+        while time.time() - start < 3:
+            color = random.choice(palette)
+            for r in range(self.ROWS):
+                for c in range(self.COLS):
+                    self.set_square(r, c, color)
             self.pixels.show()
             time.sleep(0.15)
 
