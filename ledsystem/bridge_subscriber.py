@@ -125,6 +125,7 @@ _startup_completed = False
 STARTUP_HOLD_SECONDS = 20.0
 _startup_timer: threading.Timer | None = None
 _startup_timer_lock = threading.Lock()
+_RESET_ZONE_REASONS = {"engine_reset", "websocket_reset"}
 
 
 def _cancel_startup_timer(reason: str = "") -> bool:
@@ -150,6 +151,20 @@ def _on_startup_hold_expired() -> None:
     logger.info("Startup zones hold elapsed; LEDs cleared")
 
 
+def _start_zones_hold(reason: str) -> None:
+    """Show the startup zones scene and keep it visible until pre-empted or expired."""
+    global _startup_timer
+
+    _cancel_startup_timer(reason)
+    _led_post("/zones", {})
+    with _startup_timer_lock:
+        timer = threading.Timer(STARTUP_HOLD_SECONDS, _on_startup_hold_expired)
+        timer.daemon = True
+        _startup_timer = timer
+    timer.start()
+    logger.info("LED zones display started (%s); %.0fs hold", reason, STARTUP_HOLD_SECONDS)
+
+
 def handle_fen_update(data: dict) -> None:
     """FEN changed — sync board state without forcing a visible redraw."""
     global _last_fen
@@ -173,18 +188,12 @@ def handle_state_sync(data: dict) -> None:
     Do NOT synthesize a player- or engine-turn overlay from this
     snapshot — the bridge will publish the real LED-intent event.
     """
-    global _startup_completed, _startup_timer
+    global _startup_completed
     handle_fen_update(data)
     if _startup_completed:
         return
-    _led_post("/zones", {})
     _startup_completed = True
-    with _startup_timer_lock:
-        timer = threading.Timer(STARTUP_HOLD_SECONDS, _on_startup_hold_expired)
-        timer.daemon = True
-        _startup_timer = timer
-    timer.start()
-    logger.info("LED startup zones display started; %.0fs hold", STARTUP_HOLD_SECONDS)
+    _start_zones_hold("startup")
 
 
 def handle_led_player_turn(data: dict) -> None:
@@ -276,8 +285,13 @@ def handle_led_game_result(data: dict) -> None:
 
 def handle_led_reset(data: dict) -> None:
     """Clear any currently lit LEDs after reset / terminal sequences."""
+    reason = data.get("reason", "reset")
+    if reason in _RESET_ZONE_REASONS:
+        _start_zones_hold(reason)
+        return
+    _cancel_startup_timer(reason)
     _led_post("/clear", {})
-    logger.info("LEDs cleared (%s)", data.get("reason", "reset"))
+    logger.info("LEDs cleared (%s)", reason)
 
 
 def handle_led_command(data: dict) -> None:
