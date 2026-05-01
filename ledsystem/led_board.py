@@ -161,52 +161,62 @@ class LEDBoard:
         self.pixels.show()
 
     # ===================== DISPLAY =====================
-    def show_player_turn(self, selected, targets, best_move):
-        if self.cv_mode:
-            self._queue_display(
-                "show_player_turn",
-                {
-                    "selected": selected,
-                    "targets": targets,
-                    "best_move": best_move,
-                },
-            )
-            return
+    def _selected_rc(self, selected):
+        if selected is None:
+            return None
+        sr = selected.get("row")
+        sc = selected.get("col")
+        if sr is None or sc is None or not self.in_bounds(sr, sc):
+            return None
+        return (sr, sc)
 
-        self.clear()
+    def _best_from_rc(self, best_move):
+        if best_move is None:
+            return None
+        br = best_move.get("from_r")
+        bc = best_move.get("from_c")
+        if br is None or bc is None or not self.in_bounds(br, bc):
+            return None
+        return (br, bc)
 
-        best_from = None
-        best_to = None
-        if best_move is not None:
-            best_from = (best_move.get("from_r"), best_move.get("from_c"))
-            best_to = (best_move.get("to_r"), best_move.get("to_c"))
-        has_selection = False
-        if selected is not None:
-            sr = selected.get("row")
-            sc = selected.get("col")
-            has_selection = sr is not None and sc is not None and self.in_bounds(sr, sc)
-
-        if not has_selection:
-            if best_from is not None and best_from[0] is not None and best_from[1] is not None:
-                self.set_square(best_from[0], best_from[1], self.GREEN)
-            self.pixels.show()
-            return
-
+    def _paint_targets(self, targets):
         for target in targets:
             tr = target.get("row")
             tc = target.get("col")
             if tr is None or tc is None or not self.in_bounds(tr, tc):
                 continue
-            if self.is_empty(tr, tc):
-                self.set_square(tr, tc, self.WHITE)
-            else:
-                self.set_square(tr, tc, self.ORANGE)
+            color = self.WHITE if self.is_empty(tr, tc) else self.ORANGE
+            self.set_square(tr, tc, color)
 
-        sr = selected.get("row")
-        sc = selected.get("col")
-        if sr is not None and sc is not None and self.in_bounds(sr, sc):
-            self.set_square(sr, sc, self.RED)
+    def show_player_turn(self, selected, targets, best_move):
+        if self.cv_mode:
+            self._queue_display(
+                "show_player_turn",
+                {"selected": selected, "targets": targets, "best_move": best_move},
+            )
+            return
 
+        selected_rc = self._selected_rc(selected)
+        best_from_rc = self._best_from_rc(best_move)
+
+        # Selection-only contract (docs/led_flow.md §2): if there is
+        # nothing to paint, leave the previous overlay (engine-turn,
+        # zones, etc.) on the strip instead of wiping it. Without this,
+        # any blank LED_PLAYER_TURN payload — e.g. a deselect or a fresh
+        # turn before any best-move arrives — produces a dark board.
+        if selected_rc is None and best_from_rc is None:
+            return
+
+        self.clear()
+
+        if selected_rc is None:
+            # Idle scene: only the best-move source square in green.
+            self.set_square(best_from_rc[0], best_from_rc[1], self.GREEN)
+            self.pixels.show()
+            return
+
+        self._paint_targets(targets)
+        self.set_square(selected_rc[0], selected_rc[1], self.RED)
         self.pixels.show()
 
     def show_opponent_move(self, fr, fc, tr, tc):
@@ -258,7 +268,9 @@ class LEDBoard:
             return
 
         start = time.time()
-        rows = range(0,5) if side=="black" else range(5,10)
+        # Under the algebraic-rank convention (row 0 = red back, row 9 =
+        # black back), light up the winner's half of the board.
+        rows = range(5,10) if side=="black" else range(0,5)
         palette = [self.RED,self.GREEN,self.BLUE,self.YELLOW,self.PURPLE,self.CYAN,self.PINK,self.ORANGE]
 
         while time.time()-start < 3:
