@@ -42,6 +42,14 @@ def test_set_fen_normalizes_engine_notation_and_renders_board():
     assert board.pixels.values[board.pixel_index(9, 4)] == board.BLUE
 
 
+def test_pixel_index_flips_algebraic_rows_for_physical_board():
+    led_board = load_led_board_module()
+    board = led_board.LEDBoard()
+
+    assert board.pixel_index(0, 0) == board.BOARD_LED_MAP[9][0]
+    assert board.pixel_index(9, 0) == board.BOARD_LED_MAP[0][0]
+
+
 def test_cv_resume_replays_pending_player_turn_overlay():
     led_board = load_led_board_module()
     board = led_board.LEDBoard()

@@ -95,7 +95,10 @@ class LEDBoard:
             self.clear()
 
     def pixel_index(self, r, c):
-        return self.BOARD_LED_MAP[r][c]
+        # Keep the software model in algebraic Xiangqi rows (row 0 = red
+        # back rank) but flip at the final hardware lookup because the
+        # physical strip map is wired top-to-bottom.
+        return self.BOARD_LED_MAP[self.ROWS - 1 - r][c]
 
     def set_square(self, r, c, color):
         self.pixels[self.pixel_index(r, c)] = color
