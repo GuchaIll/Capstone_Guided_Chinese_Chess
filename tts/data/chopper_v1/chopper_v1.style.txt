@@ -1,0 +1,6 @@
+mood: serious, calm
+pace: fast
+energy: focused
+delivery: offering explanation
+notes: avoid shouting, keep phrasing smooth and deliberate in explaining
+

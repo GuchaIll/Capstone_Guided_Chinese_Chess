@@ -1,0 +1,5 @@
+mood: happy, silly
+pace: medium
+energy: playful, friendly
+delivery: tactical coach, slightly playful
+notes: making silly comment, playfully deliver teaching 

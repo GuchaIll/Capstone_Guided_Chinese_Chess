@@ -1,0 +1,7 @@
+mood: serious, concerned
+pace: fast
+energy: focused, attentive
+delivery: punctual, tactical coach
+notes: avoid shouting, keep phrasing smooth and deliberate in explaining
+
+

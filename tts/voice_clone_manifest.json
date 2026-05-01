@@ -1,0 +1,57 @@
+{
+  "generated_at": "2026-05-01T00:47:05.447423+00:00",
+  "clip_count": 3,
+  "ready_clip_count": 3,
+  "voices": {
+    "chopper": [
+      {
+        "clip_id": "chopper_v1",
+        "voice_id": "chopper",
+        "audio_path": "tts/data/chopper_v1/chopper_v1.m4a",
+        "transcript_path": "tts/data/chopper_v1/chopper_v1.lab",
+        "style_path": "tts/data/chopper_v1/chopper_v1.style.txt",
+        "transcript": "Subjects bacteria count down by 70%.",
+        "style": {
+          "mood": "serious, calm",
+          "pace": "fast",
+          "energy": "focused",
+          "delivery": "offering explanation",
+          "notes": "avoid shouting, keep phrasing smooth and deliberate in explaining"
+        },
+        "ready": true
+      },
+      {
+        "clip_id": "chopper_v2",
+        "voice_id": "chopper",
+        "audio_path": "tts/data/chopper_v2/chopper_v2.m4a",
+        "transcript_path": "tts/data/chopper_v2/chopper_v2.lab",
+        "style_path": "tts/data/chopper_v2/chopper_v2.style.txt",
+        "transcript": "At least for now, Doctorine's medicine works quickly to reduce the fever. But the bacteria from the cestia will still remain inside your body for a little while longer. So just take your antibiotic shot and stay in bed.",
+        "style": {
+          "mood": "serious, concerned",
+          "pace": "fast",
+          "energy": "focused, attentive",
+          "delivery": "punctual, tactical coach",
+          "notes": "avoid shouting, keep phrasing smooth and deliberate in explaining"
+        },
+        "ready": true
+      },
+      {
+        "clip_id": "chopper_v3",
+        "voice_id": "chopper",
+        "audio_path": "tts/data/chopper_v3/chopper_v3.m4a",
+        "transcript_path": "tts/data/chopper_v3/chopper_v3.lab",
+        "style_path": "tts/data/chopper_v3/chopper_v3.style.txt",
+        "transcript": "have any skin because you're a skeleton.",
+        "style": {
+          "mood": "happy, silly",
+          "pace": "medium",
+          "energy": "playful, friendly",
+          "delivery": "tactical coach, slightly playful",
+          "notes": "making silly comment, playfully deliver teaching"
+        },
+        "ready": true
+      }
+    ]
+  }
+}
