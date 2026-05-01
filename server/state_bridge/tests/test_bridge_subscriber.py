@@ -274,16 +274,40 @@ def test_handle_led_command_ignores_bridge_direct_http_capture_commands(monkeypa
 def test_handle_led_game_result_and_reset(monkeypatch):
     calls = []
     monkeypatch.setattr(subscriber, "_led_post", lambda path, body=None: calls.append((path, body)) or True)
+    cancelled = []
+    monkeypatch.setattr(subscriber, "_cancel_startup_timer", lambda reason="": cancelled.append(reason) or False)
+    started = []
+    monkeypatch.setattr(subscriber, "_start_zones_hold", lambda reason: started.append(reason))
 
     subscriber.handle_led_game_result({"result": "red_wins", "winner": "red"})
     subscriber.handle_led_game_result({"result": "draw"})
     subscriber.handle_led_reset({"reason": "game_over"})
+    subscriber.handle_led_reset({"reason": "engine_reset"})
 
     assert calls == [
         ("/win", {"side": "red"}),
         ("/draw", {}),
         ("/clear", {}),
     ]
+    assert cancelled == ["game_over"]
+    assert started == ["engine_reset"]
+
+
+def test_game_reset_then_led_reset_restarts_startup_zones_hold(monkeypatch):
+    calls = []
+    monkeypatch.setattr(subscriber, "_led_post", lambda path, body=None: calls.append((path, body)) or True)
+    started = []
+    monkeypatch.setattr(subscriber, "_start_zones_hold", lambda reason: started.append(reason))
+
+    subscriber._last_fen = ""
+
+    subscriber.handle_game_reset({})
+    subscriber.handle_led_reset({"reason": "engine_reset"})
+
+    assert calls == [
+        ("/fen-sync", {"fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"}),
+    ]
+    assert started == ["engine_reset"]
 
 
 def test_event_dispatch_maps_explicit_led_flows():
