@@ -84,10 +84,10 @@ def test_engine_event_sequence_drives_led_board_with_normalized_fen(monkeypatch)
     # 1. Engine publishes the starting board using chess-style N/B letters.
     subscriber.handle_fen_update({"fen": ENGINE_STYLE_START_FEN, "source": "engine"})
 
-    assert board.board_state[0][1] == "h"
-    assert board.board_state[0][2] == "e"
-    assert board.board_state[9][1] == "H"
-    assert board.board_state[9][2] == "E"
+    assert board.board_state[0][1] == "H"
+    assert board.board_state[0][2] == "E"
+    assert board.board_state[9][1] == "h"
+    assert board.board_state[9][2] == "e"
 
     # 2. Capture flow pauses LEDs, then a selection highlight is queued while
     # CV mode is active and replayed once LEDs resume.
@@ -95,10 +95,10 @@ def test_engine_event_sequence_drives_led_board_with_normalized_fen(monkeypatch)
     subscriber.handle_led_player_turn(
         {
             "fen": ENGINE_STYLE_START_FEN,
-            "selected_square": "b9",
-            "legal_targets": ["a7", "c7"],
-            "best_move_from": "b9",
-            "best_move_to": "a7",
+            "selected_square": "b0",
+            "legal_targets": ["a2", "c2"],
+            "best_move_from": "b0",
+            "best_move_to": "a2",
         }
     )
 
@@ -106,12 +106,12 @@ def test_engine_event_sequence_drives_led_board_with_normalized_fen(monkeypatch)
     assert board._pending_display == (
         "show_player_turn",
         {
-            "selected": {"row": 9, "col": 1},
-            "targets": [{"row": 7, "col": 0}, {"row": 7, "col": 2}],
+            "selected": {"row": 0, "col": 1},
+            "targets": [{"row": 2, "col": 0}, {"row": 2, "col": 2}],
             "best_move": {
-                "from_r": 9,
+                "from_r": 0,
                 "from_c": 1,
-                "to_r": 7,
+                "to_r": 2,
                 "to_c": 0,
             },
         },
@@ -121,25 +121,25 @@ def test_engine_event_sequence_drives_led_board_with_normalized_fen(monkeypatch)
 
     assert board.cv_mode is False
     assert board._pending_display is None
-    assert board.pixels.values[board.pixel_index(9, 1)] == board.RED
-    assert board.pixels.values[board.pixel_index(7, 0)] == board.WHITE
-    assert board.pixels.values[board.pixel_index(7, 2)] == board.WHITE
+    assert board.pixels.values[board.pixel_index(0, 1)] == board.RED
+    assert board.pixels.values[board.pixel_index(2, 0)] == board.WHITE
+    assert board.pixels.values[board.pixel_index(2, 2)] == board.WHITE
 
     # 3. AI move event refreshes the engine FEN first, then overlays the
     # opponent move highlight.
     subscriber.handle_led_engine_turn(
         {
-            "from": "b0",
-            "to": "c2",
+            "from": "b9",
+            "to": "c7",
             "fen": ENGINE_STYLE_AFTER_AI_MOVE_FEN,
         }
     )
 
     assert subscriber._last_fen == ENGINE_STYLE_AFTER_AI_MOVE_FEN
-    assert board.board_state[0][1] == "."
-    assert board.board_state[2][2] == "h"
-    assert board.pixels.values[board.pixel_index(0, 1)] == board.BLUE
-    assert board.pixels.values[board.pixel_index(2, 2)] == board.PURPLE
+    assert board.board_state[9][1] == "."
+    assert board.board_state[7][2] == "h"
+    assert board.pixels.values[board.pixel_index(9, 1)] == board.BLUE
+    assert board.pixels.values[board.pixel_index(7, 2)] == board.PURPLE
 
     assert led_calls == [
         ("/fen-sync", {"fen": ENGINE_STYLE_START_FEN}),
@@ -149,11 +149,11 @@ def test_engine_event_sequence_drives_led_board_with_normalized_fen(monkeypatch)
             "/player-turn",
             {
                 "fen": ENGINE_STYLE_START_FEN,
-                "selected": {"row": 9, "col": 1},
-                "targets": [{"row": 7, "col": 0}, {"row": 7, "col": 2}],
+                "selected": {"row": 0, "col": 1},
+                "targets": [{"row": 2, "col": 0}, {"row": 2, "col": 2}],
                 "best_move": {
-                    "from": {"row": 9, "col": 1},
-                    "to": {"row": 7, "col": 0},
+                    "from": {"row": 0, "col": 1},
+                    "to": {"row": 2, "col": 0},
                 },
             },
         ),
@@ -163,9 +163,9 @@ def test_engine_event_sequence_drives_led_board_with_normalized_fen(monkeypatch)
             "/engine-turn",
             {
                 "fen": ENGINE_STYLE_AFTER_AI_MOVE_FEN,
-                "from_r": 0,
+                "from_r": 9,
                 "from_c": 1,
-                "to_r": 2,
+                "to_r": 7,
                 "to_c": 2,
             },
         ),

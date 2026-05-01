@@ -65,32 +65,6 @@ def sync_fen():
         return jsonify({"error": str(e)}), 500
 
 
-# =========================
-# SHOW MOVES
-# =========================
-@app.route("/move", methods=["POST"])
-def show_move():
-    data = request.json
-
-    row = data.get("row")
-    col = data.get("col")
-
-    logger.info(f"/move request: row={row}, col={col}")
-
-    if row is None or col is None:
-        logger.warning("Missing move inputs")
-        return jsonify({"error": "Missing inputs"}), 400
-
-    try:
-        logger.info("Turning LEDs ON for move visualization")
-        led.show_moves("", int(row), int(col))
-        logger.info("Move LEDs displayed")
-        return jsonify({"status": "Move displayed"})
-    except Exception as e:
-        logger.exception("Move visualization failed")
-        return jsonify({"error": str(e)}), 500
-
-
 @app.route("/player-turn", methods=["POST"])
 def player_turn():
     data = request.json or {}

@@ -19,16 +19,16 @@ class LEDBoard:
         )
 
         self.BOARD_LED_MAP = [
-            [27, 24, 21, 18, 15, 12, 9, 6, 3],
-            [37, 40, 43, 46, 49, 52, 55, 58, 61],
-            [97, 94, 91, 88, 85, 82, 79, 76, 73],
-            [122, 125, 128, 131, 134, 137, 140, 143, 146],
-            [182, 179, 176, 173, 170, 167, 164, 161, 158],
-            [192, 195, 198, 201, 204, 207, 210, 213, 216],
-            [251, 248, 245, 242, 239, 236, 233, 230, 227],
-            [262, 265, 268, 271, 274, 277, 280, 283, 286],
-            [322, 319, 316, 313, 310, 307, 304, 301, 298],
             [335, 338, 341, 344, 347, 350, 353, 356, 359],
+            [322, 319, 316, 313, 310, 307, 304, 301, 298],
+            [262, 265, 268, 271, 274, 277, 280, 283, 286],
+            [251, 248, 245, 242, 239, 236, 233, 230, 227],
+            [192, 195, 198, 201, 204, 207, 210, 213, 216],
+            [182, 179, 176, 173, 170, 167, 164, 161, 158],
+            [122, 125, 128, 131, 134, 137, 140, 143, 146],
+            [97, 94, 91, 88, 85, 82, 79, 76, 73],
+            [37, 40, 43, 46, 49, 52, 55, 58, 61],
+            [27, 24, 21, 18, 15, 12, 9, 6, 3],
         ]
 
         self.ROWS = 10
@@ -72,8 +72,6 @@ class LEDBoard:
             self._pending_display = None
             if action == "render_board":
                 self.render_board()
-            elif action == "show_moves":
-                self.show_moves("", payload["row"], payload["col"])
             elif action == "show_player_turn":
                 self.show_player_turn(
                     payload.get("selected"),
@@ -97,8 +95,7 @@ class LEDBoard:
             self.clear()
 
     def pixel_index(self, r, c):
-        mapped_row = (self.ROWS - 1) - r
-        return self.BOARD_LED_MAP[mapped_row][c]
+        return self.BOARD_LED_MAP[r][c]
 
     def set_square(self, r, c, color):
         self.pixels[self.pixel_index(r, c)] = color
@@ -115,24 +112,11 @@ class LEDBoard:
     def is_empty(self, r, c):
         return self.board_state[r][c] == "."
 
-    def is_enemy(self, r, c, side):
-        return not self.is_empty(r,c) and self.piece_side(self.board_state[r][c]) != side
-
-    def add_if_legal(self, moves, r, c, side):
-        if self.in_bounds(r,c) and (self.is_empty(r,c) or self.is_enemy(r,c,side)):
-            moves.append((r,c))
-
-    def in_palace(self, r, c, side):
-        if side == "red":
-            return 7 <= r <= 9 and 3 <= c <= 5
-        return 0 <= r <= 2 and 3 <= c <= 5
-
     # ===================== FEN =====================
     def normalize_piece(self, piece):
         # The repo's engine/bridge FEN uses chess-style letters for two
-        # Xiangqi pieces: N/n for horse and B/b for elephant. The LED move
-        # generator below uses H/h and E/e internally, so translate only
-        # those incoming engine variants here.
+        # Xiangqi pieces: N/n for horse and B/b for elephant. Keep the
+        # LED board model on the historical H/h and E/e forms internally.
         translation = {
             "n": "h",
             "N": "H",
@@ -152,7 +136,9 @@ class LEDBoard:
                 else:
                     expanded.append(self.normalize_piece(ch))
             board.append(expanded)
-        self.board_state = board
+        # FEN lists rank 9 first; reverse it so board_state[row][col] uses
+        # algebraic Xiangqi rows where row 0 is red's back rank.
+        self.board_state = list(reversed(board))
         if not render:
             return
         if self.cv_mode:
@@ -174,159 +160,7 @@ class LEDBoard:
                 self.set_square(r, c, self.RED if self.piece_side(piece) == "red" else self.BLUE)
         self.pixels.show()
 
-    # ===================== MOVES =====================
-    def chariot_moves(self, r, c):
-        moves = []
-        side = self.piece_side(self.board_state[r][c])
-        for dr,dc in [(-1,0),(1,0),(0,-1),(0,1)]:
-            nr,nc = r+dr,c+dc
-            while self.in_bounds(nr,nc):
-                if self.is_empty(nr,nc):
-                    moves.append((nr,nc))
-                else:
-                    if self.is_enemy(nr,nc,side):
-                        moves.append((nr,nc))
-                    break
-                nr += dr
-                nc += dc
-        return moves
-
-    def cannon_moves(self, r, c):
-        moves = []
-        side = self.piece_side(self.board_state[r][c])
-        for dr,dc in [(-1,0),(1,0),(0,-1),(0,1)]:
-            nr,nc = r+dr,c+dc
-            jumped = False
-            while self.in_bounds(nr,nc):
-                if not jumped:
-                    if self.is_empty(nr,nc):
-                        moves.append((nr,nc))
-                    else:
-                        jumped = True
-                else:
-                    if not self.is_empty(nr,nc):
-                        if self.is_enemy(nr,nc,side):
-                            moves.append((nr,nc))
-                        break
-                nr += dr
-                nc += dc
-        return moves
-
-    def horse_moves(self, r, c):
-        moves = []
-        side = self.piece_side(self.board_state[r][c])
-        patterns = [
-            ((-1,0),(-2,-1)),((-1,0),(-2,1)),
-            ((1,0),(2,-1)),((1,0),(2,1)),
-            ((0,-1),(-1,-2)),((0,-1),(1,-2)),
-            ((0,1),(-1,2)),((0,1),(1,2)),
-        ]
-        for leg, dest in patterns:
-            lr,lc = r+leg[0],c+leg[1]
-            dr,dc = r+dest[0],c+dest[1]
-            if not self.in_bounds(lr,lc): continue
-            if not self.is_empty(lr,lc): continue
-            self.add_if_legal(moves,dr,dc,side)
-        return moves
-
-    def elephant_moves(self, r, c):
-        moves = []
-        side = self.piece_side(self.board_state[r][c])
-        for dr,dc in [(-2,-2),(-2,2),(2,-2),(2,2)]:
-            eye_r,eye_c = r+dr//2,c+dc//2
-            nr,nc = r+dr,c+dc
-            if not self.in_bounds(nr,nc): continue
-            if not self.is_empty(eye_r,eye_c): continue
-            if side=="red" and nr<5: continue
-            if side=="black" and nr>4: continue
-            self.add_if_legal(moves,nr,nc,side)
-        return moves
-
-    def advisor_moves(self, r, c):
-        moves = []
-        side = self.piece_side(self.board_state[r][c])
-        for dr,dc in [(-1,-1),(-1,1),(1,-1),(1,1)]:
-            nr,nc = r+dr,c+dc
-            if self.in_bounds(nr,nc) and self.in_palace(nr,nc,side):
-                self.add_if_legal(moves,nr,nc,side)
-        return moves
-
-    def general_moves(self, r, c):
-        moves = []
-        side = self.piece_side(self.board_state[r][c])
-        for dr,dc in [(-1,0),(1,0),(0,-1),(0,1)]:
-            nr,nc = r+dr,c+dc
-            if self.in_bounds(nr,nc) and self.in_palace(nr,nc,side):
-                self.add_if_legal(moves,nr,nc,side)
-
-        # flying general
-        enemy = "k" if side=="red" else "K"
-        step = -1 if side=="red" else 1
-        nr = r+step
-        while self.in_bounds(nr,c):
-            if not self.is_empty(nr,c):
-                if self.board_state[nr][c] == enemy:
-                    moves.append((nr,c))
-                break
-            nr += step
-        return moves
-
-    def soldier_moves(self, r, c):
-        moves = []
-        side = self.piece_side(self.board_state[r][c])
-        if side=="red":
-            self.add_if_legal(moves,r-1,c,side)
-            if r<=4:
-                self.add_if_legal(moves,r,c-1,side)
-                self.add_if_legal(moves,r,c+1,side)
-        else:
-            self.add_if_legal(moves,r+1,c,side)
-            if r>=5:
-                self.add_if_legal(moves,r,c-1,side)
-                self.add_if_legal(moves,r,c+1,side)
-        return moves
-
-    def get_moves(self, r, c):
-        piece = self.board_state[r][c]
-        if piece==".":
-            return []
-        p = piece.lower()
-        if p=="r": return self.chariot_moves(r,c)
-        if p=="c": return self.cannon_moves(r,c)
-        if p=="h": return self.horse_moves(r,c)
-        if p=="e": return self.elephant_moves(r,c)
-        if p=="a": return self.advisor_moves(r,c)
-        if p=="k": return self.general_moves(r,c)
-        if p=="p": return self.soldier_moves(r,c)
-        return []
-
     # ===================== DISPLAY =====================
-    def show_moves(self, piece_name, r, c):
-        if self.cv_mode:
-            self._queue_display("show_moves", {"row": r, "col": c})
-            return
-
-        if self.board_state[r][c]==".":
-            print("No piece")
-            return
-
-        moves = self.get_moves(r,c)
-        best = moves[0] if moves else None
-
-        self.clear()
-
-        for mr,mc in moves:
-            if self.is_empty(mr,mc):
-                self.set_square(mr,mc,self.WHITE)
-            else:
-                self.set_square(mr,mc,self.ORANGE)
-
-        if best:
-            self.set_square(best[0],best[1],self.GREEN)
-
-        self.set_square(r,c,self.RED)
-        self.pixels.show()
-
     def show_player_turn(self, selected, targets, best_move):
         if self.cv_mode:
             self._queue_display(

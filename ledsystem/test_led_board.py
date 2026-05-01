@@ -35,27 +35,39 @@ def test_set_fen_normalizes_engine_notation_and_renders_board():
 
     board.set_fen("4n4/9/9/9/9/9/9/9/9/4B4 w - - 0 1")
 
-    assert board.board_state[0][4] == "h"
-    assert board.board_state[9][4] == "E"
+    assert board.board_state[0][4] == "E"
+    assert board.board_state[9][4] == "h"
     assert board.pixels.show_calls >= 1
-    assert board.pixels.values[board.pixel_index(0, 4)] == board.BLUE
-    assert board.pixels.values[board.pixel_index(9, 4)] == board.RED
+    assert board.pixels.values[board.pixel_index(0, 4)] == board.RED
+    assert board.pixels.values[board.pixel_index(9, 4)] == board.BLUE
 
 
-def test_cv_resume_replays_pending_move_highlight():
+def test_cv_resume_replays_pending_player_turn_overlay():
     led_board = load_led_board_module()
     board = led_board.LEDBoard()
     board.set_fen("9/9/9/9/9/9/9/9/9/R8 w - - 0 1")
 
     board.cv_pause()
-    board.show_moves("", 9, 0)
+    board.show_player_turn(
+        {"row": 0, "col": 0},
+        [{"row": 1, "col": 0}],
+        {"from_r": 0, "from_c": 0, "to_r": 1, "to_c": 0},
+    )
 
-    assert board._pending_display == ("show_moves", {"row": 9, "col": 0})
+    assert board._pending_display == (
+        "show_player_turn",
+        {
+            "selected": {"row": 0, "col": 0},
+            "targets": [{"row": 1, "col": 0}],
+            "best_move": {"from_r": 0, "from_c": 0, "to_r": 1, "to_c": 0},
+        },
+    )
 
     board.cv_resume()
 
     assert board._pending_display is None
-    assert board.pixels.values[board.pixel_index(9, 0)] == board.RED
+    assert board.pixels.values[board.pixel_index(0, 0)] == board.RED
+    assert board.pixels.values[board.pixel_index(1, 0)] == board.WHITE
 
 
 def test_show_player_turn_without_selection_highlights_only_best_piece():
@@ -65,12 +77,12 @@ def test_show_player_turn_without_selection_highlights_only_best_piece():
 
     board.show_player_turn(
         None,
-        [{"row": 8, "col": 0}],
-        {"from_r": 9, "from_c": 0, "to_r": 8, "to_c": 0},
+        [{"row": 1, "col": 0}],
+        {"from_r": 0, "from_c": 0, "to_r": 1, "to_c": 0},
     )
 
-    assert board.pixels.values[board.pixel_index(9, 0)] == board.GREEN
-    assert board.pixels.values[board.pixel_index(8, 0)] == board.OFF
+    assert board.pixels.values[board.pixel_index(0, 0)] == board.GREEN
+    assert board.pixels.values[board.pixel_index(1, 0)] == board.OFF
 
 
 def test_show_player_turn_with_selection_highlights_selected_and_targets_only():
@@ -79,10 +91,26 @@ def test_show_player_turn_with_selection_highlights_selected_and_targets_only():
     board.set_fen("9/9/9/9/9/9/9/9/9/R8 w - - 0 1", render=False)
 
     board.show_player_turn(
-        {"row": 9, "col": 0},
-        [{"row": 8, "col": 0}],
-        {"from_r": 9, "from_c": 0, "to_r": 8, "to_c": 0},
+        {"row": 0, "col": 0},
+        [{"row": 1, "col": 0}],
+        {"from_r": 0, "from_c": 0, "to_r": 1, "to_c": 0},
     )
 
-    assert board.pixels.values[board.pixel_index(9, 0)] == board.RED
-    assert board.pixels.values[board.pixel_index(8, 0)] == board.WHITE
+    assert board.pixels.values[board.pixel_index(0, 0)] == board.RED
+    assert board.pixels.values[board.pixel_index(1, 0)] == board.WHITE
+
+
+def test_show_player_turn_colors_capture_target_orange_on_asymmetric_board():
+    led_board = load_led_board_module()
+    board = led_board.LEDBoard()
+    board.set_fen("9/9/9/9/9/9/9/9/p8/R8 w - - 0 1", render=False)
+
+    board.show_player_turn(
+        {"row": 0, "col": 0},
+        [{"row": 1, "col": 0}],
+        {"from_r": 0, "from_c": 0, "to_r": 1, "to_c": 0},
+    )
+
+    assert board.board_state[0][0] == "R"
+    assert board.board_state[1][0] == "p"
+    assert board.pixels.values[board.pixel_index(1, 0)] == board.ORANGE

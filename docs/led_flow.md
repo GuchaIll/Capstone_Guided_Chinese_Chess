@@ -178,6 +178,10 @@ Behavioral rule:
 
 - selecting a different piece should replace the red/white/orange selection overlay
 - with no selection, the green default should identify only the recommended piece to pick up next
+- coordinate invariant:
+  - bridge, subscriber, server, and `led_board.py` all use algebraic Xiangqi rows
+  - `row 0` is red's back rank and `row 9` is black's back rank
+  - only FEN parsing reverses row order internally before storing `board_state`
 
 ### 3. End Turn Blackout
 
@@ -242,16 +246,10 @@ Subscriber behavior:
 
 ## Current Implementation Direction
 
-The implementation is intentionally moving away from these older inferred flows:
+The supported move-highlighting path is now:
 
-- `piece_selected` -> `POST /move`
-- `best_move` -> `POST /move`
-- `move_made(ai)` -> `POST /opponent`
+- bridge emits explicit LED intent events
+- subscriber forwards only `POST /player-turn` and `POST /engine-turn`
+- LED server renders those scenes directly in `led_board.py`
 
-Those paths were too lossy because they could not preserve the full player-turn scene across reselection and could not express startup, draw, or explicit reset behavior cleanly.
-
-The preferred path is now:
-
-- explicit bridge LED event
-- explicit LED server endpoint
-- deterministic renderer in `led_board.py`
+`POST /move` and the local pseudo-legal move generator are no longer part of the supported production flow.

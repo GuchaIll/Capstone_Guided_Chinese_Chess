@@ -1,77 +1,57 @@
 from led_board import LEDBoard
 import time
 
+
+START_FEN = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"
+CAPTURE_FEN = "9/9/9/9/9/9/9/9/p8/R8 w - - 0 1"
+ENGINE_MOVE_FEN = "r1bakabnr/9/1cn4c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 1 2"
+
+
+def pause(label):
+    print(label)
+    time.sleep(3)
+
+
 led = LEDBoard()
 
-print("Starting LED system test...")
+print("Starting LED scene smoke test...")
 
-# =========================
-# 1. LOAD STARTING POSITION
-# =========================
-print("Setting starting FEN...")
-led.set_fen("rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR")
-time.sleep(3)
+print("Syncing starting FEN...")
+led.set_fen(START_FEN)
+pause("Board rendered from FEN")
 
-# =========================
-# 2. SHOW MOVES (SOLDIER)
-# =========================
-print("Showing soldier moves...")
-led.show_moves("", 6, 0)
-time.sleep(3)
+led.show_player_turn(
+    None,
+    [],
+    {"from_r": 0, "from_c": 1, "to_r": 2, "to_c": 2},
+)
+pause("Idle player-turn scene: recommended piece only")
 
-# =========================
-# 3. SHOW MOVES (CHARIOT)
-# =========================
-print("Showing chariot moves...")
-led.show_moves("", 9, 0)
-time.sleep(3)
+led.set_fen(CAPTURE_FEN, render=False)
+led.show_player_turn(
+    {"row": 0, "col": 0},
+    [{"row": 1, "col": 0}],
+    {"from_r": 0, "from_c": 0, "to_r": 1, "to_c": 0},
+)
+pause("Selected player-turn scene: capture target should be orange")
 
-# =========================
-# 4. SHOW MOVES (HORSE)
-# =========================
-print("Showing horse moves...")
-led.show_moves("", 9, 1)
-time.sleep(3)
+led.set_fen(ENGINE_MOVE_FEN, render=False)
+led.show_opponent_move(9, 1, 7, 2)
+pause("Engine-turn scene")
 
-# =========================
-# 5. SHOW MOVES (CANNON)
-# =========================
-print("Showing cannon moves...")
-led.show_moves("", 7, 1)
-time.sleep(3)
-
-# =========================
-# 6. OPPONENT MOVE
-# =========================
-print("Showing opponent move...")
-led.show_opponent_move(2, 4, 4, 4)
-time.sleep(3)
-
-# =========================
-# 7. SHOW BOARD ZONES
-# =========================
-print("Showing board zones...")
 led.show_start_zones()
-time.sleep(3)
+pause("Startup zones scene")
 
-# =========================
-# 8. WIN CELEBRATION (RED)
-# =========================
-print("Celebrating RED win...")
 led.celebrate_win("red")
-time.sleep(3)
+pause("Red win celebration")
 
-# =========================
-# 9. WIN CELEBRATION (BLACK)
-# =========================
-print("Celebrating BLACK win...")
 led.celebrate_win("black")
-time.sleep(3)
+pause("Black win celebration")
 
-# =========================
-# 10. CLEAR BOARD
-# =========================
+led.celebrate_draw()
+pause("Draw celebration")
+
 print("Clearing LEDs...")
 led.clear()
 
-print("Test complete.")
+print("Smoke test complete.")
