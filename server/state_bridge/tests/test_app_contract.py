@@ -179,6 +179,35 @@ async def test_capture_endpoint_proxies_cv_capture_result(client, monkeypatch, c
     }
 
 
+async def test_capture_endpoint_accepts_float_captured_at_from_cv(client, monkeypatch, capture_sse_events):
+    task = await capture_sse_events(expected=2)
+
+    async def fake_capture():
+        return 200, {
+            "status": "ok",
+            "fen": CV_SUCCESS_FEN,
+            "image_path": "cv/output/http_capture.jpg",
+            "image_mime": "image/jpeg",
+            "capture_id": 3,
+            "captured_at": 1777597478.1658082,
+        }
+
+    monkeypatch.setattr("app._request_cv_capture", fake_capture)
+
+    response = client.post("/capture")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["fen"] == CV_SUCCESS_FEN
+    assert isinstance(body["captured_at"], str)
+    assert body["captured_at"].startswith("2026-")
+
+    events = await asyncio.wait_for(task, 2.0)
+    assert events[1]["type"] == "cv_capture_result"
+    assert isinstance(events[1]["data"]["captured_at"], str)
+
+
 def test_event_from_model_rejects_malformed_payload():
     """Publishing through Event.from_model must validate at the boundary."""
     import pytest as _pytest

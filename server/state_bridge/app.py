@@ -17,11 +17,12 @@ import urllib.error
 import urllib.request
 from collections import deque
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from cv_validation import FenDiffError, derive_move_from_fen_diff
 from events import Event, EventBus, EventType
@@ -313,6 +314,15 @@ class CvCaptureResult(BaseModel):
     captured_at: str | None = None
     image_path: str | None = None
     image_mime: str | None = None
+
+    @field_validator("captured_at", mode="before")
+    @classmethod
+    def _normalize_captured_at(cls, value):
+        if value is None or value == "":
+            return None
+        if isinstance(value, (int, float)):
+            return datetime.fromtimestamp(value, tz=timezone.utc).isoformat()
+        return str(value)
 
 
 def _bridge_state_message() -> dict[str, object]:
@@ -684,7 +694,7 @@ async def capture_board():
         EventType.CV_CAPTURE_RESULT,
         CvCaptureResultData(**validated.model_dump(), source="cv"),
     ))
-    return JSONResponse(payload, status_code=status_code)
+    return JSONResponse(validated.model_dump(exclude_none=True), status_code=status_code)
 
 
 # ── LED-server-compatible endpoints ──────────────────────────────────

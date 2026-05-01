@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"chess_coach/engine"
 	"go_agent_framework/core"
@@ -322,6 +323,8 @@ type DetectBlundersTool struct {
 	Engine engine.EngineClient
 }
 
+const detectBlundersEngineTimeout = 75 * time.Second
+
 func (t *DetectBlundersTool) Name() string { return "detect_blunders" }
 func (t *DetectBlundersTool) Description() string {
 	return "Detect blunders in a move sequence by analyzing evaluation drops."
@@ -347,6 +350,15 @@ func (t *DetectBlundersTool) Execute(ctx context.Context, args json.RawMessage) 
 		p.Threshold = 150
 	}
 
+	// This tool may need several engine round-trips (move replay plus one
+	// batch feature extraction). If the originating HTTP client disconnects
+	// mid-flight, the request context is canceled and the final batch call can
+	// fail even though the bridge and engine are healthy. Detach from the
+	// caller's cancellation once execution begins, but keep a bounded internal
+	// timeout so this work cannot run indefinitely.
+	engineCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), detectBlundersEngineTimeout)
+	defer cancel()
+
 	moveList := strings.Fields(p.Moves)
 
 	// Build batch entries: replay the move sequence to produce FEN for each move.
@@ -357,7 +369,7 @@ func (t *DetectBlundersTool) Execute(ctx context.Context, args json.RawMessage) 
 	for i, mv := range moveList {
 		entries[i] = engine.BatchEntry{FEN: currentFEN, MoveStr: mv}
 		// Advance position via MakeMove for the next entry's FEN.
-		result, err := t.Engine.MakeMove(ctx, currentFEN, mv)
+		result, err := t.Engine.MakeMove(engineCtx, currentFEN, mv)
 		if err != nil {
 			break
 		}
@@ -367,7 +379,7 @@ func (t *DetectBlundersTool) Execute(ctx context.Context, args json.RawMessage) 
 	}
 
 	// Single batch call to get full feature vectors.
-	results, err := t.Engine.BatchAnalyze(ctx, entries)
+	results, err := t.Engine.BatchAnalyze(engineCtx, entries)
 	if err != nil {
 		return "", fmt.Errorf("detect_blunders: batch analysis: %w", err)
 	}

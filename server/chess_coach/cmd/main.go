@@ -68,6 +68,7 @@ func main() {
 	chatHandler := makeChatHandler(graph, store)
 	dashMux := observability.DashboardMux(adapter, os.DirFS("dashboard/dist"), chatHandler)
 	mux.Handle("/dashboard/", dashMux)
+	mux.HandleFunc("POST /dashboard/tts", makeTTSHandler(newFishTTSClientFromEnv()))
 
 	addr := ":8080"
 	logger.Info("chess-coach listening", "addr", addr)

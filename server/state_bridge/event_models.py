@@ -10,9 +10,10 @@ is added to one side, mirror it on the other.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class _EventDataBase(BaseModel):
@@ -99,6 +100,15 @@ class CvCaptureResultData(_EventDataBase):
     captured_at: str | None = None
     image_path: str | None = None
     image_mime: str | None = None
+
+    @field_validator("captured_at", mode="before")
+    @classmethod
+    def _normalize_captured_at(cls, value):
+        if value is None or value == "":
+            return None
+        if isinstance(value, (int, float)):
+            return datetime.fromtimestamp(value, tz=timezone.utc).isoformat()
+        return str(value)
 
 
 class CvValidationErrorData(_EventDataBase):

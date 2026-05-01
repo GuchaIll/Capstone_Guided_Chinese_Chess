@@ -21,6 +21,22 @@ class FenDiffError(ValueError):
     """Raised when a CV FEN cannot be mapped to one legal board move."""
 
 
+def _normalize_piece(piece: str | None) -> str | None:
+    if piece is None:
+        return None
+    mapping = {
+        "H": "N",
+        "h": "n",
+        "E": "B",
+        "e": "b",
+        "G": "K",
+        "g": "k",
+        "S": "P",
+        "s": "p",
+    }
+    return mapping.get(piece, piece)
+
+
 def _parse_board(fen: str) -> list[list[str | None]]:
     parts = fen.strip().split()
     if len(parts) < 2:
@@ -40,7 +56,7 @@ def _parse_board(fen: str) -> list[list[str | None]]:
                 continue
             if file >= 9:
                 raise FenDiffError("FEN rank overflows board width")
-            board[file][rank] = ch
+            board[file][rank] = _normalize_piece(ch)
             file += 1
         if file != 9:
             raise FenDiffError("FEN rank does not span 9 files")
