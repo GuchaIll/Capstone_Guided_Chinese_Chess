@@ -19,16 +19,16 @@ class LEDBoard:
         )
 
         self.BOARD_LED_MAP = [
-            [3,6,9,12,15,18,21,24,27],
-            [61,58,55,52,49,46,43,40,37],
-            [73,76,79,82,85,88,91,94,97],
-            [146,143,140,137,134,131,128,125,122],
-            [158,161,164,167,170,173,176,179,182],
-            [216,213,210,207,204,201,198,195,192],
-            [227,230,233,236,239,242,245,248,251],
-            [286,283,280,277,274,271,268,265,262],
-            [298,301,304,307,310,313,316,319,322],
-            [359,356,353,350,347,344,341,338,335],
+            [27, 24, 21, 18, 15, 12, 9, 6, 3],
+            [37, 40, 43, 46, 49, 52, 55, 58, 61],
+            [97, 94, 91, 88, 85, 82, 79, 76, 73],
+            [122, 125, 128, 131, 134, 137, 140, 143, 146],
+            [182, 179, 176, 173, 170, 167, 164, 161, 158],
+            [192, 195, 198, 201, 204, 207, 210, 213, 216],
+            [251, 248, 245, 242, 239, 236, 233, 230, 227],
+            [262, 265, 268, 271, 274, 277, 280, 283, 286],
+            [322, 319, 316, 313, 310, 307, 304, 301, 298],
+            [335, 338, 341, 344, 347, 350, 353, 356, 359],
         ]
 
         self.ROWS = 10
@@ -410,6 +410,39 @@ class LEDBoard:
                 self.set_square(r,c,self.RED)
 
         self.pixels.show()
+
+    # ===================== DRAW =====================
+def celebrate_draw(self):
+    if self.cv_mode:
+        self._queue_display("celebrate_draw")
+        return
+
+    self.clear()
+
+    palette = [
+        self.RED,
+        self.GREEN,
+        self.BLUE,
+        self.YELLOW,
+        self.PURPLE,
+        self.CYAN,
+        self.PINK,
+        self.ORANGE,
+        self.WHITE,
+    ]
+
+    start = time.time()
+
+    while time.time() - start < 4:
+        for r in range(self.ROWS):
+            for c in range(self.COLS):
+                color = random.choice(palette)
+                self.set_square(r, c, color)
+
+        self.pixels.show()
+        time.sleep(0.20)
+
+    self.clear()
 
     # ===================== WIN =====================
     def celebrate_win(self, side):
