@@ -564,16 +564,22 @@ function App() {
   const handlePieceSelected = useCallback((square: string) => {
     if (turnPhase !== 'player_idle') return;
     if (!isConnected) return;
-    sendMessage(JSON.stringify({ type: 'legal_moves', square }));
+    sendMessage(JSON.stringify({ type: 'select', square }));
     if (!suggestionRequestedRef.current) {
       suggestionRequestedRef.current = true;
       sendMessage(JSON.stringify({ type: 'suggest', difficulty: 4 }));
     }
   }, [sendMessage, isConnected, turnPhase]);
 
-  const handlePieceDeselected = useCallback(() => {
+  const handlePieceDeselected = useCallback((reason: 'manual' | 'move' | 'system' = 'manual') => {
     setLegalTargets([]);
-  }, []);
+    if (!useBridgeCommands) return;
+    if (reason !== 'manual') return;
+    if (turnPhase !== 'player_idle') return;
+    if (gameState.sideToMove !== playerSide) return;
+    if (!isConnected) return;
+    sendMessage(JSON.stringify({ type: 'deselect' }));
+  }, [gameState.sideToMove, isConnected, playerSide, sendMessage, turnPhase]);
 
   // Stage a move locally — do NOT send WS yet. Committed when player clicks End Turn.
   //

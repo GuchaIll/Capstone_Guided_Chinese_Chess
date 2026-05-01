@@ -44,11 +44,26 @@ def test_engine_event_sequence_drives_led_board_with_normalized_fen(monkeypatch)
     def dispatch_led_post(path: str, body: dict | None = None) -> bool:
         payload = body or {}
         led_calls.append((path, body))
-        if path == "/fen":
-            board.set_fen(payload["fen"])
-        elif path == "/move":
-            board.show_moves("", payload["row"], payload["col"])
-        elif path == "/opponent":
+        if path == "/fen-sync":
+            board.set_fen(payload["fen"], render=False)
+        elif path == "/player-turn":
+            best_move = payload.get("best_move")
+            normalized_best_move = None
+            if isinstance(best_move, dict):
+                best_from = best_move.get("from")
+                best_to = best_move.get("to")
+                normalized_best_move = {
+                    "from_r": None if not isinstance(best_from, dict) else best_from.get("row"),
+                    "from_c": None if not isinstance(best_from, dict) else best_from.get("col"),
+                    "to_r": None if not isinstance(best_to, dict) else best_to.get("row"),
+                    "to_c": None if not isinstance(best_to, dict) else best_to.get("col"),
+                }
+            board.show_player_turn(
+                payload.get("selected"),
+                payload.get("targets", []),
+                normalized_best_move,
+            )
+        elif path == "/engine-turn":
             board.show_opponent_move(
                 payload["from_r"],
                 payload["from_c"],
@@ -77,28 +92,45 @@ def test_engine_event_sequence_drives_led_board_with_normalized_fen(monkeypatch)
     # 2. Capture flow pauses LEDs, then a selection highlight is queued while
     # CV mode is active and replayed once LEDs resume.
     subscriber.handle_led_command({"command": "off"})
-    subscriber.handle_piece_selected({"square": "b9", "targets": ["a7", "c7"]})
+    subscriber.handle_led_player_turn(
+        {
+            "fen": ENGINE_STYLE_START_FEN,
+            "selected_square": "b9",
+            "legal_targets": ["a7", "c7"],
+            "best_move_from": "b9",
+            "best_move_to": "a7",
+        }
+    )
 
     assert board.cv_mode is True
-    assert board._pending_display == ("show_moves", {"row": 9, "col": 1})
+    assert board._pending_display == (
+        "show_player_turn",
+        {
+            "selected": {"row": 9, "col": 1},
+            "targets": [{"row": 7, "col": 0}, {"row": 7, "col": 2}],
+            "best_move": {
+                "from_r": 9,
+                "from_c": 1,
+                "to_r": 7,
+                "to_c": 0,
+            },
+        },
+    )
 
     subscriber.handle_led_command({"command": "on"})
 
     assert board.cv_mode is False
     assert board._pending_display is None
-    assert board.pixels.values[board.BOARD_LED_MAP[9][1]] == board.RED
-    # The horse at b9 has legal moves to a7 and c7 from the starting position;
-    # show_moves marks the first legal move green as the "best" hint.
-    assert board.pixels.values[board.BOARD_LED_MAP[7][0]] == board.GREEN
-    assert board.pixels.values[board.BOARD_LED_MAP[7][2]] == board.WHITE
+    assert board.pixels.values[board.pixel_index(9, 1)] == board.RED
+    assert board.pixels.values[board.pixel_index(7, 0)] == board.WHITE
+    assert board.pixels.values[board.pixel_index(7, 2)] == board.WHITE
 
     # 3. AI move event refreshes the engine FEN first, then overlays the
     # opponent move highlight.
-    subscriber.handle_move_made(
+    subscriber.handle_led_engine_turn(
         {
             "from": "b0",
             "to": "c2",
-            "source": "ai",
             "fen": ENGINE_STYLE_AFTER_AI_MOVE_FEN,
         }
     )
@@ -106,17 +138,35 @@ def test_engine_event_sequence_drives_led_board_with_normalized_fen(monkeypatch)
     assert subscriber._last_fen == ENGINE_STYLE_AFTER_AI_MOVE_FEN
     assert board.board_state[0][1] == "."
     assert board.board_state[2][2] == "h"
-    assert board.pixels.values[board.BOARD_LED_MAP[0][1]] == board.BLUE
-    assert board.pixels.values[board.BOARD_LED_MAP[2][2]] == board.PURPLE
+    assert board.pixels.values[board.pixel_index(0, 1)] == board.BLUE
+    assert board.pixels.values[board.pixel_index(2, 2)] == board.PURPLE
 
     assert led_calls == [
-        ("/fen", {"fen": ENGINE_STYLE_START_FEN}),
+        ("/fen-sync", {"fen": ENGINE_STYLE_START_FEN}),
         ("/cv_pause", {}),
-        ("/move", {"row": 9, "col": 1}),
-        ("/cv_resume", {}),
-        ("/fen", {"fen": ENGINE_STYLE_AFTER_AI_MOVE_FEN}),
+        ("/fen-sync", {"fen": ENGINE_STYLE_START_FEN}),
         (
-            "/opponent",
-            {"from_r": 0, "from_c": 1, "to_r": 2, "to_c": 2},
+            "/player-turn",
+            {
+                "fen": ENGINE_STYLE_START_FEN,
+                "selected": {"row": 9, "col": 1},
+                "targets": [{"row": 7, "col": 0}, {"row": 7, "col": 2}],
+                "best_move": {
+                    "from": {"row": 9, "col": 1},
+                    "to": {"row": 7, "col": 0},
+                },
+            },
+        ),
+        ("/cv_resume", {}),
+        ("/fen-sync", {"fen": ENGINE_STYLE_AFTER_AI_MOVE_FEN}),
+        (
+            "/engine-turn",
+            {
+                "fen": ENGINE_STYLE_AFTER_AI_MOVE_FEN,
+                "from_r": 0,
+                "from_c": 1,
+                "to_r": 2,
+                "to_c": 2,
+            },
         ),
     ]

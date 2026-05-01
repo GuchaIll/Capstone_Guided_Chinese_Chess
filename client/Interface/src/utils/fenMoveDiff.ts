@@ -18,6 +18,20 @@ function fileToLetter(file: number): string {
   return String.fromCharCode("a".charCodeAt(0) + file);
 }
 
+function normalizePieceSymbol(piece: string): string {
+  switch (piece) {
+    case "H": return "N";
+    case "h": return "n";
+    case "E": return "B";
+    case "e": return "b";
+    case "G": return "K";
+    case "g": return "k";
+    case "S": return "P";
+    case "s": return "p";
+    default: return piece;
+  }
+}
+
 function parseFenBoard(fen: string): FenBoard | null {
   const [placement] = fen.trim().split(/\s+/);
   const ranks = placement?.split("/") ?? [];
@@ -37,7 +51,7 @@ function parseFenBoard(fen: string): FenBoard | null {
       }
 
       if (file > 8) return null;
-      board[file][rank] = char;
+      board[file][rank] = normalizePieceSymbol(char);
       file += 1;
     }
 
@@ -48,7 +62,10 @@ function parseFenBoard(fen: string): FenBoard | null {
 }
 
 function piecePlacement(fen: string): string {
-  return fen.trim().split(/\s+/)[0] ?? "";
+  return (fen.trim().split(/\s+/)[0] ?? "")
+    .split("")
+    .map((char) => (/[A-Za-z]/.test(char) ? normalizePieceSymbol(char) : char))
+    .join("");
 }
 
 function isMovingSidePiece(piece: string, sideToken: string): boolean {

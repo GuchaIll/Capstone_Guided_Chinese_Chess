@@ -227,6 +227,10 @@ services:
       - ENGINE_WS_URL=ws://engine:8080/ws
       - BRIDGE_PORT=5003
       - CV_SERVICE_URL=${CV_SERVICE_URL:-http://host.docker.internal:5005}
+      - LED_SERVER_URL=${LED_SERVER_URL:-}
+      - LED_SERVER_PORT=${LED_SERVER_PORT:-5000}
+      - RASPBERRY_PI_IP=${RASPBERRY_PI_IP:-}
+      - RASPBERY_PI_IP=${RASPBERY_PI_IP:-}
       # Bearer token required by mutating routes, SSE, and WebSockets.
       # Override via the host shell or .env to rotate the secret.
       - STATE_BRIDGE_TOKEN=${STATE_BRIDGE_TOKEN:-integration-bridge-token}

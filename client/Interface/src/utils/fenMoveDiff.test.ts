@@ -36,6 +36,26 @@ describe("fenMoveDiff", () => {
     expect(fenPlacementsEqual(left, right)).toBe(true);
   });
 
+  it("treats HEGS and NBKP conventions as the same placement", () => {
+    const hegs = "rheagaehr/9/1c5c1/s1s1s1s1s/9/9/S1S1S1S1S/1C5C1/9/RHEAGAEHR w - - 0 1";
+    const nbkp = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
+
+    expect(fenPlacementsEqual(hegs, nbkp)).toBe(true);
+  });
+
+  it("derives a move across HEGS and NBKP conventions", () => {
+    const before = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
+    const after = "rheagaehr/9/1c5c1/s1s1s1s1s/9/4S4/S1S3S1S/1C5C1/9/RHEAGAEHR b - - 0 1";
+
+    expect(deriveMoveFromFenDiff(before, after)).toEqual({
+      from: "e3",
+      to: "e4",
+      move: "e3e4",
+      piece: "P",
+      captured: null,
+    });
+  });
+
   it("rejects unchanged boards", () => {
     const fen = "4k4/9/9/9/4p4/9/9/9/9/4K4 w - - 0 1";
     expect(() => deriveMoveFromFenDiff(fen, fen)).toThrow("No physical-board change detected.");

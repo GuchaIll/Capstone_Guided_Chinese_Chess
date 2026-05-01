@@ -95,6 +95,18 @@ CLASS_TO_FEN = {
 VALID_FEN_PIECES = set("RHEAGCSrheagcs")
 DEFAULT_SIDE_TO_MOVE = "w"
 DEFAULT_EXTRA_FEN = "- - 0 1"
+FEN_SYMBOL_NORMALIZATION = str.maketrans(
+    {
+        "H": "N",
+        "h": "n",
+        "E": "B",
+        "e": "b",
+        "G": "K",
+        "g": "k",
+        "S": "P",
+        "s": "p",
+    }
+)
 
 
 # =========================
@@ -636,7 +648,7 @@ def board_to_fen_rows(board):
 
 def board_to_fen(board, side_to_move=DEFAULT_SIDE_TO_MOVE, extra_fen=DEFAULT_EXTRA_FEN):
     rows_out = board_to_fen_rows(board)
-    board_part = "/".join(rows_out)
+    board_part = "/".join(rows_out).translate(FEN_SYMBOL_NORMALIZATION)
     return f"{board_part} {side_to_move} {extra_fen}"
 
 

@@ -21,7 +21,7 @@ interface ChessBoardProps {
   legalTargets: string[];
   suggestedMove: SuggestedMove | null;
   onPieceSelected: (square: string) => void;
-  onPieceDeselected: () => void;
+  onPieceDeselected: (reason?: 'manual' | 'move' | 'system') => void;
   aiThinking: boolean;
   opponentMove?: { from: Position; to: Position };
   // Tentative move applied locally but not yet committed to the engine.
@@ -80,7 +80,7 @@ export default function ChessBoard({
   // Clear selection when side changes (e.g., after move or AI turn)
   useEffect(() => {
     setSelectedPosition(null);
-    onPieceDeselected();
+    onPieceDeselected('system');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sideToMove]); // onPieceDeselected is stable; exclude to avoid misleading dep
 
@@ -97,7 +97,7 @@ export default function ChessBoard({
     if (!canInteract) {
       setSelectedPosition(null);
       setDraggedPiece(null);
-      onPieceDeselected();
+      onPieceDeselected('system');
     }
   }, [canInteract, onPieceDeselected]);
 
@@ -109,9 +109,9 @@ export default function ChessBoard({
   }, [onPieceSelected]);
 
   // Deselect
-  const deselectPiece = useCallback(() => {
+  const deselectPiece = useCallback((reason: 'manual' | 'move' | 'system' = 'manual') => {
     setSelectedPosition(null);
-    onPieceDeselected();
+    onPieceDeselected(reason);
   }, [onPieceDeselected]);
 
   // Is the player's turn (not AI thinking, interaction allowed by App phase)?
@@ -127,7 +127,7 @@ export default function ChessBoard({
     if (selectedPosition) {
       // Clicking on same square - deselect
       if (selectedPosition.file === file && selectedPosition.rank === rank) {
-        deselectPiece();
+        deselectPiece('manual');
         return;
       }
 
@@ -142,7 +142,7 @@ export default function ChessBoard({
       const toStr = `${fileToLetter(file)}${rank}`;
 
       const success = onMove(fromStr, toStr);
-      deselectPiece();
+      deselectPiece('move');
 
       if (!success) {
         console.log('Move rejected');
@@ -181,7 +181,7 @@ export default function ChessBoard({
     }
 
     setDraggedPiece(null);
-    deselectPiece();
+    deselectPiece('move');
   }, [draggedPiece, onMove, deselectPiece, isPlayerTurn]);
 
   // Convert file/rank to notation for comparison

@@ -34,6 +34,8 @@ const HEALTH_PROBE_INTERVAL_MS = 5_000;
 // the same message regardless of which check failed.
 export const BOARD_OUT_OF_SYNC_MESSAGE =
   'Board out of sync. This can be caused by a misplaced move or low CV confidence.';
+export const MOVE_NOT_DETECTED_MESSAGE =
+  'Live board check did not detect the move on the physical board yet.';
 
 /**
  * Fetch from the bridge and validate the response against `schema`.
@@ -163,7 +165,31 @@ export function useBoardSync(currentFen: string) {
       MakeMoveResponseSchema,
       { method: 'POST', body: JSON.stringify({ fen: currentFen, move: moveStr }) },
     );
-    if (!expected.valid || !expected.fen || !fenPlacementsEqual(capture.fen, expected.fen)) {
+    if (!expected.valid || !expected.fen) {
+      console.warn('[useBoardSync] Engine could not validate staged move against current FEN.', {
+        currentFen,
+        moveStr,
+        captureFen: capture.fen,
+        expected,
+      });
+      throw new Error(outOfSync);
+    }
+    if (fenPlacementsEqual(capture.fen, currentFen)) {
+      console.warn('[useBoardSync] CV capture still matches the pre-move board.', {
+        currentFen,
+        moveStr,
+        captureFen: capture.fen,
+        expectedFen: expected.fen,
+      });
+      throw new Error(MOVE_NOT_DETECTED_MESSAGE);
+    }
+    if (!fenPlacementsEqual(capture.fen, expected.fen)) {
+      console.warn('[useBoardSync] CV capture does not match the engine-expected post-move board.', {
+        currentFen,
+        moveStr,
+        captureFen: capture.fen,
+        expectedFen: expected.fen,
+      });
       throw new Error(outOfSync);
     }
   }, [currentFen]);

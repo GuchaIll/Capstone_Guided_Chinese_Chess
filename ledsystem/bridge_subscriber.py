@@ -18,6 +18,7 @@ import json
 import logging
 import os
 import sys
+import threading
 import time
 from urllib.request import urlopen, Request
 from urllib.error import HTTPError, URLError
@@ -116,65 +117,176 @@ def sse_stream(url: str, bridge_token: str | None = None):
 # ── Event handlers (call LED server HTTP API) ────────────────────────
 
 _last_fen: str = ""
+_startup_completed = False
+
+# Startup zones hold: /zones is rendered immediately, then this single-shot
+# timer clears the LEDs after STARTUP_HOLD_SECONDS *unless* a real
+# led_player_turn or led_engine_turn arrives first and cancels it.
+STARTUP_HOLD_SECONDS = 20.0
+_startup_timer: threading.Timer | None = None
+_startup_timer_lock = threading.Lock()
+
+
+def _cancel_startup_timer(reason: str = "") -> bool:
+    """Cancel the pending startup-zones timer if one is running."""
+    global _startup_timer
+    with _startup_timer_lock:
+        timer = _startup_timer
+        _startup_timer = None
+    if timer is None:
+        return False
+    timer.cancel()
+    if reason:
+        logger.info("Startup zones hold cancelled (%s)", reason)
+    return True
+
+
+def _on_startup_hold_expired() -> None:
+    """Fire when STARTUP_HOLD_SECONDS elapses without a real LED overlay."""
+    global _startup_timer
+    with _startup_timer_lock:
+        _startup_timer = None
+    _led_post("/clear", {})
+    logger.info("Startup zones hold elapsed; LEDs cleared")
 
 
 def handle_fen_update(data: dict) -> None:
-    """FEN changed — store in LED server so subsequent move queries work."""
+    """FEN changed — sync board state without forcing a visible redraw."""
     global _last_fen
     fen = data.get("fen", "")
     if not fen:
         return
     _last_fen = fen
-    _led_post("/fen", {"fen": fen})
-    logger.info("Board updated from %s: %s", data.get("source", "?"), fen[:40])
+    _led_post("/fen-sync", {"fen": fen})
+    logger.info("Board state synced from %s: %s", data.get("source", "?"), fen[:40])
 
 
-def handle_piece_selected(data: dict) -> None:
-    """Engine replied with legal moves for a square — show on LEDs."""
-    square = data.get("square", "")
-    rc = _sq_to_rc(square)
-    if rc is None:
+def handle_state_sync(data: dict) -> None:
+    """Seed the LED board with the bridge snapshot, then run startup once.
+
+    Startup contract (see docs/led_flow.md §1):
+      1. /fen-sync     — non-rendering, seeds the LED board model
+      2. /zones        — visible startup overlay
+      3. hold the zones display for STARTUP_HOLD_SECONDS; the next
+         real led_player_turn or led_engine_turn pre-empts it via
+         _cancel_startup_timer; otherwise /clear at expiry.
+    Do NOT synthesize a player- or engine-turn overlay from this
+    snapshot — the bridge will publish the real LED-intent event.
+    """
+    global _startup_completed, _startup_timer
+    handle_fen_update(data)
+    if _startup_completed:
         return
-    r, c = rc
-    _led_post("/move", {"row": r, "col": c})
-    logger.info("Piece selected at %s — moves shown", square)
+    _led_post("/zones", {})
+    _startup_completed = True
+    with _startup_timer_lock:
+        timer = threading.Timer(STARTUP_HOLD_SECONDS, _on_startup_hold_expired)
+        timer.daemon = True
+        _startup_timer = timer
+    timer.start()
+    logger.info("LED startup zones display started; %.0fs hold", STARTUP_HOLD_SECONDS)
+
+
+def handle_led_player_turn(data: dict) -> None:
+    """Display the player's overlay for the current turn."""
+    _cancel_startup_timer("led_player_turn")
+    fen = data.get("fen", "")
+    if fen:
+        handle_fen_update({"fen": fen, "source": "led_player_turn"})
+
+    selected_square = data.get("selected_square")
+    selected_rc = _sq_to_rc(selected_square) if isinstance(selected_square, str) else None
+
+    targets = []
+    for square in data.get("legal_targets", []):
+        rc = _sq_to_rc(square)
+        if rc is None:
+            continue
+        targets.append({"row": rc[0], "col": rc[1]})
+
+    best_move = None
+    best_from = data.get("best_move_from")
+    best_to = data.get("best_move_to")
+    best_from_rc = _sq_to_rc(best_from) if isinstance(best_from, str) else None
+    best_to_rc = _sq_to_rc(best_to) if isinstance(best_to, str) else None
+    if best_from_rc or best_to_rc:
+        best_move = {
+            "from": None if best_from_rc is None else {"row": best_from_rc[0], "col": best_from_rc[1]},
+            "to": None if best_to_rc is None else {"row": best_to_rc[0], "col": best_to_rc[1]},
+        }
+
+    _led_post(
+        "/player-turn",
+        {
+            "fen": fen or _last_fen,
+            "selected": None if selected_rc is None else {"row": selected_rc[0], "col": selected_rc[1]},
+            "targets": targets,
+            "best_move": best_move,
+        },
+    )
+    logger.info("Player-turn LED overlay updated")
 
 
 def handle_move_made(data: dict) -> None:
-    """A move was made — highlight from/to squares for opponent moves."""
-    from_sq = data.get("from", "")
-    to_sq = data.get("to", "")
-    source = data.get("source", "")
-
-    # Update FEN first if present
+    """Keep the board model in sync after authoritative moves."""
     fen = data.get("fen", "")
     if fen:
-        handle_fen_update({"fen": fen, "source": source})
-
-    # If the opponent (AI or remote) moved, highlight in blue/purple
-    if source in ("ai", "opponent"):
-        from_rc = _sq_to_rc(from_sq)
-        to_rc = _sq_to_rc(to_sq)
-        if from_rc and to_rc:
-            _led_post("/opponent", {
-                "from_r": from_rc[0], "from_c": from_rc[1],
-                "to_r": to_rc[0], "to_c": to_rc[1],
-            })
-            logger.info("Opponent move %s→%s highlighted", from_sq, to_sq)
+        handle_fen_update({"fen": fen, "source": data.get("source", "")})
 
 
-def handle_best_move(data: dict) -> None:
-    """Coaching agent recommended a best move — show moves from that square."""
+def handle_led_engine_turn(data: dict) -> None:
+    """Display the engine's chosen move with blue/purple endpoints."""
+    _cancel_startup_timer("led_engine_turn")
+    fen = data.get("fen", "")
+    if fen:
+        handle_fen_update({"fen": fen, "source": "led_engine_turn"})
+
     from_sq = data.get("from", "")
+    to_sq = data.get("to", "")
     from_rc = _sq_to_rc(from_sq)
-    if from_rc:
-        _led_post("/move", {"row": from_rc[0], "col": from_rc[1]})
-        logger.info("Best move highlighted from %s", from_sq)
+    to_rc = _sq_to_rc(to_sq)
+    if from_rc is None or to_rc is None:
+        return
+    _led_post(
+        "/engine-turn",
+        {
+            "fen": fen or _last_fen,
+            "from_r": from_rc[0],
+            "from_c": from_rc[1],
+            "to_r": to_rc[0],
+            "to_c": to_rc[1],
+        },
+    )
+    logger.info("Engine-turn LED overlay updated for %s→%s", from_sq, to_sq)
+
+
+def handle_led_game_result(data: dict) -> None:
+    """Play the win/draw sequence for terminal positions."""
+    result = data.get("result", "")
+    if result == "draw":
+        _led_post("/draw", {})
+        logger.info("Draw LED sequence played")
+        return
+
+    winner = data.get("winner")
+    if winner in ("red", "black"):
+        _led_post("/win", {"side": winner})
+        logger.info("Win LED sequence played for %s", winner)
+
+
+def handle_led_reset(data: dict) -> None:
+    """Clear any currently lit LEDs after reset / terminal sequences."""
+    _led_post("/clear", {})
+    logger.info("LEDs cleared (%s)", data.get("reason", "reset"))
 
 
 def handle_led_command(data: dict) -> None:
     """CV system requests LED off (camera capture) or on."""
     cmd = data.get("command", "")
+    source = data.get("source", "")
+    if source == "bridge_direct_http":
+        logger.info("Skipping LED command %s because bridge already applied it directly", cmd)
+        return
     if cmd == "off" or cmd == "clear":
         _led_post("/cv_pause", {})
         logger.info("LEDs paused (command: %s)", cmd)
@@ -184,20 +296,20 @@ def handle_led_command(data: dict) -> None:
 
 
 def handle_game_reset(_data: dict) -> None:
-    """Game reset — store starting FEN."""
-    _led_post("/fen", {"fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"})
-    _led_post("/cv_pause", {})  # clear LEDs
-    _led_post("/cv_resume", {})
-    logger.info("Game reset")
+    """Game reset — resync the board model to the starting FEN."""
+    handle_fen_update({"fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"})
+    logger.info("Game reset state synced")
 
 
 EVENT_HANDLERS = {
-    "state_sync": handle_fen_update,
+    "state_sync": handle_state_sync,
     "fen_update": handle_fen_update,
     "cv_capture": handle_fen_update,
-    "piece_selected": handle_piece_selected,
     "move_made": handle_move_made,
-    "best_move": handle_best_move,
+    "led_player_turn": handle_led_player_turn,
+    "led_engine_turn": handle_led_engine_turn,
+    "led_game_result": handle_led_game_result,
+    "led_reset": handle_led_reset,
     "led_command": handle_led_command,
     "game_reset": handle_game_reset,
 }

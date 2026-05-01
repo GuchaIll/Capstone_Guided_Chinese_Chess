@@ -21,6 +21,7 @@ const STALE_THRESHOLD_MS = 60_000; // service considered "inactive" after 60 s
 
 type HardwareSource = 'bridge' | 'cv' | 'led' | 'engine' | 'player';
 type LogFilter = 'all' | 'cv' | 'led' | 'engine' | 'player';
+type LedMode = 'startup' | 'player' | 'engine' | 'result' | 'off' | 'idle';
 
 interface SseEventPayload {
   type: string;
@@ -59,13 +60,14 @@ interface LedStatus {
   lastCommandTs: number | null;
   lastCommand: string | null;
   lastLedEndpoint: string | null;
-  mode: 'pieces' | 'moves' | 'opponent' | 'off' | 'idle';
+  mode: LedMode;
 }
 
 // ── ID counter ────────────────────────────────────────────────────────────────
 
 let _id = 0;
 const nextId = () => ++_id;
+const LED_PLAYER_SIDE = 'red';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -97,7 +99,7 @@ function classifySource(type: string, data: Record<string, unknown>): HardwareSo
   const source = data.source as string | undefined;
   if (type === 'cv_capture_requested' || type === 'cv_capture_result' || type === 'cv_capture' || type === 'cv_validation_error') return 'cv';
   if (type === 'fen_update' && source === 'cv') return 'cv';
-  if (type === 'led_command') return 'led';
+  if (type === 'led_command' || type === 'led_player_turn' || type === 'led_engine_turn' || type === 'led_game_result' || type === 'led_reset') return 'led';
   if (type === 'move_made' && (source === 'ai' || source === 'opponent')) return 'engine';
   if (type === 'state_sync') return 'bridge';
   if (type === 'game_reset') return 'player';
@@ -105,12 +107,96 @@ function classifySource(type: string, data: Record<string, unknown>): HardwareSo
   return 'bridge';
 }
 
+function inferStartupSceneEndpoint(data: Record<string, unknown>): '/player-turn' | '/engine-turn' | '/clear' {
+  const legalMoves = Array.isArray(data.legal_moves) ? data.legal_moves : [];
+  if (
+    (typeof data.selected_square === 'string' && data.selected_square) ||
+    (typeof data.best_move_from === 'string' && data.best_move_from) ||
+    (typeof data.best_move_to === 'string' && data.best_move_to) ||
+    legalMoves.length > 0
+  ) {
+    return '/player-turn';
+  }
+
+  const sideToMove = typeof data.side_to_move === 'string' ? data.side_to_move.toLowerCase() : '';
+  if (sideToMove === LED_PLAYER_SIDE) {
+    return '/player-turn';
+  }
+
+  const lastMove = data.last_move;
+  if (
+    lastMove &&
+    typeof lastMove === 'object' &&
+    typeof (lastMove as { from?: unknown }).from === 'string' &&
+    typeof (lastMove as { to?: unknown }).to === 'string'
+  ) {
+    return '/engine-turn';
+  }
+
+  return '/clear';
+}
+
+interface LedEffect {
+  endpoints: string[];
+  mode: LedMode | null;
+}
+
+function inferLedEffect(
+  type: string,
+  data: Record<string, unknown>,
+  options: {
+    isFirstStateSync: boolean;
+    previousMode: LedMode;
+  },
+): LedEffect {
+  switch (type) {
+    case 'state_sync': {
+      if (!options.isFirstStateSync) {
+        return { endpoints: ['/fen-sync'], mode: null };
+      }
+      const startupScene = inferStartupSceneEndpoint(data);
+      return {
+        endpoints: ['/fen-sync', '/zones', startupScene],
+        mode:
+          startupScene === '/player-turn'
+            ? 'player'
+            : startupScene === '/engine-turn'
+            ? 'engine'
+            : 'off',
+      };
+    }
+    case 'fen_update':
+    case 'cv_capture':
+    case 'move_made':
+    case 'game_reset':
+      return { endpoints: ['/fen-sync'], mode: null };
+    case 'led_player_turn':
+      return { endpoints: ['/player-turn'], mode: 'player' };
+    case 'led_engine_turn':
+      return { endpoints: ['/engine-turn'], mode: 'engine' };
+    case 'led_game_result':
+      return { endpoints: [data.result === 'draw' ? '/draw' : '/win'], mode: 'result' };
+    case 'led_reset':
+      return { endpoints: ['/clear'], mode: 'off' };
+    case 'led_command':
+      if (data.command === 'off' || data.command === 'clear') {
+        return { endpoints: ['/cv_pause'], mode: 'off' };
+      }
+      if (data.command === 'on') {
+        return { endpoints: ['/cv_resume'], mode: options.previousMode };
+      }
+      return { endpoints: [], mode: null };
+    default:
+      return { endpoints: [], mode: null };
+  }
+}
+
 /** Human-readable description of each SSE event. */
 function describeEvent(type: string, data: Record<string, unknown>): string {
   const d = data;
   switch (type) {
     case 'state_sync':
-      return `State sync — full board snapshot broadcast to all subscribers | FEN: ${shortFen(d.fen)}`;
+      return `State sync — full board snapshot broadcast to all subscribers | side to move: ${String(d.side_to_move ?? 'unknown')} | FEN: ${shortFen(d.fen)}`;
     case 'fen_update':
       return `Board position updated (source: ${d.source ?? 'unknown'}) | FEN: ${shortFen(d.fen)}`;
     case 'move_made': {
@@ -145,8 +231,16 @@ function describeEvent(type: string, data: Record<string, unknown>): string {
       const targets = Array.isArray(d.targets) ? d.targets.length : 0;
       return `Piece selected at ${d.square ?? '?'} — ${targets} legal target${targets !== 1 ? 's' : ''} highlighted`;
     }
+    case 'led_player_turn':
+      return `LED player-turn scene — selected ${String(d.selected_square ?? 'none')}, ${Array.isArray(d.legal_targets) ? d.legal_targets.length : 0} legal target(s), best move ${String(d.best_move_from ?? '?')}→${String(d.best_move_to ?? '?')}`;
+    case 'led_engine_turn':
+      return `LED engine-turn scene — ${d.from ?? '?'}→${d.to ?? '?'} in blue/purple`;
+    case 'led_game_result':
+      return `LED result scene — ${d.result ?? 'unknown'}${d.winner ? ` (${d.winner})` : ''}`;
+    case 'led_reset':
+      return `LED reset scene — clear LEDs (${d.reason ?? 'reset'})`;
     case 'game_reset':
-      return 'Game reset — board returned to starting position, all state cleared';
+      return 'Game reset — board returned to starting position and the LED board model is resynced';
     default:
       return `${type} — ${JSON.stringify(d).substring(0, 80)}`;
   }
@@ -159,29 +253,36 @@ function describeEvent(type: string, data: Record<string, unknown>): string {
 function describeLedAction(type: string, data: Record<string, unknown>): string {
   const d = data;
   switch (type) {
-    case 'state_sync':
+    case 'state_sync': {
+      const startupScene = inferStartupSceneEndpoint(d);
+      if (startupScene === '/player-turn') {
+        return '→ LED: POST /fen-sync  {fen: "…"}  — sync board model only; first sync also POST /zones  {}  then POST /player-turn  {fen, selected, targets, best_move}';
+      }
+      if (startupScene === '/engine-turn') {
+        return '→ LED: POST /fen-sync  {fen: "…"}  — sync board model only; first sync also POST /zones  {}  then POST /engine-turn  {fen, from_r, from_c, to_r, to_c}';
+      }
+      return '→ LED: POST /fen-sync  {fen: "…"}  — sync board model only; first sync also POST /zones  {}  then POST /clear  {} if no turn scene can be restored';
+    }
     case 'fen_update':
     case 'cv_capture':
-      return `→ LED: POST /fen  {fen: "…"}  — redraw all pieces on the board`;
+      return '→ LED: POST /fen-sync  {fen: "…"}  — sync board state without changing the active overlay';
     case 'cv_capture_requested':
     case 'cv_capture_result':
       return '';
-    case 'piece_selected': {
-      const sq = d.square as string | undefined;
-      const hint = sq
-        ? ` (${sq}: col=${sq.charCodeAt(0) - 97}, row=${sq[1]})`
-        : '';
-      return `→ LED: POST /move  {row, col}${hint}  — red=selected, white=empty targets, orange=captures`;
-    }
     case 'move_made': {
       const src = d.source as string | undefined;
-      if (src === 'ai' || src === 'opponent') {
-        return `→ LED: POST /opponent  {from_r, from_c, to_r, to_c}  — from=blue, to=purple`;
-      }
-      return '';
+      return src ? `→ LED: POST /fen-sync  {fen: "…"}  — sync board after ${src} move` : '';
     }
-    case 'best_move':
-      return `→ LED: POST /move  {row, col}  — green destination highlight from ${d.from ?? '?'}`;
+    case 'led_player_turn':
+      return '→ LED: POST /player-turn  {fen, selected, targets, best_move}  — red selection, white moves, orange captures, green best move';
+    case 'led_engine_turn':
+      return '→ LED: POST /engine-turn  {fen, from_r, from_c, to_r, to_c}  — from=blue, to=purple';
+    case 'led_game_result':
+      return d.result === 'draw'
+        ? '→ LED: POST /draw  {}  — draw sequence'
+        : '→ LED: POST /win  {side}  — win sequence';
+    case 'led_reset':
+      return '→ LED: POST /clear  {}  — turn off currently lit LEDs';
     case 'led_command': {
       const cmd = d.command;
       if (cmd === 'off' || cmd === 'clear')
@@ -191,7 +292,7 @@ function describeLedAction(type: string, data: Record<string, unknown>): string 
       return '';
     }
     case 'game_reset':
-      return '→ LED: POST /fen (start FEN)  → POST /cv_pause  → POST /cv_resume  — reset sequence';
+      return '→ LED: POST /fen-sync  {fen: start}  — resync board model only; paired led_reset then POST /clear  {}';
     default:
       return '';
   }
@@ -216,6 +317,10 @@ const TYPE_BADGE: Record<string, string> = {
   cv_capture:          'bg-indigo-900/80 text-indigo-200',
   cv_validation_error: 'bg-red-900/80 text-red-300',
   led_command:         'bg-amber-900/80 text-amber-200',
+  led_player_turn:     'bg-rose-900/80 text-rose-200',
+  led_engine_turn:     'bg-fuchsia-900/80 text-fuchsia-200',
+  led_game_result:     'bg-lime-900/80 text-lime-200',
+  led_reset:           'bg-zinc-800/80 text-zinc-200',
   best_move:           'bg-teal-900/80 text-teal-200',
   piece_selected:      'bg-violet-900/80 text-violet-200',
   game_reset:          'bg-orange-900/80 text-orange-200',
@@ -334,6 +439,7 @@ export default function HardwarePage() {
 
   const logRef = useRef<HTMLDivElement>(null);
   const pausedRef = useRef(paused);
+  const seenInitialStateSyncRef = useRef(false);
   pausedRef.current = paused;
 
   // Ticker: refresh relative timestamps every 5 s
@@ -438,20 +544,23 @@ export default function HardwarePage() {
         // Update LED status
         const ledAction = describeLedAction(type, data);
         if (ledAction) {
-          const endpoint = ledAction.split('POST ')[1]?.split(' ')[0] ?? null;
-          let mode: LedStatus['mode'] = 'idle';
-          if (type === 'fen_update' || type === 'cv_capture' || type === 'state_sync' || type === 'game_reset') mode = 'pieces';
-          else if (type === 'piece_selected' || type === 'best_move') mode = 'moves';
-          else if (type === 'move_made') mode = 'opponent';
-          else if (type === 'led_command' && (data.command === 'off' || data.command === 'clear')) mode = 'off';
-          else if (type === 'led_command' && data.command === 'on') mode = 'pieces';
-          setLed((l) => ({
-            ...l,
-            lastCommandTs: ts,
-            lastCommand: type === 'led_command' ? (data.command as string) : type,
-            lastLedEndpoint: endpoint,
-            mode,
-          }));
+          const isFirstStateSync = type === 'state_sync' && !seenInitialStateSyncRef.current;
+          if (isFirstStateSync) {
+            seenInitialStateSyncRef.current = true;
+          }
+          setLed((l) => {
+            const effect = inferLedEffect(type, data, {
+              isFirstStateSync,
+              previousMode: l.mode,
+            });
+            return {
+              ...l,
+              lastCommandTs: ts,
+              lastCommand: type === 'led_command' ? (data.command as string) : type,
+              lastLedEndpoint: effect.endpoints[effect.endpoints.length - 1] ?? null,
+              mode: effect.mode ?? l.mode,
+            };
+          });
         }
 
         pushEntry(payload);
@@ -658,7 +767,8 @@ export default function HardwarePage() {
           <Row label="Triggered by" value={led.lastCommand ?? '—'} />
           <div className="mt-2 text-[10px] text-slate-500">
             Driven by <span className="font-mono">bridge_subscriber.py</span>{' '}
-            reacting to SSE events. Port 5000.
+            reacting to SSE events. First sync runs <span className="font-mono">/zones</span>,
+            then restores the player or engine scene. Port 5000.
           </div>
         </Card>
       </div>

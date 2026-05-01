@@ -144,16 +144,6 @@ def zones():
         logger.exception("Zone display failed")
         return jsonify({"error": str(e)}), 500
 
-
-@app.route("/draw", methods=["POST"])
-def draw():
-    try:
-        led.celebrate_draw()
-        return jsonify({"status": "draw celebration"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
 # =========================
 # WIN SEQUENCE
 # =========================
