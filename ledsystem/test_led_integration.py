@@ -34,6 +34,7 @@ def load_led_modules():
 
 ENGINE_STYLE_START_FEN = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1"
 ENGINE_STYLE_AFTER_AI_MOVE_FEN = "r1bakabnr/9/1cn4c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 1 2"
+PLAYER_TURN_CONTROL_FEN = "4k4/9/9/9/9/9/9/p8/R8/4K4 w - - 0 1"
 
 
 def test_engine_event_sequence_drives_led_board_with_normalized_fen(monkeypatch):
@@ -167,6 +168,136 @@ def test_engine_event_sequence_drives_led_board_with_normalized_fen(monkeypatch)
                 "from_c": 1,
                 "to_r": 7,
                 "to_c": 2,
+            },
+        ),
+    ]
+
+
+def test_engine_driven_player_turn_overlay_replaces_selection_and_preserves_idle_rules(monkeypatch):
+    led_board, subscriber = load_led_modules()
+    board = led_board.LEDBoard()
+    led_calls: list[tuple[str, dict | None]] = []
+
+    def dispatch_led_post(path: str, body: dict | None = None) -> bool:
+        payload = body or {}
+        led_calls.append((path, body))
+        if path == "/fen-sync":
+            board.set_fen(payload["fen"], render=False)
+        elif path == "/player-turn":
+            best_move = payload.get("best_move")
+            normalized_best_move = None
+            if isinstance(best_move, dict):
+                best_from = best_move.get("from")
+                best_to = best_move.get("to")
+                normalized_best_move = {
+                    "from_r": None if not isinstance(best_from, dict) else best_from.get("row"),
+                    "from_c": None if not isinstance(best_from, dict) else best_from.get("col"),
+                    "to_r": None if not isinstance(best_to, dict) else best_to.get("row"),
+                    "to_c": None if not isinstance(best_to, dict) else best_to.get("col"),
+                }
+            board.show_player_turn(
+                payload.get("selected"),
+                payload.get("targets", []),
+                normalized_best_move,
+            )
+        else:
+            raise AssertionError(f"Unhandled LED path in test: {path}")
+        return True
+
+    monkeypatch.setattr(subscriber, "_led_post", dispatch_led_post)
+    subscriber._last_fen = ""
+
+    subscriber.handle_fen_update({"fen": PLAYER_TURN_CONTROL_FEN, "source": "engine"})
+
+    subscriber.handle_led_player_turn(
+        {
+            "fen": PLAYER_TURN_CONTROL_FEN,
+            "selected_square": "a0",
+            "legal_targets": ["a1"],
+            "best_move_from": "a0",
+            "best_move_to": "a1",
+        }
+    )
+
+    assert board.pixels.values[board.pixel_index(0, 0)] == board.RED
+    assert board.pixels.values[board.pixel_index(1, 0)] == board.ORANGE
+
+    subscriber.handle_led_player_turn(
+        {
+            "fen": PLAYER_TURN_CONTROL_FEN,
+            "selected_square": "e0",
+            "legal_targets": ["e1"],
+            "best_move_from": "e0",
+            "best_move_to": "e1",
+        }
+    )
+
+    assert board.pixels.values[board.pixel_index(0, 0)] == board.OFF
+    assert board.pixels.values[board.pixel_index(1, 0)] == board.OFF
+    assert board.pixels.values[board.pixel_index(0, 4)] == board.RED
+    assert board.pixels.values[board.pixel_index(1, 4)] == board.WHITE
+
+    subscriber.handle_led_player_turn(
+        {
+            "fen": PLAYER_TURN_CONTROL_FEN,
+            "selected_square": None,
+            "legal_targets": ["e1"],
+            "best_move_from": "e0",
+            "best_move_to": "e1",
+        }
+    )
+
+    assert board.pixels.values[board.pixel_index(0, 4)] == board.GREEN
+    assert board.pixels.values[board.pixel_index(1, 4)] == board.OFF
+
+    assert led_calls == [
+        ("/fen-sync", {"fen": PLAYER_TURN_CONTROL_FEN}),
+        (
+            "/fen-sync",
+            {"fen": PLAYER_TURN_CONTROL_FEN},
+        ),
+        (
+            "/player-turn",
+            {
+                "fen": PLAYER_TURN_CONTROL_FEN,
+                "selected": {"row": 0, "col": 0},
+                "targets": [{"row": 1, "col": 0}],
+                "best_move": {
+                    "from": {"row": 0, "col": 0},
+                    "to": {"row": 1, "col": 0},
+                },
+            },
+        ),
+        (
+            "/fen-sync",
+            {"fen": PLAYER_TURN_CONTROL_FEN},
+        ),
+        (
+            "/player-turn",
+            {
+                "fen": PLAYER_TURN_CONTROL_FEN,
+                "selected": {"row": 0, "col": 4},
+                "targets": [{"row": 1, "col": 4}],
+                "best_move": {
+                    "from": {"row": 0, "col": 4},
+                    "to": {"row": 1, "col": 4},
+                },
+            },
+        ),
+        (
+            "/fen-sync",
+            {"fen": PLAYER_TURN_CONTROL_FEN},
+        ),
+        (
+            "/player-turn",
+            {
+                "fen": PLAYER_TURN_CONTROL_FEN,
+                "selected": None,
+                "targets": [{"row": 1, "col": 4}],
+                "best_move": {
+                    "from": {"row": 0, "col": 4},
+                    "to": {"row": 1, "col": 4},
+                },
             },
         ),
     ]
