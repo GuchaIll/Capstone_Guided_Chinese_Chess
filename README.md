@@ -80,21 +80,25 @@ graph TD
         GoCoach[Go Coach<br/>9-agent LLM :5002]
         ReactUI[React Frontend<br/>:3000]
         Kibo3D[Kibo 3D Avatar<br/>Three.js :3001]
+        Embedding[Embedding Service<br/>:8100]
         ChromaDB[(ChromaDB<br/>RAG Knowledge)]
     end
 
+    Camera -.->|captures| Board
     Camera -->|frame capture| CV
     CV -->|POST /state/fen| StateBridge
     StateBridge -->|validate move| RustEngine
     RustEngine -->|legal moves / AI move| StateBridge
-    StateBridge -->|analysis request| GoCoach
-    GoCoach -->|RAG query| ChromaDB
-    GoCoach -->|coaching advice| ReactUI
+    ReactUI -->|POST /coach| GoCoach
+    GoCoach -->|coaching response| ReactUI
+    GoCoach -->|engine proxy /engine/*| StateBridge
+    GoCoach -->|POST /embed| Embedding
+    GoCoach -->|vector search| ChromaDB
     StateBridge -->|SSE: fen_update, best_move| ReactUI
     StateBridge -->|SSE: LED commands| BridgeSub
+    StateBridge -->|WS /ws/kibo: kibo_trigger| Kibo3D
     BridgeSub -->|HTTP POST| LEDServer
     LEDServer -->|NeoPixel colors| LEDStrip
-    ReactUI -->|WebSocket: animation trigger| Kibo3D
 ```
 
 ### System Architecture (as Built)
