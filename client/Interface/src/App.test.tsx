@@ -715,4 +715,201 @@ describe('App coaching integration', () => {
       ).toBeTruthy();
     });
   });
+
+  it('shows the board-out-of-sync alert (not the bridge\'s server-shape error) when /capture returns 502', async () => {
+    // Bridge returns 502 when CV responded but the FEN was structurally
+    // invalid. The user-facing string must be the friendly "Board out
+    // of sync" copy from docs/error_handling.md, not the bridge's
+    // internal "unexpected payload shape" message.
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/health')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ cv_service_healthy: true }),
+        } as Response);
+      }
+      if (url.endsWith('/capture')) {
+        return Promise.resolve({
+          ok: false,
+          status: 502,
+          text: async () => '{"error":"CV service returned an unexpected payload shape"}',
+        } as Response);
+      }
+      return Promise.reject(new Error(`Unexpected fetch call: ${url}`));
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/health'))).toBe(true);
+    });
+    await act(async () => {});
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /stage move/i }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /end turn/i }));
+    });
+
+    // The user sees the friendly copy, not the server-internal error.
+    // The same message lands in both the modal and the inline turn notice.
+    await waitFor(() => {
+      expect(
+        screen.getAllByText(/board out of sync\. this can be caused by a misplaced move or low cv confidence\./i).length,
+      ).toBeGreaterThan(0);
+    });
+    expect(screen.queryByText(/unexpected payload shape/i)).toBeNull();
+
+    // And the move is *not* sent to the WS — the staged-move state stays
+    // intact for the user to retry on the next End Turn click.
+    expect(wsMocks.sendMessage).not.toHaveBeenCalledWith(
+      expect.stringContaining('"type":"move"'),
+    );
+  });
+
+  it('classifies the player move and posts the matching Kibo trigger to the bridge', async () => {
+    // After an accepted move, the client should:
+    //   1. POST /coach/classify-move with the FEN *before* + the move
+    //   2. Map the classification to a Kibo trigger per docs/Kibo_flow.md
+    //   3. POST that trigger to /kibo/trigger on the bridge
+    // A "blunder" classification → "misses_move" trigger.
+    const classifyCalls: Array<{ fen: string; move: string }> = [];
+    const kiboTriggerCalls: string[] = [];
+
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith('/health')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ cv_service_healthy: false }),
+        } as Response);
+      }
+      if (url.endsWith('/coach/classify-move')) {
+        const body = JSON.parse(String(init?.body)) as { fen: string; move: string };
+        classifyCalls.push(body);
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            move: body.move,
+            classification: 'blunder',
+            centipawn_loss: 250,
+            score_delta: -180,
+          }),
+        } as Response);
+      }
+      if (url.endsWith('/kibo/trigger')) {
+        const body = JSON.parse(String(init?.body)) as { trigger: string };
+        kiboTriggerCalls.push(body.trigger);
+        return Promise.resolve({ ok: true, json: async () => ({ status: 'ok' }) } as Response);
+      }
+      return Promise.reject(new Error(`Unexpected fetch call: ${url}`));
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    // Settle the initial /health probe.
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/health'))).toBe(true);
+    });
+    await act(async () => {});
+
+    // Seed the engine state so the staged-move FEN snapshot is meaningful.
+    const fenBefore = '4k4/9/9/9/9/9/9/9/9/R3K4 w - - 0 1';
+    await act(async () => {
+      wsMocks.onMessage?.(JSON.stringify({
+        type: 'state',
+        fen: fenBefore,
+        result: 'in_progress',
+        is_check: false,
+        seq: 1,
+      }));
+    });
+
+    // Stage the move (mocked board fires a0→a1) then End Turn.
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /stage move/i }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /end turn/i }));
+    });
+
+    // Engine confirms the move was valid.
+    await act(async () => {
+      wsMocks.onMessage?.(JSON.stringify({
+        type: 'move_result',
+        valid: true,
+        move: 'a0a1',
+        fen: '1k7/9/9/9/9/9/9/9/R8/4K4 b - - 0 1',
+        result: 'in_progress',
+        is_check: false,
+        score: -180,
+      }));
+    });
+
+    // classify-move runs with the snapshot taken at staging time, not
+    // the post-move FEN that the engine echoed back.
+    await waitFor(() => {
+      expect(classifyCalls).toHaveLength(1);
+    });
+    expect(classifyCalls[0]).toEqual({ fen: fenBefore, move: 'a0a1' });
+
+    // And the bridge gets the matching Kibo trigger.
+    await waitFor(() => {
+      expect(kiboTriggerCalls).toContain('misses_move');
+    });
+  });
+
+  it('fires the illegal_move Kibo trigger when the engine rejects the staged move', async () => {
+    const kiboTriggerCalls: string[] = [];
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith('/health')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ cv_service_healthy: false }),
+        } as Response);
+      }
+      if (url.endsWith('/kibo/trigger')) {
+        const body = JSON.parse(String(init?.body)) as { trigger: string };
+        kiboTriggerCalls.push(body.trigger);
+        return Promise.resolve({ ok: true, json: async () => ({ status: 'ok' }) } as Response);
+      }
+      // classify-move shouldn't be hit on a rejected move.
+      if (url.endsWith('/coach/classify-move')) {
+        throw new Error('classify-move should not be called when move is invalid');
+      }
+      return Promise.reject(new Error(`Unexpected fetch call: ${url}`));
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/health'))).toBe(true);
+    });
+    await act(async () => {});
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /stage move/i }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /end turn/i }));
+    });
+
+    await act(async () => {
+      wsMocks.onMessage?.(JSON.stringify({
+        type: 'move_result',
+        valid: false,
+        reason: 'piece cannot move there',
+      }));
+    });
+
+    await waitFor(() => {
+      expect(kiboTriggerCalls).toContain('illegal_move');
+    });
+  });
 });

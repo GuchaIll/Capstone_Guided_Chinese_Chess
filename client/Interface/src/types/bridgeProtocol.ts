@@ -209,7 +209,14 @@ export const BridgeCaptureResultSchema = z.object({
   image_base64: z.string().nullable().optional(),
   image_mime: z.string().nullable().optional(),
   image_path: z.string().nullable().optional(),
-});
+  source: z.string().optional(),
+  capture_id: z.union([z.string(), z.number()]).nullable().optional(),
+  captured_at: z.string().nullable().optional(),
+  detections: z.number().optional(),
+  mapped: z.number().optional(),
+  assigned: z.number().optional(),
+  post_to_bridge: z.boolean().optional(),
+}).passthrough();
 export type BridgeCaptureResult = z.infer<typeof BridgeCaptureResultSchema>;
 
 export const BridgeHealthStatusSchema = z.object({

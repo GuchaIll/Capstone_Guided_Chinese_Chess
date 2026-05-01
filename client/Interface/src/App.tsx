@@ -33,6 +33,12 @@ import type { Position, Side } from './types';
 import type { AgentGraphState } from './types/agentState';
 import type { TurnPhase } from './types/turnPhase';
 import { bridgeWsUrl } from './services/bridgeClient';
+import {
+  classifyMove,
+  fireKiboTrigger,
+  pickMoveQualityTrigger,
+  pickOutcomeTrigger,
+} from './services/kiboClient';
 import './App.css';
 
 const sideToString = (s: Side): 'red' | 'black' => (s === RED ? 'red' : 'black');
@@ -102,6 +108,11 @@ function App() {
   turnPhaseRef.current = turnPhase;
   const pendingMoveRef = useRef<{ from: string; to: string } | null>(pendingMove);
   pendingMoveRef.current = pendingMove;
+  // FEN snapshot taken at the moment the player stages a move. We need
+  // this to call /coach/classify-move once the engine confirms the move,
+  // because move_result returns the FEN *after* the move and the
+  // classifier needs the position before.
+  const fenBeforeStagedRef = useRef<string | null>(null);
 
   // Helper: trigger AI turn after server confirms player's move (or at game
   // start when the engine is the side-to-move).
@@ -127,6 +138,36 @@ function App() {
       sendMessageRef.current(JSON.stringify({ type: 'ai_move', difficulty: 4 }));
       aiTurnTimeoutRef.current = null;
     }, 500);
+  }, []);
+
+  // Kibo trigger dispatcher. Called once per End Turn outcome — see
+  // docs/Kibo_flow.md for the trigger catalogue and priority order.
+  // No-ops (returns null) keep Kibo in its idle loop.
+  const dispatchKiboTriggerForPlayerMove = useCallback((
+    fenBefore: string | null,
+    move: string,
+    result: string,
+  ) => {
+    // Priority 1: game outcome wins over everything else.
+    const outcome = pickOutcomeTrigger(
+      result,
+      sideToString(playerSideRef.current),
+    );
+    if (outcome) {
+      void fireKiboTrigger(outcome);
+      return;
+    }
+    if (result !== 'in_progress') {
+      // Game over but not a win/loss for the player (draw etc.) — no trigger.
+      return;
+    }
+    if (!fenBefore || !move) return;
+    // Priority 2-4: classify the move and let the kibo client decide.
+    void classifyMove(fenBefore, move).then((classification) => {
+      if (!classification) return;
+      const trigger = pickMoveQualityTrigger(classification);
+      if (trigger) void fireKiboTrigger(trigger);
+    });
   }, []);
 
   const flushAcknowledgementCommentary = useCallback(() => {
@@ -170,6 +211,11 @@ function App() {
   const applyMoveResultMessage = useCallback((data: EngineMoveResultMessage) => {
     endTurnInFlightRef.current = false;
     if (!data.valid) {
+      // Engine rejected the move — fire the rule-violation Kibo reaction
+      // (priority 4 in docs/Kibo_flow.md). Reset the staged-fen ref so
+      // the next click captures fresh.
+      void fireKiboTrigger('illegal_move');
+      fenBeforeStagedRef.current = null;
       setPendingMove(null);
       setTurnPhase('player_idle');
       setTurnNotice(data.reason ?? 'Move was rejected by the engine.');
@@ -198,12 +244,25 @@ function App() {
       data.score ?? 0,
     );
 
+    // Fire a Kibo trigger using the FEN snapshot taken when the move was
+    // staged. classify-move runs async; the result might not be a notable
+    // classification, in which case nothing posts and Kibo stays idle.
+    const fenBefore = fenBeforeStagedRef.current;
+    fenBeforeStagedRef.current = null;
+    if (data.move) {
+      dispatchKiboTriggerForPlayerMove(
+        fenBefore,
+        data.move,
+        data.result ?? 'in_progress',
+      );
+    }
+
     if (data.result && data.result !== 'in_progress') {
       setResult(data.result as GameResult);
     } else if (isConnectedRef.current && data.result === 'in_progress') {
       triggerAiTurn();
     }
-  }, [setGameStateFromFen, pushMoveRecord, triggerAiTurn, setResult]);
+  }, [setGameStateFromFen, pushMoveRecord, triggerAiTurn, setResult, dispatchKiboTriggerForPlayerMove]);
 
   const applyAiMoveMessage = useCallback((data: EngineAiMoveMessage) => {
     endTurnInFlightRef.current = false;
@@ -234,6 +293,14 @@ function App() {
 
     if (data.result && data.result !== 'in_progress') {
       setResult(data.result as GameResult);
+      // Engine's reply ended the game — fire the win/lose Kibo trigger
+      // from the player's perspective. Move-quality reactions don't
+      // apply to the engine's own moves, only to outcomes.
+      const outcome = pickOutcomeTrigger(
+        data.result,
+        sideToString(playerSideRef.current),
+      );
+      if (outcome) void fireKiboTrigger(outcome);
     }
   }, [setGameStateFromFen, pushMoveRecord, setResult]);
 
@@ -301,6 +368,11 @@ function App() {
         return;
       case 'move_result': {
         if (!data.valid) {
+          // Engine rejected the move — fire the illegal_move Kibo trigger
+          // (priority 4 per docs/Kibo_flow.md) and reset the staged-fen
+          // ref so the next stage captures fresh.
+          void fireKiboTrigger('illegal_move');
+          fenBeforeStagedRef.current = null;
           endTurnInFlightRef.current = false;
           setPendingMove(null);
           setTurnPhase('player_idle');
@@ -525,12 +597,16 @@ function App() {
     setPendingMove({ from, to });
     setTurnPhase('player_pending');
     setTurnNotice('Move staged locally. Press End My Turn to submit it.');
+    // Capture the engine's view of the position before this move so the
+    // Kibo trigger pipeline can call /coach/classify-move once the
+    // engine confirms the move.
+    fenBeforeStagedRef.current = gameState.fen;
 
     setLegalTargets([]);
     setSuggestedMove(null);
     suggestionRequestedRef.current = false;
     return true;
-  }, [pendingMove, turnPhase]);
+  }, [pendingMove, turnPhase, gameState.fen]);
 
   // Commit the pending move (player) or acknowledge the engine's move.
   const handleEndTurn = useCallback(() => {

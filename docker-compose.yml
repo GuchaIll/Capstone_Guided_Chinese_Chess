@@ -85,6 +85,7 @@ services:
         STATE_BRIDGE_INTERNAL_URL: http://state-bridge:5003
         COACHING_INTERNAL_URL: http://coaching:5000
         DASHBOARD_INTERNAL_URL: http://go-coaching:8080
+        TTS_PROVIDER: ${NEXT_PUBLIC_TTS_PROVIDER:-browser}
     container_name: chess-client
     ports:
       - "3000:3000"
@@ -149,7 +150,14 @@ services:
       - MODAL_LLM_MODEL=${MODAL_LLM_MODEL:-}
       - MODAL_LLM_ANALYSIS_MODEL=${MODAL_LLM_ANALYSIS_MODEL:-}
       - MODAL_LLM_ORCHESTRATION_MODEL=${MODAL_LLM_ORCHESTRATION_MODEL:-}
+      - FISH_TTS_API_URL=${FISH_TTS_API_URL:-}
+      - FISH_TTS_API_KEY=${FISH_TTS_API_KEY:-}
+      - FISH_TTS_MODEL=${FISH_TTS_MODEL:-s2-pro}
+      - FISH_TTS_REFERENCE_BUNDLE=${FISH_TTS_REFERENCE_BUNDLE:-/app/tts/out/chopper_reference_bundle.json}
+      - FISH_TTS_TIMEOUT_SECONDS=${FISH_TTS_TIMEOUT_SECONDS:-90}
       - LLM_TIMEOUT_SECONDS=${LLM_TIMEOUT_SECONDS:-45}
+    volumes:
+      - ./tts:/app/tts:ro
     depends_on:
       state-bridge:
         condition: service_healthy

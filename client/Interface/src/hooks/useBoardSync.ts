@@ -134,6 +134,7 @@ export function useBoardSync(currentFen: string) {
     const raw: unknown = await response.json();
     const parsed = BridgeCaptureResultSchema.safeParse(raw);
     if (!parsed.success) {
+      console.warn('[useBoardSync] Rejected /capture payload:', parsed.error.issues, raw);
       throw new Error('Bridge /capture returned a payload that failed validation');
     }
     return parsed.data;

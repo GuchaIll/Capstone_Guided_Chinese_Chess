@@ -8,6 +8,7 @@ import threading
 import urllib.request
 import urllib.error
 from collections import Counter
+from datetime import datetime, timezone
 
 import numpy as np
 from flask import Flask, jsonify, request
@@ -127,6 +128,10 @@ saved_board_corners = None
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok", "service": "cv"})
+
+
+def capture_timestamp():
+    return datetime.now(timezone.utc).isoformat()
 
 
 @app.route("/capture", methods=["POST"])
@@ -860,7 +865,7 @@ def process_capture(model, warped, grid, current_board_corners, last_valid_state
         "mapped": len(mapped),
         "assigned": len(assigned),
         "capture_id": capture_id,
-        "captured_at": time.time(),
+        "captured_at": capture_timestamp(),
         "image_path": CAPTURE_PATH,
         "image_mime": "image/jpeg",
         "post_to_bridge": post_to_bridge,
@@ -983,7 +988,7 @@ def main():
                             "mapped": 0,
                             "assigned": 0,
                             "capture_id": last_completed_capture_id,
-                            "captured_at": time.time(),
+                            "captured_at": capture_timestamp(),
                             "image_path": CAPTURE_PATH,
                             "image_mime": "image/jpeg",
                             "post_to_bridge": bool(failed_request_options.get("post_to_bridge", True)),
@@ -1058,7 +1063,7 @@ def main():
                             "mapped": 0,
                             "assigned": 0,
                             "capture_id": requested_capture_id,
-                            "captured_at": time.time(),
+                            "captured_at": capture_timestamp(),
                             "image_path": CAPTURE_PATH,
                             "image_mime": "image/jpeg",
                             "post_to_bridge": bool(requested_capture_options.get("post_to_bridge", True)),
