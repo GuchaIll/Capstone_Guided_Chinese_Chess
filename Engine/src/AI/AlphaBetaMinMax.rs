@@ -16,6 +16,7 @@
 //! - **Repetition Detection**: Returns draw score on 3-fold repetition via history stack.
 
 use crate::AI::AI::{AI, SearchConfig, SearchResult, AIBuilder, TTStats};
+use crate::AI::piece_square_tables::{compute_game_phase, pst_score};
 use crate::Game::{
     Move, PIECE_TYPE, PIECE_COLOR, OFFBOARD,
     RED, BLACK, EMPTY,
@@ -287,25 +288,58 @@ impl AlphaBetaMinMax {
     //     EVALUATION
     // ========================
 
-    /// Evaluate the current position from the perspective of the side to move
+    /// Evaluate the current position from the perspective of the side to move.
+    ///
+    /// Combines material (PIECE_VALUES) with positional piece-square table
+    /// bonuses, interpolated between opening/midgame and endgame tables by the
+    /// current game phase. Without PSTs the search sees a flat evaluation
+    /// surface for any quiet move, which is the dominant cause of weak play
+    /// at low depths — material-only eval makes positional differences
+    /// invisible until they crystallize into captures inside the horizon.
     fn evaluate(&self, state: &GameState) -> i32 {
         let board = state.board();
+        let phase = compute_game_phase(board);
         let mut score: i32 = 0;
 
         for i in 0..154 {
             let piece = board.board[i];
-            if piece != EMPTY && piece != OFFBOARD {
-                let value = PIECE_VALUES[piece as usize];
-                let color = PIECE_COLOR[piece as usize];
-                if color == RED {
-                    score += value;
-                } else if color == BLACK {
-                    score -= value;
-                }
+            if piece == EMPTY || piece == OFFBOARD {
+                continue;
+            }
+            let value = PIECE_VALUES[piece as usize];
+            let pst = pst_score(piece, i, phase);
+            let color = PIECE_COLOR[piece as usize];
+            if color == RED {
+                score += value + pst;
+            } else if color == BLACK {
+                score -= value + pst;
             }
         }
 
         if state.side_to_move() == RED { score } else { -score }
+    }
+
+    /// Whether the side to move has any heavy material (rook, cannon,
+    /// or knight) on the board. Used to gate null-move pruning: with
+    /// only K + soldiers/advisors/elephants, zugzwang is plausible and
+    /// the null-move heuristic can return false fail-highs.
+    fn side_has_heavy_material(&self, state: &GameState) -> bool {
+        let board = state.board();
+        let side = state.side_to_move();
+        for i in 0..154 {
+            let piece = board.board[i];
+            if piece == EMPTY || piece == OFFBOARD {
+                continue;
+            }
+            if PIECE_COLOR[piece as usize] != side {
+                continue;
+            }
+            let pt = PIECE_TYPE[piece as usize];
+            if pt == ROOK || pt == CANNON || pt == KNIGHT {
+                return true;
+            }
+        }
+        false
     }
 
     // ========================
@@ -640,6 +674,7 @@ impl AlphaBetaMinMax {
         mut alpha: i32,
         beta: i32,
         ply: usize,
+        can_null: bool,
     ) -> i32 {
         self.nodes_searched += 1;
 
@@ -706,6 +741,43 @@ impl AlphaBetaMinMax {
             };
         }
 
+        // --- Null-move pruning ---
+        // Skip a turn for the side to move and search the resulting
+        // position at reduced depth. If even the "free pass" position
+        // already fails high (>= beta), the real search would too, so
+        // we can prune. Gates:
+        //   - can_null: never null twice in a row (would be a no-op pair)
+        //   - !in_check: can't legally pass when forced to respond
+        //   - depth >= 3: need headroom for the R=2 reduction
+        //   - beta well below mate score: avoid zugzwang inside mate searches
+        //   - side_has_heavy_material: K + soldiers/advisor/elephant alone
+        //     is a Xiangqi zugzwang shape; null-move is unsafe there
+        const NULL_MOVE_R: u8 = 2;
+        if can_null
+            && !in_check
+            && depth >= 3
+            && beta < MATE_SCORE - 100
+            && self.side_has_heavy_material(state)
+        {
+            state.make_null_move();
+            let null_score = -self.alpha_beta(
+                state,
+                depth - 1 - NULL_MOVE_R,
+                -beta,
+                -beta + 1,
+                ply + 1,
+                false,
+            );
+            state.undo_null_move();
+
+            if self.search_aborted {
+                return alpha;
+            }
+            if null_score >= beta {
+                return beta;
+            }
+        }
+
         // --- Move generation ---
         let mut moves = state.legal_moves();
 
@@ -733,7 +805,7 @@ impl AlphaBetaMinMax {
                 continue;
             }
 
-            let score = -self.alpha_beta(state, depth - 1, -beta, -alpha, ply + 1);
+            let score = -self.alpha_beta(state, depth - 1, -beta, -alpha, ply + 1, true);
             state.undo_move();
 
             if score > best_score {
@@ -847,6 +919,7 @@ impl AlphaBetaMinMax {
                     -asp_beta,
                     -asp_alpha.max(iter_best_score),
                     1,
+                    true,
                 );
 
                 // If score falls outside aspiration window, re-search with full window
@@ -857,6 +930,7 @@ impl AlphaBetaMinMax {
                         -INFINITY,
                         -iter_best_score,
                         1,
+                        true,
                     );
                     // Widen window for remaining moves in this iteration
                     asp_alpha = -INFINITY;
@@ -1119,7 +1193,7 @@ mod tests {
     #[test]
     fn test_ai_creation() {
         let ai = AlphaBetaMinMax::new();
-        assert_eq!(ai.config.depth, 4);
+        assert_eq!(ai.config.depth, 7);
     }
 
     #[test]
@@ -1586,6 +1660,22 @@ mod tests {
                     "Depth {} has only {:.0} nps, expected > 1000",
                     r.depth, r.nodes_per_sec);
             }
+        }
+    }
+
+    #[test]
+    #[ignore] // Slow test — run explicitly for benchmarking
+    fn bench_depth_5_6_7_sweep() {
+        // Sized to characterize the cost of the post-PST + null-move
+        // changes at the new default depth (6) and one ply above and
+        // below it. Run with: cargo test --release -- --ignored
+        //   bench_depth_5_6_7_sweep --nocapture
+        let opening = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
+        let midgame = "2bakab2/9/2n1c2c1/p1p3p1p/4p4/9/P1P1P1P1P/2N1C1N2/9/1RBAKAB1R w - - 0 10";
+
+        for (label, fen) in [("Opening", opening), ("Midgame", midgame)] {
+            let results = run_benchmark(fen, 5..=7);
+            print_benchmark_table(label, &results);
         }
     }
 

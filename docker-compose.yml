@@ -85,7 +85,8 @@ services:
         STATE_BRIDGE_INTERNAL_URL: http://state-bridge:5003
         COACHING_INTERNAL_URL: http://coaching:5000
         DASHBOARD_INTERNAL_URL: http://go-coaching:8080
-        TTS_PROVIDER: ${NEXT_PUBLIC_TTS_PROVIDER:-browser}
+        TTS_PROVIDER: ${NEXT_PUBLIC_TTS_PROVIDER:-fish_modal}
+        TTS_FALLBACK_PROVIDER: ${NEXT_PUBLIC_TTS_FALLBACK_PROVIDER:-browser}
     container_name: chess-client
     ports:
       - "3000:3000"

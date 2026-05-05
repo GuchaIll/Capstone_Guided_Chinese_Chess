@@ -136,7 +136,15 @@ export class SpeechService {
   /** Stop any current speech. */
   stop(): void {
     this.synth?.cancel();
-    this.audio?.pause();
+    if (this.audio) {
+      this.audio.pause();
+      this.audio.currentTime = 0;
+      this.audio.onended = null;
+      this.audio.onerror = null;
+      this.audio.src = '';
+      this.audio.load();
+      this.audio = null;
+    }
     this._isSpeaking = false;
   }
 

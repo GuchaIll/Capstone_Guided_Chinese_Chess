@@ -27,12 +27,13 @@ import type {
   EngineStateMessage,
 } from './types/bridgeProtocol';
 import { SpeechService } from './services/speech/SpeechService';
-import { SuggestedMove, RED, BLACK } from './types';
+import { SuggestedMove, RED, BLACK, START_FEN } from './types';
 import type { GameResult } from './types';
 import type { Position, Side } from './types';
 import type { AgentGraphState } from './types/agentState';
 import type { TurnPhase } from './types/turnPhase';
 import { bridgeWsUrl } from './services/bridgeClient';
+import { fenPlacementsEqual } from './utils/fenMoveDiff';
 import {
   classifyMove,
   fireKiboTrigger,
@@ -45,14 +46,26 @@ const sideToString = (s: Side): 'red' | 'black' => (s === RED ? 'red' : 'black')
 const otherSide = (s: Side): Side => (s === RED ? BLACK : RED);
 const useBridgeCommands =
   (process.env.NEXT_PUBLIC_USE_BRIDGE_COMMANDS ?? 'true') !== 'false';
+const RESET_BOARD_MISMATCH_MESSAGE =
+  'Physical board does not match the starting position yet. Reset all pieces to the starting setup, then press Reset again.';
+const RESET_ECHO_DEDUPE_WINDOW_MS = 2_000;
+const VALID_GAME_RESULTS: ReadonlySet<GameResult> = new Set([
+  'in_progress',
+  'red_wins',
+  'black_wins',
+  'draw',
+]);
 
-interface PendingCoachingEvent {
-  move: string;
-  fen: string;
-  side: 'red' | 'black';
-  result: string;
-  isCheck: boolean;
-  score: number;
+function normalizeGameResult(result: unknown): GameResult {
+  return typeof result === 'string' && VALID_GAME_RESULTS.has(result as GameResult)
+    ? result as GameResult
+    : 'in_progress';
+}
+
+function getSideToMoveFromFen(fen: unknown): Side {
+  if (typeof fen !== 'string') return RED;
+  const sideToken = fen.trim().split(/\s+/)[1];
+  return typeof sideToken === 'string' && sideToken.toLowerCase() === 'b' ? BLACK : RED;
 }
 
 function App() {
@@ -68,6 +81,8 @@ function App() {
   const [turnActionPending, setTurnActionPending] = useState(false);
   const [opponentMove, setOpponentMove] = useState<{ from: Position; to: Position } | null>(null);
   const [boardSyncAlert, setBoardSyncAlert] = useState<string | null>(null);
+  const [chatResetVersion, setChatResetVersion] = useState(0);
+  const [resyncInFlight, setResyncInFlight] = useState(false);
   // CV health probe + capture/verify helpers live in a hook so they can be
   // tested in isolation and don't pollute the App component with timers.
   const {
@@ -92,7 +107,7 @@ function App() {
   const aiThinkingRef = useRef(false);
   const endTurnInFlightRef = useRef(false);
   const lastAppliedMoveSignatureRef = useRef<string | null>(null);
-  const pendingAcknowledgementCommentaryRef = useRef<PendingCoachingEvent | null>(null);
+  const lastLocalResetAtRef = useRef(0);
 
   // Speech service (singleton for component lifetime)
   const speechService = useMemo(() => new SpeechService(), []);
@@ -140,6 +155,15 @@ function App() {
     }, 500);
   }, []);
 
+  const stopPendingAiTurn = useCallback(() => {
+    if (aiTurnTimeoutRef.current !== null) {
+      clearTimeout(aiTurnTimeoutRef.current);
+      aiTurnTimeoutRef.current = null;
+    }
+    aiThinkingRef.current = false;
+    setAiThinking(false);
+  }, []);
+
   // Kibo trigger dispatcher. Called once per End Turn outcome — see
   // docs/Kibo_flow.md for the trigger catalogue and priority order.
   // No-ops (returns null) keep Kibo in its idle loop.
@@ -170,19 +194,56 @@ function App() {
     });
   }, []);
 
-  const flushAcknowledgementCommentary = useCallback(() => {
-    const pending = pendingAcknowledgementCommentaryRef.current;
-    if (!pending) return;
-    pendingAcknowledgementCommentaryRef.current = null;
-    chatPanelRef.current?.sendMoveEvent(
-      pending.move,
-      pending.fen,
-      pending.side,
-      pending.result,
-      pending.isCheck,
-      pending.score,
-    );
-  }, []);
+  const verifyResetBoardSync = useCallback(() => {
+    setTurnNotice('Resetting game and checking the physical board...');
+    setBoardSyncAlert(null);
+
+    void requestBoardCapture()
+      .then((capture) => {
+        if (!capture.fen) {
+          setTurnNotice('Game reset locally. CV unavailable, so the physical board was not verified.');
+          return;
+        }
+        if (!fenPlacementsEqual(START_FEN, capture.fen)) {
+          setTurnNotice(RESET_BOARD_MISMATCH_MESSAGE);
+          setBoardSyncAlert(RESET_BOARD_MISMATCH_MESSAGE);
+          return;
+        }
+        setTurnNotice(null);
+        setBoardSyncAlert(null);
+      })
+      .catch(() => {
+        setTurnNotice(RESET_BOARD_MISMATCH_MESSAGE);
+        setBoardSyncAlert(RESET_BOARD_MISMATCH_MESSAGE);
+      });
+  }, [requestBoardCapture]);
+
+  const applyResetState = useCallback((checkPhysicalBoard: boolean) => {
+    speechService.stop();
+    resetGame();
+    setChatResetVersion((version) => version + 1);
+    setLegalTargets([]);
+    setSuggestedMove(null);
+    setOpponentMove(null);
+    setPendingMove(null);
+    setTurnPhase('player_idle');
+    setTurnNotice(null);
+    setBoardSyncAlert(null);
+    setTurnActionPending(false);
+    setAiThinking(false);
+    endTurnInFlightRef.current = false;
+    aiThinkingRef.current = false;
+    suggestionRequestedRef.current = false;
+    lastAppliedMoveSignatureRef.current = null;
+    if (aiTurnTimeoutRef.current) {
+      clearTimeout(aiTurnTimeoutRef.current);
+      aiTurnTimeoutRef.current = null;
+    }
+
+    if (checkPhysicalBoard) {
+      verifyResetBoardSync();
+    }
+  }, [resetGame, speechService, verifyResetBoardSync]);
 
   const applyStateMessage = useCallback((data: EngineStateMessage) => {
     endTurnInFlightRef.current = false;
@@ -191,11 +252,14 @@ function App() {
     setTurnActionPending(false);
     // If the engine's side is to move (game start when player is BLACK,
     // or right after a side-switch reset), kick off the AI automatically.
-    const fenSide = (data.fen.split(' ')[1] ?? 'w').toLowerCase();
-    const sideOnMove: Side = fenSide === 'b' ? BLACK : RED;
-    const result = data.result ?? 'in_progress';
+    const sideOnMove = getSideToMoveFromFen(data.fen);
+    const result = normalizeGameResult(data.result);
     if (result !== 'in_progress') {
-      setResult(result as GameResult);
+      stopPendingAiTurn();
+      setTurnPhase('player_idle');
+      setTurnNotice(null);
+      setResult(result);
+      return;
     }
     if (
       isConnectedRef.current &&
@@ -206,7 +270,7 @@ function App() {
     ) {
       triggerAiTurn();
     }
-  }, [setGameStateFromFen, triggerAiTurn]);
+  }, [setGameStateFromFen, triggerAiTurn, setResult, stopPendingAiTurn]);
 
   const applyMoveResultMessage = useCallback((data: EngineMoveResultMessage) => {
     endTurnInFlightRef.current = false;
@@ -231,6 +295,7 @@ function App() {
     setPendingMove(null);
     setTurnNotice(null);
     setTurnActionPending(false);
+    const result = normalizeGameResult(data.result);
     if (data.move) {
       pushMoveRecord(data.move.substring(0, 2), data.move.substring(2, 4));
     }
@@ -239,7 +304,7 @@ function App() {
       data.move ?? '',
       data.fen ?? '',
       sideToString(playerSideRef.current),
-      data.result ?? 'in_progress',
+      result,
       data.is_check ?? false,
       data.score ?? 0,
     );
@@ -253,16 +318,18 @@ function App() {
       dispatchKiboTriggerForPlayerMove(
         fenBefore,
         data.move,
-        data.result ?? 'in_progress',
+        result,
       );
     }
 
-    if (data.result && data.result !== 'in_progress') {
-      setResult(data.result as GameResult);
-    } else if (isConnectedRef.current && data.result === 'in_progress') {
+    if (result !== 'in_progress') {
+      stopPendingAiTurn();
+      setTurnPhase('player_idle');
+      setResult(result);
+    } else if (isConnectedRef.current) {
       triggerAiTurn();
     }
-  }, [setGameStateFromFen, pushMoveRecord, triggerAiTurn, setResult, dispatchKiboTriggerForPlayerMove]);
+  }, [setGameStateFromFen, pushMoveRecord, triggerAiTurn, setResult, dispatchKiboTriggerForPlayerMove, stopPendingAiTurn]);
 
   const applyAiMoveMessage = useCallback((data: EngineAiMoveMessage) => {
     endTurnInFlightRef.current = false;
@@ -277,32 +344,28 @@ function App() {
         setOpponentMove({ from: fromPos, to: toPos });
       }
     }
-    aiThinkingRef.current = false;
-    setAiThinking(false);
-    setTurnNotice("Mirror the engine move on the physical board, then press End Engine's Turn.");
+    stopPendingAiTurn();
     setTurnActionPending(false);
-    setTurnPhase('engine_done');
-    pendingAcknowledgementCommentaryRef.current = {
-      move: data.move ?? '',
-      fen: data.fen ?? '',
-      side: sideToString(otherSide(playerSideRef.current)),
-      result: data.result ?? 'in_progress',
-      isCheck: data.is_check ?? false,
-      score: data.score ?? 0,
-    };
+    const result = normalizeGameResult(data.result);
 
-    if (data.result && data.result !== 'in_progress') {
-      setResult(data.result as GameResult);
+    if (result !== 'in_progress') {
+      setTurnNotice(null);
+      setTurnPhase('player_idle');
+      setResult(result);
       // Engine's reply ended the game — fire the win/lose Kibo trigger
       // from the player's perspective. Move-quality reactions don't
       // apply to the engine's own moves, only to outcomes.
       const outcome = pickOutcomeTrigger(
-        data.result,
+        result,
         sideToString(playerSideRef.current),
       );
       if (outcome) void fireKiboTrigger(outcome);
+      return;
     }
-  }, [setGameStateFromFen, pushMoveRecord, setResult]);
+
+    setTurnNotice("Mirror the engine move on the physical board, then press End Engine's Turn.");
+    setTurnPhase('engine_done');
+  }, [setGameStateFromFen, pushMoveRecord, setResult, stopPendingAiTurn]);
 
   const handleEngineMessage = useCallback((message: string) => {
     const data = parseEngineMessage(message);
@@ -435,13 +498,16 @@ function App() {
       setTurnActionPending(false);
       setOpponentMove(null);
 
-      const result = data.result ?? data.game_result ?? 'in_progress';
+      const result = normalizeGameResult(data.result ?? data.game_result);
       if (result !== 'in_progress') {
-        setResult(result as GameResult);
+        stopPendingAiTurn();
+        setTurnPhase('player_idle');
+        setTurnNotice(null);
+        setResult(result);
+        return;
       }
 
-      const sideToken = data.fen.split(' ')[1]?.toLowerCase() || 'w';
-      const sideOnMove: Side = sideToken === 'b' ? BLACK : RED;
+      const sideOnMove = getSideToMoveFromFen(data.fen);
       if (
         isConnectedRef.current &&
         sideOnMove !== playerSideRef.current &&
@@ -469,7 +535,7 @@ function App() {
       const moveTo = data.to ?? '';
       const source = data.source ?? '';
       const moveStr = `${moveFrom}${moveTo}`;
-      const result = data.result ?? 'in_progress';
+      const result = normalizeGameResult(data.result);
       const isCheck = data.is_check ?? false;
       const score = data.score ?? 0;
       if (!shouldApplyBridgeMove(source, moveStr, fen)) {
@@ -491,7 +557,9 @@ function App() {
         );
 
         if (result !== 'in_progress') {
-          setResult(result as GameResult);
+          stopPendingAiTurn();
+          setTurnPhase('player_idle');
+          setResult(result);
         } else if (isConnectedRef.current) {
           triggerAiTurn();
         }
@@ -507,43 +575,31 @@ function App() {
           }
         }
 
-        aiThinkingRef.current = false;
-        setAiThinking(false);
+        if (result !== 'in_progress') {
+          stopPendingAiTurn();
+          setTurnNotice(null);
+          setTurnActionPending(false);
+          setTurnPhase('player_idle');
+          setResult(result);
+          return;
+        }
+
+        stopPendingAiTurn();
         setTurnNotice("Mirror the engine move on the physical board, then press End Engine's Turn.");
         setTurnActionPending(false);
         setTurnPhase('engine_done');
-        pendingAcknowledgementCommentaryRef.current = {
-          move: moveStr,
-          fen,
-          side: sideToString(otherSide(playerSideRef.current)),
-          result,
-          isCheck,
-          score,
-        };
-
-        if (result !== 'in_progress') {
-          setResult(result as GameResult);
-        }
         return;
       }
     }
 
     if (event.type === 'game_reset') {
-      resetGame();
-      setLegalTargets([]);
-      setSuggestedMove(null);
-      setOpponentMove(null);
-      setPendingMove(null);
-      setTurnPhase('player_idle');
-      setTurnNotice(null);
-      setTurnActionPending(false);
-      aiThinkingRef.current = false;
-      setAiThinking(false);
-      lastAppliedMoveSignatureRef.current = null;
-      pendingAcknowledgementCommentaryRef.current = null;
+      if (Date.now() - lastLocalResetAtRef.current < RESET_ECHO_DEDUPE_WINDOW_MS) {
+        return;
+      }
+      applyResetState(true);
       return;
     }
-  }, [pushMoveRecord, resetGame, setGameStateFromFen, setResult, triggerAiTurn, shouldApplyBridgeMove]);
+  }, [applyResetState, pushMoveRecord, setGameStateFromFen, setResult, stopPendingAiTurn, triggerAiTurn, shouldApplyBridgeMove]);
 
   const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
   const defaultEngineWsUrl = `${wsProtocol}://${window.location.host}/ws`;
@@ -722,15 +778,6 @@ function App() {
             setTurnNotice(message);
             return;
           }
-          // Only flush coaching commentary after a clean verification.
-          // When CV is unavailable (message is non-null on the success path)
-          // we still advance the turn but skip commentary so the user isn't
-          // told a board state was confirmed when it wasn't.
-          if (message === null) {
-            flushAcknowledgementCommentary();
-          } else {
-            pendingAcknowledgementCommentaryRef.current = null;
-          }
           setTurnPhase('player_idle');
           setTurnNotice(message);
         })
@@ -743,7 +790,6 @@ function App() {
     turnPhase,
     detectPhysicalMove,
     verifyPhysicalBoardSync,
-    flushAcknowledgementCommentary,
     requestBoardCapture,
     liveBoardCheckEnabled,
     cvServiceHealthy,
@@ -763,33 +809,87 @@ function App() {
   }, [turnPhase]);
 
   const handleReset = useCallback(() => {
-    resetGame();
-    setLegalTargets([]);
-    setSuggestedMove(null);
-    setOpponentMove(null);
-    setPendingMove(null);
-    setTurnPhase('player_idle');
-    setTurnNotice(null);
-    setBoardSyncAlert(null);
-    setTurnActionPending(false);
-    setAiThinking(false);
-    endTurnInFlightRef.current = false;
-    aiThinkingRef.current = false;
-    suggestionRequestedRef.current = false;
-    lastAppliedMoveSignatureRef.current = null;
-    pendingAcknowledgementCommentaryRef.current = null;
-    if (aiTurnTimeoutRef.current) {
-      clearTimeout(aiTurnTimeoutRef.current);
-      aiTurnTimeoutRef.current = null;
-    }
+    lastLocalResetAtRef.current = Date.now();
+    applyResetState(true);
     if (isConnected) {
       sendMessage(JSON.stringify({ type: 'reset' }));
     }
-  }, [resetGame, sendMessage, isConnected]);
+  }, [applyResetState, sendMessage, isConnected]);
 
   const handleLiveBoardCheckToggle = useCallback(() => {
     setLiveBoardCheckEnabled(!liveBoardCheckEnabled);
   }, [liveBoardCheckEnabled, setLiveBoardCheckEnabled]);
+
+  const handleResyncBoard = useCallback(() => {
+    if (resyncInFlight) return;
+    if (!cvServiceHealthy) {
+      setTurnNotice('CV offline. Unable to recapture the board right now.');
+      return;
+    }
+
+    setResyncInFlight(true);
+    setTurnNotice('Recapturing the physical board...');
+    setBoardSyncAlert(null);
+
+    void (async () => {
+      try {
+        const stagedMove = pendingMoveRef.current;
+        if (stagedMove) {
+          const moveStr = `${stagedMove.from}${stagedMove.to}`;
+          const capture = await requestBoardCapture();
+          if (!capture.fen) {
+            setTurnNotice('CV service unavailable. Unable to recapture the staged move right now.');
+            return;
+          }
+          await validatePendingMoveWithLiveBoardCheck(moveStr, capture);
+          setTurnNotice('Physical board recaptured. Press End Turn to submit the move.');
+          setBoardSyncAlert(null);
+          return;
+        }
+
+        if (turnPhaseRef.current === 'engine_done') {
+          const { ok, message } = await verifyPhysicalBoardSync();
+          if (!ok) {
+            setTurnNotice(message);
+            setBoardSyncAlert(message);
+            return;
+          }
+          setTurnNotice(message ?? 'Physical board recaptured and matches the engine move.');
+          setBoardSyncAlert(null);
+          return;
+        }
+
+        const capture = await requestBoardCapture();
+        if (!capture.fen) {
+          setTurnNotice('CV service unavailable. Unable to recapture the board right now.');
+          return;
+        }
+        if (!fenPlacementsEqual(gameState.fen, capture.fen)) {
+          const message = 'Physical board recaptured, but it still does not match the current position.';
+          setTurnNotice(message);
+          setBoardSyncAlert(message);
+          return;
+        }
+        setTurnNotice('Physical board recaptured and matches the current position.');
+        setBoardSyncAlert(null);
+      } catch (error: unknown) {
+        const message = error instanceof Error
+          ? error.message
+          : 'Unable to recapture the physical board.';
+        setTurnNotice(message);
+        setBoardSyncAlert(message);
+      } finally {
+        setResyncInFlight(false);
+      }
+    })();
+  }, [
+    cvServiceHealthy,
+    gameState.fen,
+    requestBoardCapture,
+    resyncInFlight,
+    validatePendingMoveWithLiveBoardCheck,
+    verifyPhysicalBoardSync,
+  ]);
 
   // Switch which side the player controls. Forces a reset so the engine
   // is in a clean state for the new orientation; if the new side is BLACK,
@@ -839,7 +939,16 @@ function App() {
 
   // Cleanup speech service on unmount
   useEffect(() => {
+    const handlePageExit = () => {
+      speechService.stop();
+    };
+
+    window.addEventListener('beforeunload', handlePageExit);
+    window.addEventListener('pagehide', handlePageExit);
+
     return () => {
+      window.removeEventListener('beforeunload', handlePageExit);
+      window.removeEventListener('pagehide', handlePageExit);
       speechService.destroy();
     };
   }, [speechService]);
@@ -900,6 +1009,18 @@ function App() {
                       {liveBoardCheckEnabled ? 'On' : 'Off'}
                     </button>
                   </div>
+                  <button
+                    type="button"
+                    onClick={handleResyncBoard}
+                    disabled={resyncInFlight || turnActionPending || !cvServiceHealthy}
+                    className={`mt-3 w-full rounded-xl border px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] transition-all ${
+                      resyncInFlight || turnActionPending || !cvServiceHealthy
+                        ? 'cursor-not-allowed border-white/10 bg-white/5 text-slate-500'
+                        : 'border-sky-400/40 bg-sky-500/10 text-sky-100 hover:bg-sky-500/20'
+                    }`}
+                  >
+                    {resyncInFlight ? 'Recapturing...' : 'Resync Board'}
+                  </button>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                   <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
@@ -942,6 +1063,7 @@ function App() {
             suggestedMove={suggestedMove}
             gameStateFen={gameState.fen}
             speechService={speechService}
+            resetVersion={chatResetVersion}
           />
         </div>
       </main>
@@ -1068,6 +1190,18 @@ function App() {
                 X
               </button>
             </div>
+            <button
+              type="button"
+              onClick={handleResyncBoard}
+              disabled={resyncInFlight || turnActionPending || !cvServiceHealthy}
+              className={`mt-5 w-full rounded-2xl border px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] transition-all ${
+                resyncInFlight || turnActionPending || !cvServiceHealthy
+                  ? 'cursor-not-allowed border-white/10 bg-white/5 text-slate-500'
+                  : 'border-sky-400/40 bg-sky-500/10 text-sky-100 hover:bg-sky-500/20'
+              }`}
+            >
+              {resyncInFlight ? 'Recapturing...' : 'Resync Board'}
+            </button>
           </div>
         </div>
       ) : null}

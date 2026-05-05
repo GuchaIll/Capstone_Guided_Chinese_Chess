@@ -23,6 +23,12 @@ const wsMocks = vi.hoisted(() => ({
   onMessage: null as ((message: string) => void) | null,
 }));
 
+const speechMocks = vi.hoisted(() => ({
+  speak: vi.fn(() => Promise.resolve()),
+  stop: vi.fn(),
+  destroy: vi.fn(),
+}));
+
 class MockEventSource {
   static instances: MockEventSource[] = [];
 
@@ -52,7 +58,9 @@ vi.mock('./components/AgentStateGraph', () => ({
 }));
 
 vi.mock('./components/GameOverModal', () => ({
-  default: () => null,
+  default: ({ result }: { result: string }) => (
+    result === 'in_progress' ? null : <div data-testid="game-over-result">{result}</div>
+  ),
 }));
 
 vi.mock('./components/EndTurnButton', () => ({
@@ -95,9 +103,14 @@ vi.mock('./hooks/useChessVoiceCommands', () => ({
 vi.mock('./services/speech/SpeechService', () => ({
   SpeechService: class {
     speak() {
-      return Promise.resolve();
+      return speechMocks.speak();
     }
-    destroy() {}
+    stop() {
+      speechMocks.stop();
+    }
+    destroy() {
+      speechMocks.destroy();
+    }
   },
 }));
 
@@ -125,6 +138,9 @@ describe('App coaching integration', () => {
     chatMocks.sendVoiceMessage.mockReset();
     wsMocks.sendMessage.mockReset();
     wsMocks.onMessage = null;
+    speechMocks.speak.mockClear();
+    speechMocks.stop.mockClear();
+    speechMocks.destroy.mockClear();
     MockEventSource.instances = [];
     vi.stubGlobal('EventSource', MockEventSource);
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('bridge unavailable')));
@@ -135,7 +151,7 @@ describe('App coaching integration', () => {
     vi.unstubAllGlobals();
   });
 
-  it('forwards bridge AI move events to ChatPanel.sendMoveEvent', async () => {
+  it('does not forward bridge AI move events to coaching on acknowledgement', async () => {
     vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith('/capture')) {
@@ -189,18 +205,195 @@ describe('App coaching integration', () => {
     });
 
     await waitFor(() => {
-      expect(chatMocks.sendMoveEvent).toHaveBeenCalledWith(
-        'a9a8',
-        '1nbakabnr/r8/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 1 2',
-        'black',
-        'in_progress',
-        false,
-        -12,
+      expect(chatMocks.sendMoveEvent).not.toHaveBeenCalled();
+    });
+  });
+
+  it('stops speech immediately when the player resets the game and recaptures the board', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/health')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ cv_service_healthy: true }),
+        } as Response);
+      }
+      if (url.endsWith('/capture')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            status: 'ok',
+            fen: 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1',
+          }),
+        } as Response);
+      }
+      return Promise.reject(new Error(`Unexpected fetch call: ${url}`));
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /reset/i }));
+    });
+
+    expect(speechMocks.stop).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringMatching(/\/capture$/),
+        expect.objectContaining({ method: 'POST' }),
       );
     });
   });
 
-  it('dedupes bridge command and SSE AI move updates into one coaching event on acknowledgement', async () => {
+  it('shows a board sync warning when reset capture does not match the starting position', async () => {
+    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/health')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ cv_service_healthy: true }),
+        } as Response);
+      }
+      if (url.endsWith('/capture')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            status: 'ok',
+            fen: '4k4/9/9/9/9/9/9/9/9/4K4 w - - 0 1',
+          }),
+        } as Response);
+      }
+      return Promise.reject(new Error(`Unexpected fetch call: ${url}`));
+    }));
+
+    render(<App />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /reset/i }));
+    });
+
+    expect((await screen.findAllByText(/Physical board does not match the starting position yet/i)).length).toBeGreaterThan(0);
+  });
+
+  it('lets the player manually resync the board with a fresh capture', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/health')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ cv_service_healthy: true }),
+        } as Response);
+      }
+      if (url.endsWith('/capture')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            status: 'ok',
+            fen: 'rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1',
+          }),
+        } as Response);
+      }
+      return Promise.reject(new Error(`Unexpected fetch call: ${url}`));
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/health'))).toBe(true);
+    });
+    await act(async () => {});
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /resync board/i }));
+    });
+
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.some(([u, init]) =>
+          String(u).endsWith('/capture') && init?.method === 'POST')
+      ).toBe(true);
+    });
+    expect(await screen.findByText(/Physical board recaptured and matches the current position/i)).toBeTruthy();
+  });
+
+  it('uses a fresh capture to clear a staged-move sync issue before retrying end turn', async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith('/health')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ cv_service_healthy: true }),
+        } as Response);
+      }
+      if (url.endsWith('/capture')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            status: 'ok',
+            fen: '4k4/9/9/9/9/9/9/9/R8/4K4 b - - 0 2',
+          }),
+        } as Response);
+      }
+      if (url.endsWith('/engine/validate-fen')) {
+        expect(init?.method).toBe('POST');
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ valid: true }),
+        } as Response);
+      }
+      if (url.endsWith('/engine/make-move')) {
+        expect(init?.method).toBe('POST');
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            valid: true,
+            fen: '4k4/9/9/9/9/9/9/9/R8/4K4 b - - 0 2',
+          }),
+        } as Response);
+      }
+      return Promise.reject(new Error(`Unexpected fetch call: ${url}`));
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await act(async () => {
+      wsMocks.onMessage?.(JSON.stringify({
+        type: 'state',
+        fen: '4k4/9/9/9/9/9/9/9/9/R3K4 w - - 0 1',
+        result: 'in_progress',
+        is_check: false,
+        seq: 1,
+      }));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /stage move/i }));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /resync board/i }));
+    });
+
+    expect(await screen.findByText(/Physical board recaptured. Press End Turn to submit the move/i)).toBeTruthy();
+  });
+
+  it('stops speech on page unload and destroys the speech service on unmount', () => {
+    const { unmount } = render(<App />);
+
+    window.dispatchEvent(new Event('beforeunload'));
+    window.dispatchEvent(new Event('pagehide'));
+
+    expect(speechMocks.stop).toHaveBeenCalledTimes(2);
+
+    unmount();
+
+    expect(speechMocks.destroy).toHaveBeenCalledTimes(1);
+  });
+
+  it('dedupes bridge command and SSE AI move updates without triggering coaching commentary', async () => {
     vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith('/capture')) {
@@ -265,7 +458,7 @@ describe('App coaching integration', () => {
     });
 
     await waitFor(() => {
-      expect(chatMocks.sendMoveEvent).toHaveBeenCalledTimes(1);
+      expect(chatMocks.sendMoveEvent).not.toHaveBeenCalled();
     });
   });
 
@@ -403,6 +596,50 @@ describe('App coaching integration', () => {
       });
 
       expect(wsMocks.sendMessage).toHaveBeenCalledWith(
+        JSON.stringify({ type: 'ai_move', difficulty: 4 }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('shows the game-over state immediately when the engine reports a terminal AI move', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith('/health')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ cv_service_healthy: false }),
+          } as Response);
+        }
+        if (url.endsWith('/kibo/trigger')) {
+          return Promise.resolve({ ok: true, json: async () => ({ status: 'ok' }) } as Response);
+        }
+        return Promise.reject(new Error(`Unexpected fetch call: ${url}`));
+      }));
+
+      render(<App />);
+
+      await act(async () => {
+        wsMocks.onMessage?.(JSON.stringify({
+          type: 'ai_move',
+          move: 'e9e8',
+          fen: '4k4/9/9/9/9/9/9/9/9/4K4 w - - 0 2',
+          result: 'black_wins',
+          is_check: true,
+          score: -9999,
+        }));
+      });
+
+      expect(screen.getByTestId('game-over-result').textContent).toBe('black_wins');
+
+      await act(async () => {
+        vi.advanceTimersByTime(1000);
+      });
+
+      expect(wsMocks.sendMessage).not.toHaveBeenCalledWith(
         JSON.stringify({ type: 'ai_move', difficulty: 4 }),
       );
     } finally {
@@ -860,6 +1097,76 @@ describe('App coaching integration', () => {
     // And the bridge gets the matching Kibo trigger.
     await waitFor(() => {
       expect(kiboTriggerCalls).toContain('misses_move');
+    });
+  });
+
+  it('accepts structured classify-move responses without crashing', async () => {
+    const kiboTriggerCalls: string[] = [];
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith('/health')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ cv_service_healthy: false }),
+        } as Response);
+      }
+      if (url.endsWith('/coach/classify-move')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            classification: { category: 'good' },
+            centipawn_loss: 5,
+            score_delta: 0,
+          }),
+        } as Response);
+      }
+      if (url.endsWith('/kibo/trigger')) {
+        const body = JSON.parse(String(init?.body)) as { trigger: string };
+        kiboTriggerCalls.push(body.trigger);
+        return Promise.resolve({ ok: true, json: async () => ({ status: 'ok' }) } as Response);
+      }
+      return Promise.reject(new Error(`Unexpected fetch call: ${url}`));
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/health'))).toBe(true);
+    });
+    await act(async () => {});
+
+    await act(async () => {
+      wsMocks.onMessage?.(JSON.stringify({
+        type: 'state',
+        fen: '4k4/9/9/9/9/9/9/9/9/R3K4 w - - 0 1',
+        result: 'in_progress',
+        is_check: false,
+        seq: 1,
+      }));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /stage move/i }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /end turn/i }));
+    });
+
+    await act(async () => {
+      wsMocks.onMessage?.(JSON.stringify({
+        type: 'move_result',
+        valid: true,
+        move: 'a0a1',
+        fen: '4k4/9/9/9/9/9/9/9/R8/4K4 b - - 0 2',
+        result: 'in_progress',
+        is_check: false,
+        score: 12,
+      }));
+    });
+
+    await waitFor(() => {
+      expect(kiboTriggerCalls).toContain('high_accuracy');
     });
   });
 

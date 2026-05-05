@@ -20,7 +20,7 @@ export function createScene() {
     1,
     2000,
   );
-  camera.position.set(100, 200, 300);
+  camera.position.set(100, 100, 200);
   camera.lookAt(0, 100, 0);
 
   // Scene

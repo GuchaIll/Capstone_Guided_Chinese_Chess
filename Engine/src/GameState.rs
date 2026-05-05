@@ -414,6 +414,26 @@ impl GameState {
     }
 
     // ========================
+    //     NULL-MOVE (search-only)
+    // ========================
+
+    /// Toggle the side to move without applying a real move.
+    ///
+    /// Used by null-move pruning in the search: passes the turn to the
+    /// opponent so the search can test whether even a "free" move would
+    /// fail high. Does not touch move history, position-repetition
+    /// counts, halfmove clock, or fullmove number — those only advance
+    /// on real moves. Must be paired with `undo_null_move()`.
+    pub fn make_null_move(&mut self) {
+        self.board.side = if self.board.side == RED { BLACK } else { RED };
+    }
+
+    /// Restore the side to move after a paired `make_null_move()`.
+    pub fn undo_null_move(&mut self) {
+        self.board.side = if self.board.side == RED { BLACK } else { RED };
+    }
+
+    // ========================
     //     TERMINAL CONDITIONS
     // ========================
 

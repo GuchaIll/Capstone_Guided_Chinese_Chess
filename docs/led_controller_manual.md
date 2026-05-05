@@ -111,8 +111,8 @@ row = int(sq[1])               # "0"=0, ..., "9"=9
    ```
 4. The subscriber connects to the state bridge SSE stream.
 5. On connection, the bridge sends a `state_sync` event with the current FEN.
-6. The LED board redraws to show the starting position.
-7. Optionally call `POST /zones` to highlight starting zones in cyan.
+6. The LED subscriber requests a fresh `POST /bridge/capture` before showing any startup lighting scene.
+7. The LED board then shows the startup zones scene in cyan.
 
 ---
 

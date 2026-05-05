@@ -16,11 +16,11 @@
 
 ---
 
-## Key Endpoints
+## Key Endpoinst
 
 | URL | Description |
 |---|---|
-| `http://localhost:3000` | Main game interface |
+| `http://localhost:3000` | Main game inetrface |
 | `http://localhost:3000/agents` | Agent pipeline inspector |
 | `http://localhost:3001` | Kibo 3D avatar |
 | `ws://localhost:5003/ws` | State bridge gameplay WebSocket |

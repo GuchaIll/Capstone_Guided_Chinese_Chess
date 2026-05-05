@@ -103,14 +103,16 @@ When the LED subscriber receives its first `state_sync`:
 1. `POST /fen-sync` with the starting bridge FEN
    — non-rendering, just seeds the LED board model so later overlays know
    piece positions
-2. `POST /zones` and **leave the zones display up for 20 seconds**
+2. `POST /bridge/capture`
+   — force a fresh CV snapshot before any visible board-lighting scene runs
+3. `POST /zones` and **leave the zones display up for 20 seconds**
    — this is the visible startup hold; the subscriber must not POST any
    other rendering endpoint during this window
-3. on the **first** `led_player_turn` or `led_engine_turn` event after
+4. on the **first** `led_player_turn` or `led_engine_turn` event after
    startup, transition into the matching use case:
    - `led_player_turn` ⇒ Use Case 2 (`POST /player-turn`)
    - `led_engine_turn` ⇒ Use Case 4 (`POST /fen-sync` then `POST /engine-turn`)
-4. if the 20-second window elapses with no `led_player_turn` or
+5. if the 20-second window elapses with no `led_player_turn` or
    `led_engine_turn` having arrived, `POST /clear` so the board doesn't
    sit on the zones display indefinitely
 
@@ -132,7 +134,8 @@ Notes:
 The startup contract above is enforced by:
 
 - [ledsystem/bridge_subscriber.py](../ledsystem/bridge_subscriber.py)
-  `handle_state_sync` — POSTs `/fen-sync` then `/zones`, then arms a
+  `handle_state_sync` — POSTs `/fen-sync`, then `POST /bridge/capture`,
+  then `/zones`, then arms a
   daemon `threading.Timer(STARTUP_HOLD_SECONDS, …)` that fires
   `_on_startup_hold_expired` to `POST /clear` if nothing else has
   rendered yet.

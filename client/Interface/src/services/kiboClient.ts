@@ -25,11 +25,26 @@ export type KiboTrigger =
   | 'illegal_move';
 
 export interface ClassifyMoveResult {
-  classification?: string;
+  classification?: string | { category?: unknown };
   centipawn_loss?: number;
   score?: number;
   score_delta?: number;
   alternatives?: unknown[];
+}
+
+function normalizeClassification(classification: ClassifyMoveResult['classification']): string {
+  if (typeof classification === 'string') {
+    return classification.toLowerCase();
+  }
+  if (
+    classification &&
+    typeof classification === 'object' &&
+    'category' in classification &&
+    typeof classification.category === 'string'
+  ) {
+    return classification.category.toLowerCase();
+  }
+  return '';
 }
 
 const COACH_BASE = '/coach';
@@ -107,7 +122,7 @@ export function pickOutcomeTrigger(
 export function pickMoveQualityTrigger(
   result: ClassifyMoveResult,
 ): KiboTrigger | null {
-  const classification = (result.classification ?? '').toLowerCase();
+  const classification = normalizeClassification(result.classification);
   const cpLoss = result.centipawn_loss ?? 0;
   const scoreDelta = result.score_delta ?? 0;
 

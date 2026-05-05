@@ -28,11 +28,22 @@ pub struct SearchConfig {
 impl Default for SearchConfig {
     fn default() -> Self {
         Self {
-            depth: 4,
+            // Strive for depth 7. Iterative deepening will return the
+            // deepest completed iteration's best move; if depth 7
+            // doesn't fit in the wall-clock budget below, callers see
+            // the depth 6 (or shallower) result rather than a partial
+            // depth 7. From the bench: midgame depth 7 ≈ 800 ms fits;
+            // opening depth 7 ≈ 1.3 s typically aborts and returns
+            // depth 6 (~520 ms).
+            depth: 7,
             use_move_ordering: true,
             use_quiescence: true,
             use_transposition_table: true,
-            time_limit_ms: None,
+            // 1 s wall-clock cap on iterative deepening. Whichever comes
+            // first — depth ceiling or time — wins. Iterative deepening
+            // returns the deepest completed iteration's best move on
+            // mid-search abort (see search() and is_time_up()).
+            time_limit_ms: Some(1000),
         }
     }
 }

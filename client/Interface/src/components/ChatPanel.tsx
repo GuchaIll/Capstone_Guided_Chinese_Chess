@@ -28,6 +28,7 @@ interface ChatPanelProps {
   suggestedMove: SuggestedMove | null;
   gameStateFen: string;
   speechService?: SpeechService | null;
+  resetVersion?: number;
 }
 
 export interface ChatPanelHandle {
@@ -45,56 +46,124 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel
   suggestedMove,
   gameStateFen,
   speechService,
+  resetVersion = 0,
 }, ref) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState(0);
   const [onboardingComplete] = useState(false);
   const [activeButtons, setActiveButtons] = useState<OnboardingButton[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sessionIdRef = useRef(`session-${Date.now()}`);
+  const warmupSessionIdRef = useRef(`${sessionIdRef.current}-warmup`);
+  const sessionGenerationRef = useRef(0);
 
   const httpProtocol = globalThis.location.protocol === 'https:' ? 'https' : 'http';
   const defaultCoachUrl = `${httpProtocol}://${globalThis.location.host}`;
   const coachUrl = process.env.NEXT_PUBLIC_COACH_URL || defaultCoachUrl;
+  const isTyping = pendingRequests > 0;
+
+  const beginRequest = useCallback(() => {
+    setPendingRequests((count) => count + 1);
+  }, []);
+
+  const endRequest = useCallback(() => {
+    setPendingRequests((count) => Math.max(0, count - 1));
+  }, []);
+
+  const postCoachMessage = useCallback(async (payload: {
+    message: string;
+    session_id: string;
+    fen?: string;
+    move?: string;
+  }): Promise<string> => {
+    const response = await axios.post(`${coachUrl}/dashboard/chat`, payload);
+    return response.data.response || '';
+  }, [coachUrl]);
+
+  const pushAssistantMessage = useCallback((content: string) => {
+    setMessages((prev) => [...prev, { role: 'assistant', content }]);
+    speechService?.speak(content).catch(() => {});
+  }, [speechService]);
+
+  useEffect(() => {
+    sessionGenerationRef.current += 1;
+    const requestGeneration = sessionGenerationRef.current;
+    const sessionId = `session-${Date.now()}-${requestGeneration}`;
+    sessionIdRef.current = sessionId;
+    warmupSessionIdRef.current = `${sessionId}-warmup`;
+    setMessages([]);
+    setActiveButtons([]);
+    setChatInput('');
+    setPendingRequests(0);
+    beginRequest();
+
+    void postCoachMessage({
+      message: 'Introduce yourself as a Chinese chess coach for a brand-new player. Briefly explain the goal of the game, a few core rules, and a short bit of history. Keep it welcoming and concise. Use the phrase "Chinese chess" and avoid the word "Xiangqi."',
+      session_id: warmupSessionIdRef.current,
+    }).then((response) => {
+      if (sessionGenerationRef.current !== requestGeneration || !response) return;
+      pushAssistantMessage(response);
+    }).catch(() => {
+      if (sessionGenerationRef.current !== requestGeneration) return;
+      // Warm-up is best-effort; keep the chat quiet if it fails.
+    }).finally(() => {
+      if (sessionGenerationRef.current !== requestGeneration) return;
+      endRequest();
+    });
+  }, [beginRequest, endRequest, postCoachMessage, pushAssistantMessage, resetVersion]);
+
+  const deliverAssistantReply = useCallback((content: string, generation: number) => {
+    if (sessionGenerationRef.current !== generation) return;
+    pushAssistantMessage(content);
+  }, [pushAssistantMessage]);
+
+  const handleCoachFailure = useCallback((content: string, generation: number) => {
+    if (sessionGenerationRef.current !== generation) return;
+    setMessages((prev) => [...prev, { role: 'assistant', content }]);
+  }, []);
+
+  const endRequestIfCurrent = useCallback((generation: number) => {
+    if (sessionGenerationRef.current !== generation) return;
+    endRequest();
+  }, [endRequest]);
 
   // Expose sendVoiceMessage and sendMoveEvent to parent via ref
   useImperativeHandle(ref, () => ({
     sendVoiceMessage: (msg: string) => {
       if (!msg.trim()) return;
+      const generation = sessionGenerationRef.current;
       setMessages(prev => [...prev, { role: 'user', content: msg }]);
-      setIsTyping(true);
+      beginRequest();
 
-      axios.post(`${coachUrl}/dashboard/chat`, {
+      postCoachMessage({
         message: msg,
         session_id: sessionIdRef.current,
         fen: gameStateFen,
-      }).then(res => {
-        const response = res.data.response || 'Sorry, I could not understand that.';
-        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-        speechService?.speak(response).catch(() => {});
+      }).then(response => {
+        const content = response || 'Sorry, I could not understand that.';
+        deliverAssistantReply(content, generation);
       }).catch(() => {
-        setMessages(prev => [...prev, { role: 'assistant', content: 'Failed to communicate with the coaching agent.' }]);
-      }).finally(() => setIsTyping(false));
+        handleCoachFailure('Failed to communicate with the coaching agent.', generation);
+      }).finally(() => endRequestIfCurrent(generation));
     },
     sendMoveEvent: (move: string, fen: string, side: string, _result: string, isCheck: boolean, score: number) => {
-      setIsTyping(true);
-      axios.post(`${coachUrl}/dashboard/chat`, {
+      const generation = sessionGenerationRef.current;
+      beginRequest();
+      postCoachMessage({
         message: `${side} played ${move}. Check: ${isCheck}, score: ${score}. Comment on this move.`,
         fen,
         move,
         session_id: sessionIdRef.current,
-      }).then(res => {
-        const response = res.data.response;
+      }).then(response => {
         if (response) {
-          setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-          speechService?.speak(response).catch(() => {});
+          deliverAssistantReply(response, generation);
         }
       }).catch(() => {
         // Silently ignore move event failures
-      }).finally(() => setIsTyping(false));
+      }).finally(() => endRequestIfCurrent(generation));
     },
-  }), [coachUrl, speechService, gameStateFen]);
+  }), [beginRequest, deliverAssistantReply, endRequestIfCurrent, gameStateFen, handleCoachFailure, postCoachMessage]);
 
   // ---- Scroll ----
   const scrollToBottom = () => {
@@ -107,58 +176,47 @@ const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(function ChatPanel
 
   // ---- Send onboarding answer ----
   const sendOnboardingAnswer = useCallback((value: string, label: string) => {
+    const generation = sessionGenerationRef.current;
     setMessages(prev => [...prev, { role: 'user', content: label }]);
     setActiveButtons([]);
-    setIsTyping(true);
+    beginRequest();
 
-    axios.post(`${coachUrl}/dashboard/chat`, {
+    postCoachMessage({
       message: value,
       session_id: sessionIdRef.current,
       fen: gameStateFen,
     })
-      .then(res => {
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: res.data.response || 'Received.',
-        }]);
-        setIsTyping(false);
+      .then((response) => {
+        deliverAssistantReply(response || 'Received.', generation);
       })
       .catch(() => {
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: 'Failed to reach coaching server.',
-        }]);
-        setIsTyping(false);
-      });
-  }, [coachUrl, gameStateFen]);
+        handleCoachFailure('Failed to reach coaching server.', generation);
+      })
+      .finally(() => endRequestIfCurrent(generation));
+  }, [beginRequest, deliverAssistantReply, endRequestIfCurrent, gameStateFen, handleCoachFailure, postCoachMessage]);
 
   // ---- Send chat message ----
   const handleSendChat = async () => {
     if (!chatInput.trim()) return;
 
+    const generation = sessionGenerationRef.current;
     const text = chatInput.trim();
     setMessages(prev => [...prev, { role: 'user', content: text }]);
     setChatInput('');
-    setIsTyping(true);
+    beginRequest();
 
     try {
-      const response = await axios.post(`${coachUrl}/dashboard/chat`, {
+      const response = await postCoachMessage({
         message: text,
         session_id: sessionIdRef.current,
         fen: gameStateFen,
       });
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: response.data.response || 'Sorry, I could not understand that.',
-      }]);
+      deliverAssistantReply(response || 'Sorry, I could not understand that.', generation);
     } catch (error) {
       console.error('Chat error:', error);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Failed to communicate with the coaching agent.',
-      }]);
+      handleCoachFailure('Failed to communicate with the coaching agent.', generation);
     } finally {
-      setIsTyping(false);
+      endRequestIfCurrent(generation);
     }
   };
 
