@@ -7,6 +7,13 @@ import (
 	"strings"
 )
 
+const (
+	maxFeedbackWords     = 500
+	maxCoachAdviceWords  = 260
+	maxBestLineWords     = 24
+	maxPuzzleDetailWords = 80
+)
+
 // FeedbackAgent composes the final coaching response from pipeline outputs.
 // It handles three distinct paths:
 //   - Blunder abort: emits blunder summary only, all other sections suppressed.
@@ -33,10 +40,10 @@ func (a *FeedbackAgent) Run(ctx *core.Context) error {
 		writeAnalysisPath(&sb, ctx.State)
 	}
 
-	ctx.State["feedback"] = sb.String()
+	ctx.State["feedback"] = enforceFeedbackWordLimit(sb.String())
 	observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID,
-		fmt.Sprintf("Response composed (%d chars).", sb.Len()))
-	ctx.Logger.Info("feedback composed", "length", sb.Len())
+		fmt.Sprintf("Response composed (%d chars).", len(ctx.State["feedback"].(string))))
+	ctx.Logger.Info("feedback composed", "length", len(ctx.State["feedback"].(string)))
 	return nil
 }
 
@@ -101,7 +108,7 @@ func writeEngineSection(sb *strings.Builder, state map[string]interface{}) {
 
 	if pv, ok := state["principal_variation"].(map[string]interface{}); ok {
 		if bestLine := formatPrincipalVariation(pv["pv"]); bestLine != "" {
-			sb.WriteString(fmt.Sprintf("Best line: %s\n", bestLine))
+			sb.WriteString(fmt.Sprintf("Best line: %s\n", truncateWords(bestLine, maxBestLineWords)))
 		}
 	}
 }
@@ -111,15 +118,18 @@ func writePuzzleSection(sb *strings.Builder, state map[string]interface{}) {
 	if !ok {
 		return
 	}
-	sb.WriteString("\nPuzzle:\n")
-	sb.WriteString(fmt.Sprintf("  Starting position: %v\n", puzzle["starting_fen"]))
-	sb.WriteString(fmt.Sprintf("  Solution: %v\n", puzzle["solution"]))
+	var details strings.Builder
+	details.WriteString(fmt.Sprintf("  Starting position: %v\n", puzzle["starting_fen"]))
+	details.WriteString(fmt.Sprintf("  Solution: %v\n", puzzle["solution"]))
 	if themes, ok := state["puzzle_themes"].(map[string]interface{}); ok {
-		sb.WriteString(fmt.Sprintf("  Themes: %v\n", themes["themes"]))
+		details.WriteString(fmt.Sprintf("  Themes: %v\n", themes["themes"]))
 	}
 	if diff, ok := state["puzzle_difficulty"].(map[string]interface{}); ok {
-		sb.WriteString(fmt.Sprintf("  Difficulty: %v (rating %v)\n", diff["difficulty"], diff["rating"]))
+		details.WriteString(fmt.Sprintf("  Difficulty: %v (rating %v)\n", diff["difficulty"], diff["rating"]))
 	}
+	sb.WriteString("\nPuzzle:\n")
+	sb.WriteString(truncateWordsPreservingLines(details.String(), maxPuzzleDetailWords))
+	sb.WriteString("\n")
 }
 
 func writeCoachSection(sb *strings.Builder, state map[string]interface{}) {
@@ -131,7 +141,12 @@ func writeCoachSection(sb *strings.Builder, state map[string]interface{}) {
 	if !approved {
 		return
 	}
-	sb.WriteString(fmt.Sprintf("\nCoaching advice:\n%s\n", truncateWords(cleanHumanText(advice), 320)))
+	remainingBudget := maxFeedbackWords - countWords(sb.String()) - countWords("Coaching advice:")
+	if remainingBudget <= 0 {
+		return
+	}
+	adviceBudget := minInt(maxCoachAdviceWords, remainingBudget)
+	sb.WriteString(fmt.Sprintf("\nCoaching advice:\n%s\n", truncateWords(cleanHumanText(advice), adviceBudget)))
 }
 
 func writeRAGSection(sb *strings.Builder, state map[string]interface{}) {
@@ -188,6 +203,54 @@ func truncateWords(text string, maxWords int) string {
 		return strings.Join(words, " ")
 	}
 	return strings.Join(words[:maxWords], " ") + "..."
+}
+
+func truncateWordsPreservingLines(text string, maxWords int) string {
+	if maxWords <= 0 {
+		return ""
+	}
+	lines := strings.Split(text, "\n")
+	remaining := maxWords
+	out := make([]string, 0, len(lines))
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			if len(out) > 0 && out[len(out)-1] != "" {
+				out = append(out, "")
+			}
+			continue
+		}
+		lineWords := countWords(trimmed)
+		if lineWords <= remaining {
+			out = append(out, trimmed)
+			remaining -= lineWords
+			if remaining == 0 {
+				break
+			}
+			continue
+		}
+		out = append(out, truncateWords(trimmed, remaining))
+		break
+	}
+	return strings.TrimSpace(strings.Join(out, "\n"))
+}
+
+func countWords(text string) int {
+	return len(strings.Fields(strings.TrimSpace(text)))
+}
+
+func enforceFeedbackWordLimit(text string) string {
+	if countWords(text) <= maxFeedbackWords {
+		return text
+	}
+	return truncateWordsPreservingLines(text, maxFeedbackWords)
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func cleanHumanText(text string) string {

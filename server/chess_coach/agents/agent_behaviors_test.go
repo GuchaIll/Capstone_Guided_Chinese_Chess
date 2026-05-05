@@ -327,7 +327,7 @@ func TestFeedbackAgentSanitizesCoachAdviceFormatting(t *testing.T) {
 	}
 }
 
-func TestFeedbackAgentTruncatesCoachingAdviceTo320Words(t *testing.T) {
+func TestFeedbackAgentTruncatesCoachingAdviceToSectionBudget(t *testing.T) {
 	longAdvice := strings.Repeat("careful centralization ", 120)
 	ctx := newTestContext(map[string]interface{}{
 		"coaching_advice":       longAdvice,
@@ -345,7 +345,49 @@ func TestFeedbackAgentTruncatesCoachingAdviceTo320Words(t *testing.T) {
 		t.Fatalf("unexpected feedback format: %q", feedback)
 	}
 	adviceLine := parts[len(parts)-1]
-	if got := len(strings.Fields(adviceLine)); got > 320 {
-		t.Fatalf("coaching advice should be capped at 320 words, got %d: %q", got, adviceLine)
+	if got := len(strings.Fields(adviceLine)); got > maxCoachAdviceWords {
+		t.Fatalf("coaching advice should be capped at %d words, got %d: %q", maxCoachAdviceWords, got, adviceLine)
+	}
+}
+
+func TestFeedbackAgentCapsTotalResponseAt500Words(t *testing.T) {
+	longAdvice := strings.Repeat("purposeful development ", 220)
+	longPV := make([]interface{}, 0, 80)
+	for i := 0; i < 80; i++ {
+		longPV = append(longPV, "h7e7")
+	}
+	ctx := newTestContext(map[string]interface{}{
+		"engine_metrics": map[string]interface{}{
+			"search_score": 24,
+			"move_features": map[string]interface{}{
+				"move_metadata": map[string]interface{}{"move_str": "h7e7"},
+			},
+		},
+		"principal_variation": map[string]interface{}{
+			"pv": longPV,
+		},
+		"puzzle": map[string]interface{}{
+			"starting_fen": testXiangqiFEN,
+			"solution":     "h7e7",
+		},
+		"puzzle_themes": map[string]interface{}{
+			"themes": strings.Repeat("initiative ", 40),
+		},
+		"puzzle_difficulty": map[string]interface{}{
+			"difficulty": "medium",
+			"rating":     1400,
+		},
+		"coaching_advice":       longAdvice,
+		"coach_advice_approved": true,
+		"coach_trigger":         "explicit",
+	})
+
+	if err := (&FeedbackAgent{}).Run(ctx); err != nil {
+		t.Fatalf("feedback run: %v", err)
+	}
+
+	feedback, _ := ctx.State["feedback"].(string)
+	if got := len(strings.Fields(feedback)); got > maxFeedbackWords {
+		t.Fatalf("feedback should be capped at %d words, got %d: %q", maxFeedbackWords, got, feedback)
 	}
 }

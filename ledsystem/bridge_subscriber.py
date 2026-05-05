@@ -31,6 +31,8 @@ logger = logging.getLogger("bridge_subscriber")
 
 # ── LED server URL (led_server.py Flask app) ─────────────────────────
 LED_URL = "http://localhost:5000"
+BRIDGE_URL = "http://localhost:5003"
+BRIDGE_TOKEN: str | None = None
 
 
 def _led_post(path: str, body: dict | None = None) -> bool:
@@ -44,6 +46,25 @@ def _led_post(path: str, body: dict | None = None) -> bool:
             return resp.status == 200
     except (URLError, OSError) as exc:
         logger.warning("LED server call failed: %s %s — %s", path, body, exc)
+        return False
+
+
+def _bridge_post(path: str, body: dict | None = None) -> bool:
+    """POST to the state bridge. Returns True on success."""
+    url = f"{BRIDGE_URL.rstrip('/')}{path}"
+    data = json.dumps(body).encode() if body else b"{}"
+    req = Request(url, data=data, method="POST")
+    req.add_header("Content-Type", "application/json")
+    if BRIDGE_TOKEN:
+        req.add_header("Authorization", f"Bearer {BRIDGE_TOKEN}")
+    try:
+        with urlopen(req, timeout=20) as resp:  # noqa: S310
+            return resp.status == 200
+    except HTTPError as exc:
+        logger.warning("Bridge call failed: %s %s — HTTP %s", path, body, exc.code)
+        return False
+    except (URLError, OSError) as exc:
+        logger.warning("Bridge call failed: %s %s — %s", path, body, exc)
         return False
 
 
@@ -181,8 +202,10 @@ def handle_state_sync(data: dict) -> None:
 
     Startup contract (see docs/led_flow.md §1):
       1. /fen-sync     — non-rendering, seeds the LED board model
-      2. /zones        — visible startup overlay
-      3. hold the zones display for STARTUP_HOLD_SECONDS; the next
+      2. POST /capture on the bridge — refresh the CV snapshot before
+         any visible board-lighting scene is shown
+      3. /zones        — visible startup overlay
+      4. hold the zones display for STARTUP_HOLD_SECONDS; the next
          real led_player_turn or led_engine_turn pre-empts it via
          _cancel_startup_timer; otherwise /clear at expiry.
     Do NOT synthesize a player- or engine-turn overlay from this
@@ -193,6 +216,7 @@ def handle_state_sync(data: dict) -> None:
     if _startup_completed:
         return
     _startup_completed = True
+    _bridge_post("/capture", {})
     _start_zones_hold("startup")
 
 
@@ -332,8 +356,10 @@ EVENT_HANDLERS = {
 # ── Main ─────────────────────────────────────────────────────────────
 
 def run_bridge_mode(bridge_url: str, led_url: str, bridge_token: str | None = None) -> None:
-    global LED_URL
+    global LED_URL, BRIDGE_URL, BRIDGE_TOKEN
     LED_URL = led_url
+    BRIDGE_URL = bridge_url
+    BRIDGE_TOKEN = bridge_token
     url = f"{bridge_url.rstrip('/')}/state/events"
     logger.info("Starting bridge subscriber — LED server: %s", led_url)
 

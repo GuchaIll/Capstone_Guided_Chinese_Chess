@@ -138,8 +138,8 @@ async def test_post_cv_fen_accepts_valid_move_and_emits_led_resume_then_cv_captu
     assert relay.calls == [
         ("legal_moves_for_square", CV_BASE_FEN, "a0"),
         ("make_move", CV_BASE_FEN, "a0a1"),
-        ("suggest", CV_SUCCESS_FEN, 5),
-        ("ai_move", 4),
+        ("suggest", CV_SUCCESS_FEN, 7),
+        ("ai_move", 7),
     ]
 
 
@@ -179,8 +179,8 @@ async def test_post_cv_fen_normalizes_cv_piece_symbols_before_validation_and_sta
     assert relay.calls == [
         ("legal_moves_for_square", STARTING_FEN, "e3"),
         ("make_move", STARTING_FEN, "e3e4"),
-        ("suggest", "rnbakabnr/9/1c5c1/p1p1p1p1p/9/4P4/P1P3P1P/1C5C1/9/RNBAKABNR b - - 0 2", 5),
-        ("ai_move", 4),
+        ("suggest", "rnbakabnr/9/1c5c1/p1p1p1p1p/9/4P4/P1P3P1P/1C5C1/9/RNBAKABNR b - - 0 2", 7),
+        ("ai_move", 7),
     ]
 
 
@@ -198,7 +198,8 @@ def test_post_cv_fen_ignores_duplicate_capture_within_short_window(client):
     }
 
 
-async def test_capture_endpoint_proxies_cv_capture_result(client, monkeypatch, capture_sse_events):
+async def test_capture_endpoint_proxies_cv_capture_result(client, bridge_testbed, monkeypatch, capture_sse_events):
+    _, state, _, _ = bridge_testbed
     task = await capture_sse_events(expected=4)
     led_calls: list[str] = []
 
@@ -234,6 +235,7 @@ async def test_capture_endpoint_proxies_cv_capture_result(client, monkeypatch, c
     assert events[2]["data"]["fen"] == CV_SUCCESS_FEN
     assert events[3]["data"] == {"command": "on", "source": "bridge_direct_http"}
     assert led_calls == ["/cv_pause", "/cv_resume"]
+    assert state.cv_fen == CV_SUCCESS_FEN
     assert response.json() == {
         "status": "ok",
         "fen": CV_SUCCESS_FEN,
@@ -335,7 +337,9 @@ def test_event_from_model_rejects_malformed_payload():
         Event.from_model(EventType.LED_COMMAND, LedCommandData(command=False))  # type: ignore[arg-type]
 
 
-async def test_capture_endpoint_rejects_malformed_cv_payload(client, monkeypatch, capture_sse_events):
+async def test_capture_endpoint_rejects_malformed_cv_payload(client, bridge_testbed, monkeypatch, capture_sse_events):
+    _, state, _, _ = bridge_testbed
+    state.apply_fen(CV_SUCCESS_FEN, source="cv")
     task = await capture_sse_events(expected=4)
 
     async def fake_capture():
@@ -364,9 +368,12 @@ async def test_capture_endpoint_rejects_malformed_cv_payload(client, monkeypatch
     # Outbound payloads omit None-valued optional fields, so `fen` simply
     # isn't present rather than `null` on the wire.
     assert events[2]["data"].get("fen") is None
+    assert state.cv_fen is None
 
 
-async def test_capture_endpoint_returns_503_when_cv_service_is_unavailable(client, monkeypatch, capture_sse_events):
+async def test_capture_endpoint_returns_503_when_cv_service_is_unavailable(client, bridge_testbed, monkeypatch, capture_sse_events):
+    _, state, _, _ = bridge_testbed
+    state.apply_fen(CV_SUCCESS_FEN, source="cv")
     task = await capture_sse_events(expected=4)
 
     async def fake_capture():
@@ -389,6 +396,7 @@ async def test_capture_endpoint_returns_503_when_cv_service_is_unavailable(clien
     assert events[2]["data"]["status"] == "unavailable"
     assert events[3]["data"] == {"command": "on", "source": "bridge_direct_http"}
     assert response.json()["error"] == "CV capture service unavailable"
+    assert state.cv_fen is None
 
 
 async def test_capture_endpoint_waits_for_blackout_timer_before_led_resume(client, monkeypatch, capture_sse_events):

@@ -100,8 +100,8 @@ _load_local_env_files()
 state = GameStateBridge()
 bus = EventBus()
 relay = EngineRelay(state, bus)
-DEFAULT_SUGGEST_DEPTH = 5
-DEFAULT_AI_DIFFICULTY = 4
+DEFAULT_SUGGEST_DEPTH = 7
+DEFAULT_AI_DIFFICULTY = 7
 MAX_TRACKED_COMMAND_IDS = 4096
 CV_DEDUP_WINDOW_SECONDS = 0.5
 CV_SERVICE_URL = os.getenv("CV_SERVICE_URL", "http://localhost:5005").rstrip("/")
@@ -328,7 +328,7 @@ class ResetPayload(BaseModel):
 
 class AnalyzePayload(BaseModel):
     fen: str
-    depth: int = 5
+    depth: int = 7
 
 
 class BatchAnalyzePayload(BaseModel):
@@ -337,7 +337,7 @@ class BatchAnalyzePayload(BaseModel):
 
 class SuggestPayload(BaseModel):
     fen: str
-    depth: int = 5
+    depth: int = 7
 
 
 class ValidateFenPayload(BaseModel):
@@ -361,7 +361,7 @@ class IsMoveLegalPayload(BaseModel):
 
 class DetectPuzzlePayload(BaseModel):
     fen: str
-    depth: int = 5
+    depth: int = 7
     best_move: str | None = None
 
 
@@ -869,6 +869,7 @@ async def capture_board():
             status_code, payload = await _request_cv_capture()
         except (urllib.error.URLError, OSError, TimeoutError) as exc:
             logger.warning("CV capture request failed: %s", exc)
+            state.cv_fen = None
             await bus.publish(Event.from_model(
                 EventType.CV_CAPTURE_RESULT,
                 CvCaptureResultData(
@@ -891,6 +892,7 @@ async def capture_board():
             validated = CvCaptureResult.model_validate(payload)
         except Exception as exc:
             logger.warning("CV capture returned malformed payload: %s", exc)
+            state.cv_fen = None
             await bus.publish(Event.from_model(
                 EventType.CV_CAPTURE_RESULT,
                 CvCaptureResultData(
@@ -910,6 +912,7 @@ async def capture_board():
                 "fen": _normalize_xiangqi_fen(validated.fen) if validated.fen else None,
             }
         )
+        state.cv_fen = normalized_capture.fen
         await bus.publish(Event.from_model(
             EventType.CV_CAPTURE_RESULT,
             CvCaptureResultData(**normalized_capture.model_dump(), source="cv"),

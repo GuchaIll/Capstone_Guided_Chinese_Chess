@@ -65,7 +65,10 @@ func (a *CoachAgent) Run(ctx *core.Context) error {
 	prompt := buildCoachPrompt(ctx.State, coachTrigger)
 	prompt += a.skillInstructions(ctx)
 	prompt += "\n\nProvide clear, concise coaching advice based on the above analysis."
-	prompt += " Keep the response under 320 words. Do not quote large knowledge blocks."
+	prompt += " Keep the response under 260 words."
+	prompt += " Preserve the existing coaching style, but use short sections and no more than 3 concise bullet points."
+	prompt += ` Always say "Chinese chess" instead of "Xiangqi."`
+	prompt += " Do not quote large knowledge blocks."
 
 	var advice string
 	if isMockLLM(a.LLM) {
@@ -106,7 +109,7 @@ func (a *CoachAgent) skillInstructions(ctx *core.Context) string {
 func buildCoachPrompt(state map[string]interface{}, trigger string) string {
 	var sb strings.Builder
 	fen, _ := state["fen"].(string)
-	sb.WriteString("You are an expert xiangqi coach. Provide clear, actionable coaching advice.\n\n")
+	sb.WriteString("You are an expert Chinese chess coach. Provide clear, actionable coaching advice.\n\n")
 	sb.WriteString(fmt.Sprintf("Position (FEN): %s\n", fen))
 	sb.WriteString(fmt.Sprintf("Coach trigger: %s\n", trigger))
 

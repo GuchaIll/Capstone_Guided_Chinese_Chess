@@ -61,6 +61,8 @@ def test_handle_fen_update_updates_cached_fen_and_posts_to_led_server(monkeypatc
 def test_handle_state_sync_runs_startup_sequence_once(monkeypatch):
     calls = []
     monkeypatch.setattr(subscriber, "_led_post", lambda path, body=None: calls.append((path, body)) or True)
+    bridge_calls = []
+    monkeypatch.setattr(subscriber, "_bridge_post", lambda path, body=None: bridge_calls.append((path, body)) or True)
     subscriber._cancel_startup_timer()
     subscriber._startup_completed = False
     subscriber._last_fen = ""
@@ -94,6 +96,9 @@ def test_handle_state_sync_runs_startup_sequence_once(monkeypatch):
             ("/zones", {}),
             ("/fen-sync", {"fen": "9/9/9/9/9/9/9/9/9/9 w - - 0 1"}),
         ]
+        assert bridge_calls == [
+            ("/capture", {}),
+        ]
     finally:
         subscriber._cancel_startup_timer()
 
@@ -106,6 +111,8 @@ def test_handle_state_sync_does_not_synthesize_overlay_from_snapshot(monkeypatch
     """
     calls = []
     monkeypatch.setattr(subscriber, "_led_post", lambda path, body=None: calls.append((path, body)) or True)
+    bridge_calls = []
+    monkeypatch.setattr(subscriber, "_bridge_post", lambda path, body=None: bridge_calls.append((path, body)) or True)
     subscriber._cancel_startup_timer()
     subscriber._startup_completed = False
     subscriber._last_fen = ""
@@ -123,6 +130,9 @@ def test_handle_state_sync_does_not_synthesize_overlay_from_snapshot(monkeypatch
         assert calls == [
             ("/fen-sync", {"fen": "9/9/9/9/9/9/9/9/9/9 b - - 0 1"}),
             ("/zones", {}),
+        ]
+        assert bridge_calls == [
+            ("/capture", {}),
         ]
     finally:
         subscriber._cancel_startup_timer()
