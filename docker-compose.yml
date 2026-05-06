@@ -81,7 +81,7 @@ services:
         # state-bridge container reads from STATE_BRIDGE_TOKEN, otherwise
         # the auth-gated WS handshake closes with 1008 and the browser
         # surfaces it as a 1006 disconnect.
-        STATE_BRIDGE_TOKEN: ${STATE_BRIDGE_TOKEN:-integration-bridge-token}
+        STATE_BRIDGE_TOKEN: ${STATE_BRIDGE_TOKEN:?}
         STATE_BRIDGE_INTERNAL_URL: http://state-bridge:5003
         COACHING_INTERNAL_URL: http://coaching:5000
         DASHBOARD_INTERNAL_URL: http://go-coaching:8080
@@ -97,6 +97,41 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # ---- Inkstone Migration Frontend ----
+  # Parallel Next.js client for the software-only Inkstone migration lane.
+  # Keeps the legacy UI available on :3000 while the new board ships on :3002.
+  #
+  # BFF migration (refs docs/refactoring/refactoring_guide.md C3/C4):
+  # STATE_BRIDGE_TOKEN is now a RUNTIME env var only (was a build-arg
+  # baked into NEXT_PUBLIC_*). The Next.js server reads it inside
+  # app/api/* route handlers and attaches it on upstream calls; the
+  # browser only sees /api/... paths and a signed session cookie.
+  inkstone-client:
+    build:
+      context: ./client/InkstoneInterface
+      dockerfile: Dockerfile
+      args:
+        # Public, URL-only build args. No secrets.
+        TTS_PROVIDER: ${NEXT_PUBLIC_TTS_PROVIDER:-fish_modal}
+        TTS_FALLBACK_PROVIDER: ${NEXT_PUBLIC_TTS_FALLBACK_PROVIDER:-browser}
+        BRIDGE_WS_ORIGIN: ${NEXT_PUBLIC_BRIDGE_WS_ORIGIN:-}
+    container_name: inkstone-client
+    ports:
+      - "3002:3002"
+    environment:
+      # Server-only secrets — never exposed to the browser.
+      - STATE_BRIDGE_TOKEN=${STATE_BRIDGE_TOKEN:?STATE_BRIDGE_TOKEN must be set in .env}
+      - BFF_SESSION_SECRET=${BFF_SESSION_SECRET:?BFF_SESSION_SECRET must be set in .env}
+      # Server-only internal URLs — used by app/api/* route handlers.
+      - STATE_BRIDGE_INTERNAL_URL=http://state-bridge:5003
+      - COACH_INTERNAL_URL=http://go-coaching:8080
+    depends_on:
+      state-bridge:
+        condition: service_healthy
+      go-coaching:
+        condition: service_healthy
+    restart: unless-stopped
+
   # ---- Kibo Agent Viewer ----
   # 3D character display controlled by the state bridge (/ws/kibo)
   kibo:
@@ -104,7 +139,7 @@ services:
       context: ./Kibo
       dockerfile: Dockerfile
       args:
-        STATE_BRIDGE_TOKEN: ${STATE_BRIDGE_TOKEN:-integration-bridge-token}
+        STATE_BRIDGE_TOKEN: ${STATE_BRIDGE_TOKEN:?}
     container_name: kibo-viewer
     ports:
       - "3001:3001"
@@ -121,10 +156,13 @@ services:
       dockerfile: chess_coach/Dockerfile
     container_name: go-coaching
     ports:
-      - "5002:8080"
+      # Loopback-only host bind (refs C4 in docs/refactoring/refactoring_guide.md).
+      # The Inkstone BFF reaches this via `go-coaching:8080` over the
+      # docker network; the host port is only for local debugging.
+      - "127.0.0.1:5002:8080"
     environment:
       - BRIDGE_URL=http://state-bridge:5003
-      - STATE_BRIDGE_TOKEN=${STATE_BRIDGE_TOKEN:-integration-bridge-token}
+      - STATE_BRIDGE_TOKEN=${STATE_BRIDGE_TOKEN:?}
       - CHROMADB_URL=http://chromadb:8000
       - EMBEDDING_URL=http://embedding:8100
       - LLM_PROVIDER=${LLM_PROVIDER:-openrouter}
@@ -223,7 +261,12 @@ services:
       dockerfile: Dockerfile
     container_name: state-bridge
     ports:
-      - "5003:5003"
+      # Loopback-only host bind. Sibling containers reach this via
+      # `state-bridge:5003` over the docker network and don't need the
+      # host port. Format must be `host_ip:host_port:container_port` —
+      # omitting the host port (e.g. `127.0.0.1:5003`) is rejected by
+      # docker-compose with `invalid hostPort: 127.0.0.1`.
+      - "127.0.0.1:5003:5003"
     environment:
       - ENGINE_WS_URL=ws://engine:8080/ws
       - BRIDGE_PORT=5003
@@ -234,7 +277,7 @@ services:
       - RASPBERY_PI_IP=${RASPBERY_PI_IP:-}
       # Bearer token required by mutating routes, SSE, and WebSockets.
       # Override via the host shell or .env to rotate the secret.
-      - STATE_BRIDGE_TOKEN=${STATE_BRIDGE_TOKEN:-integration-bridge-token}
+      - STATE_BRIDGE_TOKEN=${STATE_BRIDGE_TOKEN:?}
     depends_on:
       engine:
         condition: service_healthy
