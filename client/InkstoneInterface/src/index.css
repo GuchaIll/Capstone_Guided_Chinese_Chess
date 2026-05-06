@@ -1,0 +1,127 @@
+/*
+ * Custom CSS for the Chinese Chess client.
+ *
+ * Tailwind utility classes are provided at runtime by the CDN script
+ * loaded in app/layout.tsx, so this file only carries:
+ *   - bespoke utility classes Tailwind doesn't generate
+ *   - body-level layout (Tailwind doesn't auto-target body)
+ *   - keyframes used by inline style animations
+ */
+
+.xiangqi-grid {
+    background-size: 20px 20px;
+    background-image:
+        linear-gradient(to right, rgba(19, 127, 236, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(19, 127, 236, 0.08) 1px, transparent 1px);
+}
+
+.river-gradient {
+    background: linear-gradient(90deg, transparent 0%, rgba(19, 127, 236, 0.05) 50%, transparent 100%);
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.move-history-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.move-history-scroll::-webkit-scrollbar { width: 3px; }
+.move-history-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(255,255,255,0.1);
+    border-radius: 10px;
+}
+
+body {
+    font-family: 'Noto Serif SC', serif;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: #f7f2e7;
+    color: #171717;
+}
+
+@keyframes voiceBar {
+    from { transform: scaleY(0.3); }
+    to   { transform: scaleY(1); }
+}
+
+@keyframes brush-reveal {
+    0% { transform: scaleX(0); opacity: 0; }
+    50% { opacity: 0.6; }
+    100% { transform: scaleX(1); opacity: 0.3; }
+}
+
+@keyframes zoom-in-enter {
+    0% { opacity: 0; transform: scale(0.9); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes zoom-out-exit {
+    0% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.1); }
+}
+
+@keyframes float-mist {
+    0%, 100% { opacity: 0.15; transform: translateX(0); }
+    50% { opacity: 0.25; transform: translateX(20px); }
+}
+
+@keyframes drip {
+    0% { transform: scaleY(0); opacity: 0.8; }
+    100% { transform: scaleY(1); opacity: 0.2; }
+}
+
+.font-calligraphy {
+    font-family: 'Ma Shan Zheng', cursive;
+}
+
+.font-serif-cn {
+    font-family: 'Noto Serif SC', serif;
+}
+
+.animate-brush-reveal {
+    animation: brush-reveal 1.2s ease-out forwards;
+    transform-origin: left center;
+}
+
+.animate-zoom-enter {
+    animation: zoom-in-enter 0.6s ease-out forwards;
+}
+
+.animate-zoom-exit {
+    animation: zoom-out-exit 0.4s ease-in forwards;
+}
+
+.animate-float-mist {
+    animation: float-mist 8s ease-in-out infinite;
+}
+
+.animate-drip {
+    animation: drip 2s ease-out forwards;
+    transform-origin: top center;
+}
+
+.inkstone-panel {
+    background: rgba(247, 242, 231, 0.78);
+    border: 1px solid rgba(23, 23, 23, 0.08);
+    box-shadow: 0 24px 60px rgba(23, 23, 23, 0.08);
+    backdrop-filter: blur(14px);
+}
+
+.inkstone-dark-panel {
+    background: rgba(20, 20, 20, 0.82);
+    border: 1px solid rgba(247, 242, 231, 0.08);
+    box-shadow: 0 24px 60px rgba(23, 23, 23, 0.22);
+    backdrop-filter: blur(18px);
+}
+
+.inkstone-paper-gradient {
+    background:
+      radial-gradient(circle at top left, rgba(255,255,255,0.75), transparent 38%),
+      linear-gradient(180deg, rgba(247,242,231,0.95), rgba(240,232,215,0.9));
+}
