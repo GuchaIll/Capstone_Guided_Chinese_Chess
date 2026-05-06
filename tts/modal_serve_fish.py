@@ -7,10 +7,13 @@ import base64
 import glob
 import os
 import subprocess
+import sys
 import tempfile
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import modal
+from fastapi.concurrency import run_in_threadpool
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
@@ -35,12 +38,19 @@ CHECKPOINT_ROOT = Path("/models/checkpoints")
 MODEL_DIR = CHECKPOINT_ROOT / MODEL_NAME
 HF_CACHE_DIR = "/root/.cache/huggingface"
 USE_HALF = os.environ.get("MODAL_FISH_USE_HALF", "false").lower() in {"1", "true", "yes"}
+IMAGE_PYTHON_BIN = os.environ.get("MODAL_FISH_IMAGE_PYTHON", "python")
+RUNTIME_PYTHON_BIN = sys.executable
 
 app = modal.App(APP_NAME)
 
-image = modal.Image.from_registry("fishaudio/fish-speech:latest").pip_install(
-    "fastapi[standard]>=0.115,<1",
-    "huggingface_hub>=0.30,<1",
+image = modal.Image.from_registry(
+    "fishaudio/fish-speech:latest",
+    setup_dockerfile_commands=[
+        "RUN ln -sf $(command -v python3) /usr/local/bin/python",
+        "RUN if command -v pip3 >/dev/null 2>&1; then ln -sf $(command -v pip3) /usr/local/bin/pip; fi",
+    ],
+).entrypoint([]).run_commands(
+    f"{IMAGE_PYTHON_BIN} -m pip install --break-system-packages 'fastapi[standard]>=0.115,<1' 'huggingface_hub>=0.30,<1'"
 )
 
 checkpoints_volume = modal.Volume.from_name(CHECKPOINTS_VOLUME_NAME, create_if_missing=True)
@@ -71,10 +81,9 @@ def _ensure_checkpoint_symlink() -> None:
     link_path.symlink_to(MODEL_DIR)
 
 
-def _ensure_model_downloaded() -> None:
+def _ensure_model_downloaded_sync() -> bool:
     from huggingface_hub import snapshot_download
 
-    checkpoints_volume.reload()
     if not MODEL_DIR.exists():
         MODEL_DIR.mkdir(parents=True, exist_ok=True)
     if not (MODEL_DIR / "codec.pth").exists():
@@ -83,8 +92,17 @@ def _ensure_model_downloaded() -> None:
             local_dir=str(MODEL_DIR),
             local_dir_use_symlinks=False,
         )
-        checkpoints_volume.commit()
+        _ensure_checkpoint_symlink()
+        return True
     _ensure_checkpoint_symlink()
+    return False
+
+
+async def _ensure_model_downloaded() -> None:
+    await checkpoints_volume.reload.aio()
+    downloaded = await run_in_threadpool(_ensure_model_downloaded_sync)
+    if downloaded:
+        await checkpoints_volume.commit.aio()
 
 
 def _convert_reference_audio(input_path: Path, work_dir: Path) -> Path:
@@ -117,7 +135,7 @@ def _run_fish_pipeline(request: TTSRequest) -> bytes:
 
         codec_path = FISH_REPO_DIR / "checkpoints" / MODEL_NAME / "codec.pth"
         dac_cmd = [
-            "python",
+            RUNTIME_PYTHON_BIN,
             str(FISH_REPO_DIR / "fish_speech/models/dac/inference.py"),
             "-i",
             str(reference_wav),
@@ -128,7 +146,7 @@ def _run_fish_pipeline(request: TTSRequest) -> bytes:
         prompt_tokens = _pick_first("*.npy", work_dir)
 
         semantic_cmd = [
-            "python",
+            RUNTIME_PYTHON_BIN,
             str(FISH_REPO_DIR / "fish_speech/models/text2semantic/inference.py"),
             "--text",
             request.text,
@@ -143,7 +161,7 @@ def _run_fish_pipeline(request: TTSRequest) -> bytes:
         codes_path = _pick_first("codes_*.npy", work_dir)
 
         decode_cmd = [
-            "python",
+            RUNTIME_PYTHON_BIN,
             str(FISH_REPO_DIR / "fish_speech/models/dac/inference.py"),
             "-i",
             str(codes_path),
@@ -169,28 +187,35 @@ def _run_fish_pipeline(request: TTSRequest) -> bytes:
 )
 @modal.asgi_app(label=SERVE_LABEL)
 def serve() -> FastAPI:
-    api = FastAPI(title="Guided Chinese Chess Fish TTS")
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        await _ensure_model_downloaded()
+        yield
 
-    @api.on_event("startup")
-    async def startup() -> None:
-        _ensure_model_downloaded()
+    api = FastAPI(title="Guided Chinese Chess Fish TTS", lifespan=lifespan)
+
+    @api.get("/")
+    async def root() -> JSONResponse:
+        return JSONResponse({"status": "ok", "service": "fish-tts", "model": MODEL_NAME})
 
     @api.get("/health")
     async def health() -> JSONResponse:
-        _ensure_model_downloaded()
+        await _ensure_model_downloaded()
         return JSONResponse({"status": "ok", "model": MODEL_NAME, "repo": MODEL_REPO_ID})
 
     @api.post("/tts")
     async def tts(request: TTSRequest) -> Response:
-        _ensure_model_downloaded()
+        await _ensure_model_downloaded()
         try:
-            audio_bytes = _run_fish_pipeline(request)
+            audio_bytes = await run_in_threadpool(_run_fish_pipeline, request)
         except HTTPException:
             raise
         except subprocess.CalledProcessError as exc:
             detail = exc.stderr.strip() or exc.stdout.strip() or str(exc)
+            print(f"[fish-tts] subprocess failed: {detail}", file=sys.stderr)
             raise HTTPException(status_code=502, detail=detail) from exc
         except Exception as exc:  # pragma: no cover
+            print(f"[fish-tts] unexpected error: {exc}", file=sys.stderr)
             raise HTTPException(status_code=500, detail=str(exc)) from exc
         return Response(content=audio_bytes, media_type="audio/wav")
 

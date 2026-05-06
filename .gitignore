@@ -57,3 +57,29 @@ __pycache__/
 .env
 .env.local
 .ENV
+
+# Coverage artefacts (refs docs/refactoring/refactoring_guide.md C6)
+.coverage
+**/.coverage
+coverage_html/
+**/coverage_html/
+.nyc_output/
+*.lcov
+
+# Test runner caches
+.pytest_cache/
+**/.pytest_cache/
+.vitest/
+
+# YOLO / Ultralytics training output. Models live in cv/models/; the
+# `runs/` tree under repo root is per-run metrics + sample images that
+# should not be checked in.
+runs/
+
+# Web-scraper local data caches (knowledge raw cache is already
+# ignored above; this catches the parallel `data/` tree).
+server/web_scraper/data/
+
+# Engine match log dropped by the Rust GameLogger. The Dockerfile-built
+# version writes to a volume; the locally-run one writes here.
+Engine/Engine/logs/

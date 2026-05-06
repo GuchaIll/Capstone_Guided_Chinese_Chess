@@ -46,7 +46,20 @@ func (a *OrchestratorAgent) Run(ctx *core.Context) error {
 
 	// Evaluate coach trigger — Coach runs only when one of these conditions is met.
 	// Condition 3 (tactical_pattern) is evaluated later by PositionAnalystAgent.
-	coachTrigger := evalCoachTrigger(ctx.State)
+	//
+	// Preserve any explicit upstream trigger (e.g. /coach/analyze, /coach/blunder,
+	// /coach/puzzle handlers set "explicit" before invoking the graph). Without
+	// this guard the orchestrator silently downgrades those calls to "none",
+	// which causes CoachAgent to skip the LLM and the user only ever sees the
+	// engine summary + RAG fallback.
+	existingTrigger, _ := ctx.State["coach_trigger"].(string)
+	var coachTrigger string
+	switch existingTrigger {
+	case "explicit", "move_count", "material_shift", "tactical_pattern":
+		coachTrigger = existingTrigger
+	default:
+		coachTrigger = evalCoachTrigger(ctx.State)
+	}
 	ctx.State["coach_trigger"] = coachTrigger
 
 	observability.PublishThought(ctx.GraphName, a.Name(), ctx.SessionID,

@@ -24,11 +24,6 @@ Responsibilities:
 from __future__ import annotations
 
 import warnings as _warnings
-_warnings.warn(
-    "RAGManagerAgent is deprecated — use Go ChromaDB Retriever tool instead.",
-    DeprecationWarning, stacklevel=2,
-)
-
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
@@ -84,6 +79,11 @@ class RAGManagerAgent(AgentBase):
         retriever: Any = None,
         enabled: bool = True,
     ):
+        _warnings.warn(
+            "RAGManagerAgent is deprecated — use Go ChromaDB Retriever tool instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__(name="RAGManagerAgent", enabled=enabled)
         self._retriever = retriever  # tools.rag_retriever.RAGRetriever instance
         self._cache: dict[str, list[Document]] = {}

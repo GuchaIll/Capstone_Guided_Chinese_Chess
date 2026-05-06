@@ -1,4 +1,14 @@
 node_modules
+.next
 dist
 .git
+.env
+.env.local
+.env.*.local
 *.log
+tsconfig.tsbuildinfo
+coverage
+.vscode
+.idea
+.DS_Store
+README.md

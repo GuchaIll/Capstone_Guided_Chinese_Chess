@@ -25,11 +25,6 @@ Uses:
 from __future__ import annotations
 
 import warnings as _warnings
-_warnings.warn(
-    "CoachAgent (Python) is deprecated — use Go CoachAgent instead.",
-    DeprecationWarning, stacklevel=2,
-)
-
 from typing import Any, Optional
 
 from .base_agent import AgentBase, AgentResponse, ResponseType
@@ -74,6 +69,11 @@ class CoachAgent(AgentBase):
         memory_agent: Any = None,
         enabled: bool = True,
     ):
+        _warnings.warn(
+            "CoachAgent (Python) is deprecated — use Go CoachAgent instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__(name="CoachAgent", enabled=enabled)
         self._rag = rag_agent          # RAGManagerAgent instance
         self._llm = llm_client         # tools.llm_client.LLMClient instance

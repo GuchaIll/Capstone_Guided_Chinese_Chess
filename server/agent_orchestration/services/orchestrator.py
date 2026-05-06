@@ -73,31 +73,29 @@ class Orchestrator:
         self._go_available: bool | None = None  # Lazy-checked on first request
 
         # ---- Initialize Agents ----
+        # Non-deprecated agents — always instantiated on startup
         self.memory_agent = MemoryAgent()
-        self.rag_agent = RAGManagerAgent(retriever=rag_retriever)
         self.engine_agent = GameEngineAgent(engine_client=engine_client)
-        self.coach_agent = CoachAgent(
-            rag_agent=self.rag_agent,
-            llm_client=llm_client,
-            memory_agent=self.memory_agent,
-        )
-        self.puzzle_agent = PuzzleMasterAgent(
-            engine_agent=self.engine_agent,
-            memory_agent=self.memory_agent,
-        )
-        self.intent_agent = IntentClassifierAgent(llm_client=llm_client)
         self.output_agent = OutputAgent()
         self.token_limiter = TokenLimiterAgent()
         self.onboarding_agent = OnboardingAgent(memory_agent=self.memory_agent)
 
-        # Agent registry for dynamic dispatch
-        self._agents: dict[str, AgentBase] = {
-            "IntentClassifierAgent": self.intent_agent,
+        # Deprecated Python fallback agents — lazily created in _ensure_fallback_agents()
+        # only when the Go coaching service is unavailable.
+        self._rag_retriever = rag_retriever  # stored for lazy init
+        self.rag_agent: Optional[Any] = None
+        self.coach_agent: Optional[Any] = None
+        self.puzzle_agent: Optional[Any] = None
+        self.intent_agent: Optional[Any] = None
+
+        # Agent registry (deprecated slots are None until _ensure_fallback_agents())
+        self._agents: dict[str, Optional[AgentBase]] = {
             "GameEngineAgent": self.engine_agent,
-            "CoachAgent": self.coach_agent,
-            "PuzzleMasterAgent": self.puzzle_agent,
-            "RAGManagerAgent": self.rag_agent,
+            "RAGManagerAgent": None,
             "MemoryAgent": self.memory_agent,
+            "CoachAgent": None,
+            "PuzzleMasterAgent": None,
+            "IntentClassifierAgent": None,
             "OutputAgent": self.output_agent,
             "TokenLimiterAgent": self.token_limiter,
             "OnboardingAgent": self.onboarding_agent,
@@ -118,7 +116,7 @@ class Orchestrator:
         self.memory_agent._session_data.clear()
 
         self.logger.info(
-            f"Agents ready: {[name for name, a in self._agents.items() if a.is_enabled]}"
+            f"Agents ready: {[name for name, a in self._agents.items() if a is not None and a.is_enabled]}"
         )
 
     async def smoke_test_llm(self) -> dict:
@@ -166,10 +164,39 @@ class Orchestrator:
         self.logger.info("Orchestrator shutting down...")
         await self._go_client.close()
         for name, agent in self._agents.items():
+            if agent is None:
+                continue
             try:
                 await agent.on_game_end(self.state.game_result)
             except Exception as e:
                 self.logger.error(f"Error shutting down {name}: {e}")
+
+    def _ensure_fallback_agents(self) -> None:
+        """Lazily instantiate deprecated Python fallback agents on first use.
+
+        Called only when the Go coaching service is unavailable.
+        Emits DeprecationWarning at instantiation (not import time) via
+        each agent's __init__ to signal pending migration to Go service.
+        """
+        if self.rag_agent is None:
+            self.rag_agent = RAGManagerAgent(retriever=self._rag_retriever)
+            self._agents["RAGManagerAgent"] = self.rag_agent
+        if self.coach_agent is None:
+            self.coach_agent = CoachAgent(
+                rag_agent=self.rag_agent,
+                llm_client=self._llm_client,
+                memory_agent=self.memory_agent,
+            )
+            self._agents["CoachAgent"] = self.coach_agent
+        if self.puzzle_agent is None:
+            self.puzzle_agent = PuzzleMasterAgent(
+                engine_agent=self.engine_agent,
+                memory_agent=self.memory_agent,
+            )
+            self._agents["PuzzleMasterAgent"] = self.puzzle_agent
+        if self.intent_agent is None:
+            self.intent_agent = IntentClassifierAgent(llm_client=self._llm_client)
+            self._agents["IntentClassifierAgent"] = self.intent_agent
 
     # ---- Main Processing Loop ----
 
@@ -208,6 +235,9 @@ class Orchestrator:
             )
             self.state_tracker.end_request(go_response.message)
             return go_response
+
+        # Go unavailable — lazily init Python fallback agents on first use
+        self._ensure_fallback_agents()
 
         # Step 1: Classify intent
         self.state_tracker.transition(
@@ -345,6 +375,7 @@ class Orchestrator:
         """
         self.state.turn_phase = TurnPhase.COMPUTER_TURN
         self.logger.info("Computer turn starting...")
+        self._ensure_fallback_agents()
 
         # Step 1: AI generates and applies a move
         ai_response = await self.engine_agent.safe_handle(
@@ -726,6 +757,9 @@ class Orchestrator:
         self.state.side_to_move = "black" if side == "red" else "red"
         if score != 0:
             self.state.last_eval = score
+
+        # Ensure fallback agents are available before coaching analysis
+        self._ensure_fallback_agents()
 
         # Determine game phase for coaching decisions
         game_phase = self.coach_agent._detect_game_phase(self.state)

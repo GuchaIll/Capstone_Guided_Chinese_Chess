@@ -24,11 +24,6 @@ Puzzle Types:
 from __future__ import annotations
 
 import warnings as _warnings
-_warnings.warn(
-    "PuzzleMasterAgent is deprecated — use Go PuzzleCuratorAgent instead.",
-    DeprecationWarning, stacklevel=2,
-)
-
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
@@ -102,6 +97,11 @@ class PuzzleMasterAgent(AgentBase):
         memory_agent: Any = None,
         enabled: bool = True,
     ):
+        _warnings.warn(
+            "PuzzleMasterAgent is deprecated — use Go PuzzleCuratorAgent instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__(name="PuzzleMasterAgent", enabled=enabled)
         self._engine = engine_agent
         self._memory = memory_agent

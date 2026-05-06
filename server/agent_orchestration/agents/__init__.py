@@ -9,13 +9,9 @@ in the orchestration pipeline.
     Framework implementation (server/chess_coach/).  The Python pipeline is
     retained as a fallback only.  See AGENTS.md for the migration map.
 """
-import warnings
-warnings.warn(
-    "agent_orchestration.agents is deprecated — use the Go coaching service "
-    "(server/chess_coach/) instead.  Retained as fallback only.",
-    DeprecationWarning,
-    stacklevel=2,
-)
+# agent_orchestration.agents is retained as Python fallback only.
+# DeprecationWarning is emitted at class instantiation, not import time,
+# so test discovery and tool imports are not polluted.
 
 from .base_agent import AgentBase, AgentResponse
 from .intent_classifier import IntentClassifierAgent, Intent

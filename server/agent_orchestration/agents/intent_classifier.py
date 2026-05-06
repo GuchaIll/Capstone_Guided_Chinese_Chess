@@ -25,11 +25,6 @@ Approach:
 from __future__ import annotations
 
 import warnings as _warnings
-_warnings.warn(
-    "IntentClassifierAgent is deprecated — use Go OrchestratorAgent instead.",
-    DeprecationWarning, stacklevel=2,
-)
-
 import re
 from enum import Enum
 from typing import Any
@@ -124,6 +119,11 @@ class IntentClassifierAgent(AgentBase):
     """
 
     def __init__(self, llm_client: Any = None, enabled: bool = True):
+        _warnings.warn(
+            "IntentClassifierAgent is deprecated — use Go OrchestratorAgent instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__(name="IntentClassifierAgent", enabled=enabled)
         self._llm_client = llm_client  # Optional: for Phase 2 LLM-based routing
 

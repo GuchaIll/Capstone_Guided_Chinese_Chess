@@ -21,6 +21,8 @@ Features:
 
 from __future__ import annotations
 
+import asyncio
+import hashlib
 import logging
 from typing import Any, Optional
 
@@ -55,6 +57,7 @@ class LLMClient:
         self._max_tokens = max_tokens
         self._temperature = temperature
         self._cache: dict[str, str] = {}
+        self._cache_lock = asyncio.Lock()
         self._total_tokens_used: int = 0
 
     # ---- Core Interface ----
@@ -88,13 +91,17 @@ class LLMClient:
         # Build full prompt with context
         full_prompt = self._build_prompt(prompt, context, system_prompt)
 
-        # Check cache
-        cache_key = f"{provider}:{hash(full_prompt)}:{temp}:{tokens}"
-        if cache_key in self._cache:
-            logger.debug("LLM cache hit")
-            return self._cache[cache_key]
+        # Stable, collision-resistant cache key (sha256 avoids random-seeded hash())
+        digest = hashlib.sha256(full_prompt.encode()).hexdigest()[:24]
+        cache_key = f"{provider}:{digest}:{temp}:{tokens}"
 
-        # Get provider config
+        # Check cache under lock to prevent TOCTOU race across await boundaries
+        async with self._cache_lock:
+            if cache_key in self._cache:
+                logger.debug("LLM cache hit")
+                return self._cache[cache_key]
+
+        # Get provider config (outside lock — read-only registry)
         config = self._registry.get_provider(provider)
         if config is None:
             logger.warning(
@@ -102,7 +109,7 @@ class LLMClient:
             )
             return self._mock_generate(prompt)
 
-        # Dispatch to provider
+        # Dispatch to provider (lock released during the network call)
         try:
             if provider == "openrouter":
                 response = await self._generate_openrouter(
@@ -123,8 +130,9 @@ class LLMClient:
             else:
                 response = self._mock_generate(prompt)
 
-            # Cache and track
-            self._cache[cache_key] = response
+            # Store result under lock to prevent concurrent writers corrupting cache
+            async with self._cache_lock:
+                self._cache[cache_key] = response
             self._total_tokens_used += len(response.split())  # Rough estimate
             return response
 

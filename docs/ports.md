@@ -11,6 +11,7 @@
 | **chromadb** | 8000 | 8000 | HTTP |
 | **embedding** | 8100 | 8100 | HTTP |
 | **chess-client** | 3000 / 80 | 3000 | HTTP |
+| **inkstone-client** | 3002 | 3002 | HTTP |
 | **kibo-viewer** | 3001 | 3001 | HTTP |
 | **led-server** (Pi, external) | 5000 | — | HTTP |
 
@@ -21,7 +22,10 @@
 | URL | Description |
 |---|---|
 | `http://localhost:3000` | Main game inetrface |
+| `http://localhost:3002` | Inkstone migration client |
 | `http://localhost:3000/agents` | Agent pipeline inspector |
+| `http://localhost:3002/agents` | Agent pipeline inspector (Inkstone lane) |
+| `http://localhost:3002/hardware` | Hardware & bus dashboard (retained for parity) |
 | `http://localhost:3001` | Kibo 3D avatar |
 | `ws://localhost:5003/ws` | State bridge gameplay WebSocket |
 | `http://localhost:5003/state/events` | State bridge SSE stream |

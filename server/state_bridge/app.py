@@ -141,10 +141,61 @@ def _extract_bearer(header_value: str | None) -> str | None:
     return token.strip() or None
 
 
-def _check_token(presented: str | None) -> bool:
-    if not STATE_BRIDGE_TOKEN or presented is None:
+# ── WS tickets ───────────────────────────────────────────────────────
+# Short-lived single-use tokens for browser WebSocket connections.
+#
+# Background: the state-bridge is fronted by a Next.js BFF
+# (client/InkstoneInterface) that holds STATE_BRIDGE_TOKEN server-side
+# and proxies HTTP / SSE traffic. WebSockets cannot be proxied through
+# Next.js App Router routes without a custom server, so the browser
+# still opens /ws directly. The BFF requests a ticket from
+# POST /auth/ws-ticket, returns it to the browser, and the browser
+# uses it as ?token=<ticket> on the WS upgrade. Tickets expire 30 s
+# after issue and are consumed on first successful auth check.
+WS_TICKET_TTL_SECONDS = 30.0
+WS_TICKET_MAX_LIVE = 256
+_ws_tickets: dict[str, float] = {}
+
+
+def _expire_old_ws_tickets(now: float) -> None:
+    expired = [tk for tk, exp in _ws_tickets.items() if exp <= now]
+    for tk in expired:
+        _ws_tickets.pop(tk, None)
+
+
+def _issue_ws_ticket() -> tuple[str, float]:
+    now = time.monotonic()
+    _expire_old_ws_tickets(now)
+    # Cap memory: drop the oldest ticket(s) if the dict is full. Tickets
+    # are cheap (32 bytes + a float) but we don't want unbounded growth
+    # if a buggy caller hammers the endpoint.
+    if len(_ws_tickets) >= WS_TICKET_MAX_LIVE:
+        oldest = min(_ws_tickets, key=_ws_tickets.get)  # type: ignore[arg-type]
+        _ws_tickets.pop(oldest, None)
+    ticket = secrets.token_urlsafe(32)
+    expires_at = now + WS_TICKET_TTL_SECONDS
+    _ws_tickets[ticket] = expires_at
+    return ticket, WS_TICKET_TTL_SECONDS
+
+
+def _consume_ws_ticket(presented: str) -> bool:
+    """Single-use validation: pop on hit, treat expired entries as miss."""
+    expires_at = _ws_tickets.pop(presented, None)
+    if expires_at is None:
         return False
-    return secrets.compare_digest(presented, STATE_BRIDGE_TOKEN)
+    return time.monotonic() < expires_at
+
+
+def _check_token(presented: str | None, *, allow_ticket: bool = False) -> bool:
+    if presented is None:
+        return False
+    if STATE_BRIDGE_TOKEN and secrets.compare_digest(presented, STATE_BRIDGE_TOKEN):
+        return True
+    # Tickets are only honoured on WS upgrades — HTTP / SSE always go
+    # through the BFF, which holds the real bearer.
+    if allow_ticket and _consume_ws_ticket(presented):
+        return True
+    return False
 
 
 def _authorize_request(request: Request) -> JSONResponse | None:
@@ -163,12 +214,17 @@ def _authorize_request(request: Request) -> JSONResponse | None:
 
 
 async def _authorize_websocket(websocket: WebSocket) -> bool:
-    """Validate the WS handshake; close with 1008 and return False on failure."""
+    """Validate the WS handshake; close with 1008 and return False on failure.
+
+    Accepts either the long-lived STATE_BRIDGE_TOKEN (server-to-server
+    callers) or a short-lived single-use ticket issued by
+    POST /auth/ws-ticket (browser callers proxied through the BFF).
+    """
     presented = (
         _extract_bearer(websocket.headers.get("authorization"))
         or websocket.query_params.get("token")
     )
-    if not _check_token(presented):
+    if not _check_token(presented, allow_ticket=True):
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return False
     return True
@@ -442,6 +498,19 @@ def _normalize_suggestion_message(result: dict[str, object]) -> dict[str, object
 @app.get("/state")
 async def get_state():
     return JSONResponse(state.to_dict())
+
+
+@app.post("/auth/ws-ticket")
+async def issue_ws_ticket():
+    """Mint a single-use, short-lived WS auth ticket for the BFF.
+
+    Bearer-gated through the global authorization middleware, so only
+    callers that already hold STATE_BRIDGE_TOKEN (i.e. the Next.js BFF
+    server) can mint tickets. The browser receives the ticket from the
+    BFF and uses it as ?token=<ticket> on the /ws or /ws/kibo upgrade.
+    """
+    ticket, ttl = _issue_ws_ticket()
+    return {"ticket": ticket, "expires_in": ttl}
 
 
 @app.get("/health")

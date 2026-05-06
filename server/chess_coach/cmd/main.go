@@ -61,6 +61,7 @@ func main() {
 	mux.HandleFunc("POST /coach/puzzle", makePuzzleHandler(graph, store))
 	mux.HandleFunc("POST /coach/features", makeFeaturesHandler(toolReg))
 	mux.HandleFunc("POST /coach/classify-move", makeClassifyMoveHandler(toolReg))
+	mux.HandleFunc("POST /coach/guidance", makeGuidanceHandler(toolReg))
 	mux.Handle("/metrics", observability.Handler())
 
 	// Dashboard with chat
@@ -72,7 +73,16 @@ func main() {
 
 	addr := ":8080"
 	logger.Info("chess-coach listening", "addr", addr)
-	log.Fatal(http.ListenAndServe(addr, mux))
+	// Defense-in-depth bearer middleware — see cmd/auth.go.
+	// /health stays open for liveness probes. The dashboard surface and
+	// /metrics are reached either via the Next.js BFF (which injects the
+	// bearer) or via the loopback-only host port for local debugging.
+	handler := requireBearer(
+		mux,
+		map[string]bool{"/health": true},
+		nil,
+	)
+	log.Fatal(http.ListenAndServe(addr, handler))
 }
 
 func buildModels(logger *slog.Logger) llm.Models {
@@ -591,6 +601,162 @@ func makeFeaturesHandler(toolReg *core.ToolRegistry) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, result.Output)
 	}
+}
+
+// makeGuidanceHandler returns a structured position-aware guidance payload.
+//
+// Wire shape:
+//   POST /coach/guidance  { fen: string }
+//   →
+//   {
+//     summary:           string,                  // short prose summary
+//     gamePhase:         string,                  // "opening" | "midgame" | "endgame"
+//     recommendedLine:   [{ from, to, label }]    // engine PV, head first
+//     highlightSquares:  [{ from, to }]           // best-move from/to in algebraic
+//     score:             number,                  // engine eval in centipawns
+//   }
+//
+// This handler intentionally bypasses the full coaching graph and the
+// LLM. It composes engine tool outputs into a deterministic structured
+// shape the UI can render directly. An LLM-enriched `summary` can be
+// layered on later by extending this handler to also call the format-
+// advice skill.
+func makeGuidanceHandler(toolReg *core.ToolRegistry) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			FEN string `json:"fen"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			http.Error(w, "invalid JSON", http.StatusBadRequest)
+			return
+		}
+		if body.FEN == "" {
+			http.Error(w, "fen is required", http.StatusBadRequest)
+			return
+		}
+
+		ctx := r.Context()
+
+		bestArgs, _ := json.Marshal(map[string]interface{}{"fen": body.FEN, "depth": 8})
+		bestRes := toolReg.ExecuteTool(ctx, core.ToolCall{ID: "guide_best", Name: "suggest_best_move", Args: bestArgs})
+
+		pvArgs, _ := json.Marshal(map[string]interface{}{"fen": body.FEN, "depth": 8})
+		pvRes := toolReg.ExecuteTool(ctx, core.ToolCall{ID: "guide_pv", Name: "get_principal_variation", Args: pvArgs})
+
+		featArgs, _ := json.Marshal(map[string]interface{}{"fen": body.FEN, "features": "material,king_safety,hanging_pieces"})
+		featRes := toolReg.ExecuteTool(ctx, core.ToolCall{ID: "guide_feat", Name: "get_position_features", Args: featArgs})
+
+		var bestMove string
+		var score float64
+		if bestRes.Error == "" {
+			var p struct {
+				BestMove string  `json:"best_move"`
+				Score    float64 `json:"score"`
+			}
+			_ = json.Unmarshal([]byte(bestRes.Output), &p)
+			bestMove = p.BestMove
+			score = p.Score
+		}
+
+		var pv []string
+		if pvRes.Error == "" {
+			var p struct {
+				PV    []string    `json:"pv"`
+				PVStr string      `json:"-"`
+				Eval  interface{} `json:"eval"`
+			}
+			_ = json.Unmarshal([]byte(pvRes.Output), &p)
+			pv = p.PV
+			if len(pv) == 0 {
+				// Legacy fallback shape encodes pv as a space-separated string.
+				var legacy struct {
+					PV string `json:"pv"`
+				}
+				_ = json.Unmarshal([]byte(pvRes.Output), &legacy)
+				if legacy.PV != "" {
+					pv = strings.Fields(legacy.PV)
+				}
+			}
+		}
+		if len(pv) == 0 && bestMove != "" {
+			pv = []string{bestMove}
+		}
+
+		var phase string
+		var summary string
+		if featRes.Error == "" {
+			phase = inferGamePhase(featRes.Output)
+			summary = composeGuidanceSummary(phase, bestMove, score, featRes.Output)
+		}
+
+		recommendedLine := make([]map[string]string, 0, len(pv))
+		for i, m := range pv {
+			if len(m) < 4 {
+				continue
+			}
+			recommendedLine = append(recommendedLine, map[string]string{
+				"from":  m[:2],
+				"to":    m[2:4],
+				"label": fmt.Sprintf("%d. %s", i+1, m),
+			})
+		}
+
+		highlights := []map[string]string{}
+		if len(bestMove) >= 4 {
+			highlights = append(highlights, map[string]string{"from": bestMove[:2], "to": bestMove[2:4]})
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"summary":          summary,
+			"gamePhase":        phase,
+			"recommendedLine":  recommendedLine,
+			"highlightSquares": highlights,
+			"score":            score,
+		})
+	}
+}
+
+// inferGamePhase reads the position-features JSON and returns a coarse
+// phase label. Falls back to "midgame" if the payload doesn't carry a
+// phase signal we recognise.
+func inferGamePhase(featuresJSON string) string {
+	var p struct {
+		GamePhase string `json:"game_phase"`
+		Phase     string `json:"phase"`
+	}
+	if err := json.Unmarshal([]byte(featuresJSON), &p); err != nil {
+		return "midgame"
+	}
+	if p.GamePhase != "" {
+		return p.GamePhase
+	}
+	if p.Phase != "" {
+		return p.Phase
+	}
+	return "midgame"
+}
+
+func composeGuidanceSummary(phase, bestMove string, score float64, _ string) string {
+	if bestMove == "" {
+		return "No engine recommendation is available for this position yet."
+	}
+	side := "you"
+	verdict := "the position is roughly balanced"
+	switch {
+	case score > 200:
+		verdict = "the side to move is clearly better"
+	case score > 60:
+		verdict = "the side to move has a small edge"
+	case score < -200:
+		verdict = "the side to move is under pressure"
+	case score < -60:
+		verdict = "the side to move is slightly worse"
+	}
+	return fmt.Sprintf(
+		"In the %s, the engine recommends %s for %s. Based on the search score, %s.",
+		phase, bestMove, side, verdict,
+	)
 }
 
 // makeClassifyMoveHandler creates a lightweight endpoint that classifies a single move.

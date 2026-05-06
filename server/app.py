@@ -21,6 +21,7 @@ import json
 import logging
 import os
 import sys
+from contextlib import asynccontextmanager
 from typing import Set
 
 from dotenv import load_dotenv
@@ -40,6 +41,23 @@ RAG_BACKEND = os.environ.get("RAG_BACKEND", "mock")
 CHROMA_DB_PATH = os.environ.get("CHROMA_DB_PATH", "./chroma_db")
 PROFILE_DIR = os.environ.get("PROFILE_DIR", "./agent_orchestration/.agent/profiles")
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+
+# Comma-separated allowed origins, e.g. "http://localhost:3000,https://myapp.com".
+# Defaults to localhost dev origins only.
+# Never combine "*" with allow_credentials=True — rejected by the CORS spec.
+CORS_ALLOWED_ORIGINS_RAW = os.environ.get("CORS_ALLOWED_ORIGINS", "")
+CORS_ORIGINS: list[str] = (
+    [o.strip() for o in CORS_ALLOWED_ORIGINS_RAW.split(",") if o.strip()]
+    if CORS_ALLOWED_ORIGINS_RAW
+    else ["http://localhost:3000", "http://localhost:3001"]
+)
+
+# WebSocket input limits
+MAX_WS_MESSAGE_BYTES: int = 8_192  # 8 KB hard limit per WebSocket frame
+_ALLOWED_MSG_TYPES = frozenset({
+    "chat", "onboarding_answer", "new_game", "set_difficulty",
+    "get_state", "get_agents", "move_event", "get_agent_graph",
+})
 
 # ========================
 #     LOGGING SETUP
@@ -82,25 +100,11 @@ def create_app():
         )
         sys.exit(1)
 
-    app = FastAPI(
-        title="Guided Chinese Chess - Coaching Server",
-        description="Agent orchestration for Xiangqi coaching",
-        version="0.1.0",
-    )
+    # ---- Application Lifespan (replaces deprecated on_event) ----
 
-    # CORS
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    # ---- Startup / Shutdown ----
-
-    @app.on_event("startup")
-    async def startup():
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        """Manage application startup and graceful shutdown."""
         global orchestrator
 
         logger.info("Starting coaching server...")
@@ -177,11 +181,28 @@ def create_app():
 
         logger.info(f"Coaching server ready at http://{SERVER_HOST}:{SERVER_PORT}")
 
-    @app.on_event("shutdown")
-    async def shutdown():
+        yield  # Server is running
+
+        # ---- Shutdown ----
         if orchestrator:
             await orchestrator.shutdown()
         logger.info("Coaching server stopped")
+
+    app = FastAPI(
+        title="Guided Chinese Chess - Coaching Server",
+        description="Agent orchestration for Xiangqi coaching",
+        version="0.1.0",
+        lifespan=lifespan,
+    )
+
+    # CORS — explicit origins; wildcard + credentials is rejected by browsers
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization"],
+    )
 
     # ---- WebSocket: /ws/chat ----
 
@@ -236,9 +257,24 @@ def create_app():
                 raw = await websocket.receive_text()
                 logger.info(f"[WS/chat] <<< {raw[:120]}")
 
+                # Guard: enforce size limit and allowlisted message types
+                if len(raw) > MAX_WS_MESSAGE_BYTES:
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": "Message too large (limit: 8 KB)",
+                    })
+                    continue
+
                 try:
                     data = json.loads(raw)
                     msg_type = data.get("type", "")
+
+                    if msg_type not in _ALLOWED_MSG_TYPES:
+                        await websocket.send_json({
+                            "type": "error",
+                            "message": f"Unknown message type: {msg_type}",
+                        })
+                        continue
 
                     if msg_type == "chat":
                         message = data.get("message", "")
@@ -355,12 +391,6 @@ def create_app():
                             "data": state_tracker.get_graph_state(),
                         })
 
-                    else:
-                        await websocket.send_json({
-                            "type": "error",
-                            "message": f"Unknown message type: {msg_type}",
-                        })
-
                 except json.JSONDecodeError:
                     await websocket.send_json({
                         "type": "error",
@@ -464,7 +494,7 @@ def create_app():
         return {
             "status": "ok",
             "engine_connected": engine_connected,
-            "agents_count": len(orchestrator._agents) if orchestrator else 0,
+            "agents_count": sum(1 for a in orchestrator._agents.values() if a is not None) if orchestrator else 0,
         }
 
     @app.get("/health/llm")
@@ -485,6 +515,7 @@ def create_app():
                 "name": agent.name,
             }
             for name, agent in orchestrator._agents.items()
+            if agent is not None
         }
 
     @app.post("/agents/{agent_name}/toggle")

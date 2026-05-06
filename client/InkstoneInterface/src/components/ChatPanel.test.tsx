@@ -117,7 +117,7 @@ describe('ChatPanel', () => {
 
     await screen.findByText('Welcome to Chinese chess.');
 
-    fireEvent.change(screen.getByPlaceholderText('Type a message...'), {
+    fireEvent.change(screen.getByPlaceholderText('Ask your coach about this position...'), {
       target: { value: 'What should I do here?' },
     });
     fireEvent.click(screen.getByRole('button'));
@@ -190,7 +190,7 @@ describe('ChatPanel', () => {
 
     await screen.findByText('Welcome to Chinese chess.');
 
-    fireEvent.change(screen.getAllByPlaceholderText('Type a message...')[0], {
+    fireEvent.change(screen.getAllByPlaceholderText('Ask your coach about this position...')[0], {
       target: { value: 'Give me coaching advice.' },
     });
     fireEvent.click(screen.getByRole('button'));

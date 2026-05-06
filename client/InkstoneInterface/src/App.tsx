@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect, useRef, type CSSProperties } from "react";
+import { useState, useCallback, useEffect, useRef, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import fishermanBg from "./assets/fisherman-bg.jpg";
 import brushStroke from "./assets/brush-stroke.png";
@@ -15,7 +15,13 @@ import pieceRookImg from "./assets/piece-rook.png";
 import pieceCannonImg from "./assets/piece-cannon.png";
 import piecePawnImg from "./assets/piece-pawn.png";
 import { useInkSounds } from "./hooks/useInkSounds";
-import { getLegalMoves, getHintMove, type Board, type Piece } from "./lib/xiangqiRules";
+import { useInkstoneEngineGame } from "./hooks/useInkstoneEngineGame";
+import { useGuidance, useStructuredGuidance } from "./hooks/useGuidance";
+import { GameOverModal } from "./components/inkstone/GameOverModal";
+import { Typewriter } from "./components/inkstone/Typewriter";
+import { type Piece } from "./lib/xiangqiRules";
+import { START_FEN } from "./types";
+import { deriveGamePhaseFromFen, squareToCoords } from "./utils/engineBoardAdapter";
 
 const toRoman = (n: number): string => {
   if (n <= 0) return "";
@@ -73,35 +79,6 @@ const generateBlobPath = (seed: number): string => {
   return `polygon(${points.join(", ")})`;
 };
 
-const createInitialBoard = (): Board => {
-  const board: Board = Array.from({ length: 10 }, () => Array(9).fill(null));
-  board[0][0] = { type: "rook", color: "black" };
-  board[0][1] = { type: "horse", color: "black" };
-  board[0][2] = { type: "elephant", color: "black" };
-  board[0][3] = { type: "advisor", color: "black" };
-  board[0][4] = { type: "king", color: "black" };
-  board[0][5] = { type: "advisor", color: "black" };
-  board[0][6] = { type: "elephant", color: "black" };
-  board[0][7] = { type: "horse", color: "black" };
-  board[0][8] = { type: "rook", color: "black" };
-  board[2][1] = { type: "cannon", color: "black" };
-  board[2][7] = { type: "cannon", color: "black" };
-  for (let i = 0; i < 9; i += 2) board[3][i] = { type: "pawn", color: "black" };
-  board[9][0] = { type: "rook", color: "red" };
-  board[9][1] = { type: "horse", color: "red" };
-  board[9][2] = { type: "elephant", color: "red" };
-  board[9][3] = { type: "advisor", color: "red" };
-  board[9][4] = { type: "king", color: "red" };
-  board[9][5] = { type: "advisor", color: "red" };
-  board[9][6] = { type: "elephant", color: "red" };
-  board[9][7] = { type: "horse", color: "red" };
-  board[9][8] = { type: "rook", color: "red" };
-  board[7][1] = { type: "cannon", color: "red" };
-  board[7][7] = { type: "cannon", color: "red" };
-  for (let i = 0; i < 9; i += 2) board[6][i] = { type: "pawn", color: "red" };
-  return board;
-};
-
 const brushLine = (x1: number, y1: number, x2: number, y2: number, seed: number) => {
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -124,47 +101,6 @@ interface CaptureAnim {
   key: number;
 }
 
-// Placeholder guidance strategies
-interface GuidanceMove {
-  label: string;
-  squares: [number, number][];
-}
-interface GuidanceStrategy {
-  title: string;
-  description: string;
-  keyMoves: GuidanceMove[];
-}
-
-const PLACEHOLDER_STRATEGIES: GuidanceStrategy[] = [
-  {
-    title: "开局：中炮进攻",
-    description: "Place the cannon on the central file to attack the opponent's king directly. This is a classic aggressive opening.",
-    keyMoves: [
-      { label: "Cannon to center", squares: [[7, 1], [7, 4]] },
-      { label: "Advance central pawn", squares: [[6, 4], [5, 4]] },
-      { label: "Develop right horse", squares: [[9, 7], [7, 6]] },
-    ],
-  },
-  {
-    title: "防守：屏风马",
-    description: "Develop both horses to protect the center. The Screen Horse defense is one of the most balanced replies to the Central Cannon.",
-    keyMoves: [
-      { label: "Left horse guards center", squares: [[9, 1], [7, 2]] },
-      { label: "Right horse mirrors", squares: [[9, 7], [7, 6]] },
-      { label: "Advance side pawn", squares: [[6, 2], [5, 2]] },
-    ],
-  },
-  {
-    title: "中盘：车控肋道",
-    description: "Move the chariot to the rib files (columns 2 and 6) to control the board laterally and support attacks.",
-    keyMoves: [
-      { label: "Chariot to rib file", squares: [[9, 0], [5, 0], [5, 1]] },
-      { label: "Support with cannon", squares: [[7, 7], [7, 4]] },
-      { label: "Cross river with pawn", squares: [[6, 6], [5, 6], [4, 6]] },
-    ],
-  },
-];
-
 const T = {
   zh: {
     back: "← 返回", title: "象棋", hint: "提示", rules: "棋规", guidance: "导引", newGame: "新局",
@@ -172,6 +108,7 @@ const T = {
     redCaptures: "红方所获", blackCaptures: "黑方所获",
     selectPieceRule: "选择棋子查看规则", selectPieceRuleSub: "Select a piece to view its rules",
     guidanceTitle: "棋局导引", guidanceSub: "AI-generated guidance (placeholder)",
+    redWins: "红方胜", blackWins: "黑方胜", draw: "和局",
     lang: "EN",
   },
   en: {
@@ -180,15 +117,62 @@ const T = {
     redCaptures: "Red Captures", blackCaptures: "Black Captures",
     selectPieceRule: "Select a piece to view its rules", selectPieceRuleSub: "",
     guidanceTitle: "Game Guidance", guidanceSub: "AI-generated guidance (placeholder)",
+    redWins: "Red Wins", blackWins: "Black Wins", draw: "Draw",
     lang: "中",
   },
 };
 
-const STRATEGY_TITLES_EN: Record<string, string> = {
-  "开局：中炮进攻": "Opening: Central Cannon",
-  "防守：屏风马": "Defense: Screen Horse",
-  "中盘：车控肋道": "Midgame: Chariot on Rib File",
+const PHASE_LABELS: Record<'zh' | 'en', Record<'opening' | 'middlegame' | 'endgame', string>> = {
+  zh: {
+    opening: '开局',
+    middlegame: '中盘',
+    endgame: '残局',
+  },
+  en: {
+    opening: 'Opening',
+    middlegame: 'Middlegame',
+    endgame: 'Endgame',
+  },
 };
+
+function formatPhaseLabel(phase: string | undefined, lang: 'zh' | 'en') {
+  if (!phase) return '';
+  const normalized = phase.trim().toLowerCase();
+  if (normalized === 'opening' || normalized === 'middlegame' || normalized === 'endgame') {
+    return PHASE_LABELS[lang][normalized];
+  }
+  return phase;
+}
+
+function formatBoardMove(move: string) {
+  if (!/^[a-i][0-9][a-i][0-9]$/i.test(move)) return move;
+  return `${move.slice(0, 2)}→${move.slice(2, 4)}`;
+}
+
+function pieceDisplayName(piece: Piece | null | undefined, lang: 'zh' | 'en') {
+  if (!piece) return '';
+  if (lang === 'zh') {
+    return `${piece.color === 'red' ? '红' : '黑'}${PIECE_CHARS[piece.color][piece.type]}`;
+  }
+  const rule = PIECE_RULES.find((entry) => entry.type === piece.type);
+  return `${piece.color === 'red' ? 'Red' : 'Black'} ${rule?.name ?? piece.type}`;
+}
+
+function describeMoveWithPiece(board: (Piece | null)[][], move: string, lang: 'zh' | 'en') {
+  if (!/^[a-i][0-9][a-i][0-9]$/i.test(move)) return move;
+  const fromSquare = move.slice(0, 2);
+  const file = fromSquare.charCodeAt(0) - 'a'.charCodeAt(0);
+  const rank = Number.parseInt(fromSquare[1], 10);
+  const row = 9 - rank;
+  const piece = board[row]?.[file] ?? null;
+  const moveText = formatBoardMove(move);
+  const pieceText = pieceDisplayName(piece, lang);
+  return pieceText ? `${pieceText} ${moveText}` : moveText;
+}
+
+function rewriteCoachSummary(summary: string, board: (Piece | null)[][], lang: 'zh' | 'en') {
+  return summary.replace(/\b[a-i][0-9][a-i][0-9]\b/gi, (match) => describeMoveWithPiece(board, match, lang));
+}
 
 // --- Move trail particle types ---
 type MoveTrailParticle = {
@@ -271,20 +255,34 @@ function generateTrailParticles(
 const XiangqiGame = () => {
   const router = useRouter();
   const { playBrush, playWhoosh, playInkTick, playInkHum, playDryBrush } = useInkSounds();
-  const [board, setBoard] = useState<Board>(createInitialBoard);
-  const [selected, setSelected] = useState<[number, number] | null>(null);
+  const {
+    board,
+    fen,
+    turn,
+    result,
+    selected,
+    legalMoves,
+    captured,
+    lastMoveEvent,
+    hintMove,
+    error,
+    selectSquare,
+    deselectSquare,
+    moveSelectedPiece,
+    requestHint,
+    dismissHint,
+    resetGame,
+  } = useInkstoneEngineGame();
   const [hoveredPiece, setHoveredPiece] = useState<string | null>(null);
   const [hoverKey, setHoverKey] = useState(0);
-  const [turn, setTurn] = useState<PieceColor>("red");
-  const [captured, setCaptured] = useState<{ red: Piece[]; black: Piece[] }>({ red: [], black: [] });
   const [transitioning, setTransitioning] = useState(false);
-  const [hint, setHint] = useState<{ from: [number, number]; to: [number, number] } | null>(null);
-  const [hintKey, setHintKey] = useState(0);
   const [captureAnim, setCaptureAnim] = useState<CaptureAnim | null>(null);
   const [showRules, setShowRules] = useState(false);
   const [ruleImageReady, setRuleImageReady] = useState(false);
   const [showGuidance, setShowGuidance] = useState(false);
   const [guidanceHighlights, setGuidanceHighlights] = useState<[number, number][]>([]);
+  const { guidance: coachGuidance, loading: coachGuidanceLoading, error: coachGuidanceError } = useGuidance(fen, showGuidance);
+  const { guidance: structuredGuidance, loading: structuredGuidanceLoading } = useStructuredGuidance(fen, showGuidance);
   const [capturedAnimKey, setCapturedAnimKey] = useState(0);
   const [lang, setLang] = useState<"zh" | "en">("zh");
   const [moveAnim, setMoveAnim] = useState<MoveAnim | null>(null);
@@ -295,10 +293,10 @@ const XiangqiGame = () => {
   const t = T[lang];
 
   useEffect(() => {
-    if (!hint) return;
-    const t = setTimeout(() => setHint(null), 3000);
+    if (!hintMove) return;
+    const t = setTimeout(() => dismissHint(), 3000);
     return () => clearTimeout(t);
-  }, [hint, hintKey]);
+  }, [hintMove, dismissHint]);
 
   useEffect(() => {
     if (!moveAnim) return;
@@ -312,11 +310,6 @@ const XiangqiGame = () => {
     return () => clearTimeout(t);
   }, [captureAnim]);
 
-  const legalMoves = useMemo(() => {
-    if (!selected) return [];
-    return getLegalMoves(board, selected[0], selected[1]);
-  }, [board, selected]);
-
   const isLegalTarget = useCallback(
     (r: number, c: number) => legalMoves.some(([mr, mc]) => mr === r && mc === c),
     [legalMoves]
@@ -328,82 +321,49 @@ const XiangqiGame = () => {
   };
 
   const handleReset = () => {
-    setBoard(createInitialBoard());
-    setSelected(null);
-    setTurn("red");
-    setCaptured({ red: [], black: [] });
-    setHint(null);
+    resetGame();
+    dismissHint();
     setCaptureAnim(null);
   };
 
   const handleHint = () => {
-    const h = getHintMove(board, turn);
-    if (h) {
-      setHint(h);
-      setHintKey(k => k + 1);
-      playBrush();
-    }
+    if (requestHint()) playBrush();
   };
 
   const handleCellClick = useCallback((row: number, col: number) => {
+    if (result !== "in_progress") return;
     const piece = board[row][col];
     if (selected) {
       const [sr, sc] = selected;
       const selectedPiece = board[sr][sc];
-      if (sr === row && sc === col) { setSelected(null); return; }
-      if (piece && piece.color === turn) { setSelected([row, col]); return; }
+      if (sr === row && sc === col) { deselectSquare(); return; }
+      if (piece && piece.color === turn) { selectSquare(row, col); return; }
 
       if (selectedPiece && isLegalTarget(row, col)) {
-        const BASE_CELL = 56;
-        const m = BASE_CELL / 2;
-        const bp = 16;
-        // Compute pixel positions for animation
-        const fromX = bp + m + sc * BASE_CELL;
-        const fromY = bp + m + sr * BASE_CELL;
-        const toX = bp + m + col * BASE_CELL;
-        const toY = bp + m + row * BASE_CELL;
-
-        // Trigger trail animation
-        const dist = Math.sqrt((toX - fromX) ** 2 + (toY - fromY) ** 2);
-        const speedFactor = Math.max(0.5, Math.min(2.5, dist / 120));
-        const animDuration = Math.max(400, Math.min(900, 300 + dist * 2));
-        setMoveAnim({
-          fromX, fromY, toX, toY,
-          piece: selectedPiece,
-          key: Date.now(),
-          particles: generateTrailParticles(fromX, fromY, toX, toY, speedFactor),
-          duration: animDuration,
-        });
-        playDryBrush();
-
-        const newBoard = board.map(r => [...r]);
-        const capturedPiece = newBoard[row][col];
-        newBoard[row][col] = selectedPiece;
-        newBoard[sr][sc] = null;
-        setBoard(newBoard);
-        setSelected(null);
-        setHint(null);
-        playBrush();
-        if (capturedPiece) {
-          setCaptured(prev => ({ ...prev, [turn]: [...prev[turn], capturedPiece] }));
-          setCapturedAnimKey(k => k + 1);
-          setCaptureAnim({
-            x: toX,
-            y: toY,
-            key: Date.now(),
-          });
+        if (moveSelectedPiece(row, col)) {
+          dismissHint();
         }
-        setTurn(turn === "red" ? "black" : "red");
-        setTimeout(() => playWhoosh(), 150);
       }
     } else {
       if (piece && piece.color === turn) {
-        setSelected([row, col]);
-        playInkTick();
-        setTimeout(() => playInkHum(), 60);
+        if (selectSquare(row, col)) {
+          playInkTick();
+          setTimeout(() => playInkHum(), 60);
+        }
       }
     }
-  }, [board, selected, turn, isLegalTarget, playBrush, playWhoosh, playInkTick, playInkHum, playDryBrush]);
+  }, [
+    board,
+    selected,
+    turn,
+    result,
+    isLegalTarget,
+    deselectSquare,
+    selectSquare,
+    moveSelectedPiece,
+    playInkTick,
+    playInkHum,
+  ]);
 
   const BASE_CELL = 56;
   const margin = BASE_CELL / 2;
@@ -430,12 +390,13 @@ const XiangqiGame = () => {
 
   const handleDragStart = useCallback((row: number, col: number, clientX: number, clientY: number) => {
     const piece = board[row][col];
-    if (!piece || piece.color !== turn) return;
+    if (!piece || piece.color !== turn || result !== "in_progress") return;
     // Select immediately — this shows the selection animation + legal moves
     clickSuppressed.current = true;
-    setSelected([row, col]);
-    playInkTick();
-    setTimeout(() => playInkHum(), 60);
+    if (selectSquare(row, col)) {
+      playInkTick();
+      setTimeout(() => playInkHum(), 60);
+    }
 
     const coords = getBoardLocalCoords(clientX, clientY);
     if (!coords) return;
@@ -448,7 +409,7 @@ const XiangqiGame = () => {
       lastTrailTime: Date.now(),
       isDragging: false,
     });
-  }, [board, turn, playInkTick, playInkHum, getBoardLocalCoords]);
+  }, [board, turn, result, playInkTick, playInkHum, getBoardLocalCoords, selectSquare]);
 
   const DRAG_THRESHOLD = 12; // px before committing to drag mode
 
@@ -528,6 +489,48 @@ const XiangqiGame = () => {
     };
   }, [dragState, handleDragMove, handleDragEnd]);
 
+  useEffect(() => {
+    if (!lastMoveEvent) return;
+
+    const [[fromRow, fromCol], [toRow, toCol]] = [lastMoveEvent.from, lastMoveEvent.to];
+    const fromX = boardPad + margin + fromCol * BASE_CELL;
+    const fromY = boardPad + margin + fromRow * BASE_CELL;
+    const toX = boardPad + margin + toCol * BASE_CELL;
+    const toY = boardPad + margin + toRow * BASE_CELL;
+    const dist = Math.sqrt((toX - fromX) ** 2 + (toY - fromY) ** 2);
+    const speedFactor = Math.max(0.5, Math.min(2.5, dist / 120));
+    const animDuration = Math.max(400, Math.min(900, 300 + dist * 2));
+
+    if (lastMoveEvent.movedPiece) {
+      setMoveAnim({
+        fromX,
+        fromY,
+        toX,
+        toY,
+        piece: lastMoveEvent.movedPiece,
+        key: lastMoveEvent.key,
+        particles: generateTrailParticles(fromX, fromY, toX, toY, speedFactor),
+        duration: animDuration,
+      });
+    }
+
+    dismissHint();
+    playDryBrush();
+    playBrush();
+
+    if (lastMoveEvent.capturedPiece) {
+      setCapturedAnimKey((key) => key + 1);
+      setCaptureAnim({
+        x: toX,
+        y: toY,
+        key: lastMoveEvent.key,
+      });
+    }
+
+    const whooshTimeout = window.setTimeout(() => playWhoosh(), 150);
+    return () => window.clearTimeout(whooshTimeout);
+  }, [lastMoveEvent, boardPad, margin, BASE_CELL, playDryBrush, playBrush, playWhoosh]);
+
   const buildTally = (pieces: Piece[]) => {
     const tally: Record<string, { piece: Piece; count: number }> = {};
     for (const p of pieces) {
@@ -540,6 +543,51 @@ const XiangqiGame = () => {
 
   const selectedPiece = selected ? board[selected[0]][selected[1]] : null;
   const selectedRule = selectedPiece ? PIECE_RULES.find(r => r.type === selectedPiece.type) : null;
+  const phaseLabel = formatPhaseLabel(deriveGamePhaseFromFen(fen), lang);
+  const isAtStartFen = fen === START_FEN;
+  const primaryGuidanceMove = structuredGuidance?.recommendedLine[0] ?? null;
+  const primaryGuidanceSquares: [number, number][] = primaryGuidanceMove
+    ? [primaryGuidanceMove.from, primaryGuidanceMove.to]
+    : [];
+  const primaryGuidanceActive =
+    primaryGuidanceSquares.length > 0 &&
+    JSON.stringify(guidanceHighlights) === JSON.stringify(primaryGuidanceSquares);
+  const formattedCoachSummary = coachGuidance
+    ? rewriteCoachSummary(coachGuidance.summary, board, lang)
+    : '';
+
+  // Pills for "Best move:" / "Best line:" become clickable. Click parses
+  // the move that follows in the prose and toggles the board highlight,
+  // matching the behaviour of the recommended-line chips below.
+  const handleCoachPillClick = useCallback((label: string) => {
+    if (!formattedCoachSummary) return;
+    const normalized = label.trim();
+    const lower = normalized.toLowerCase();
+    if (!lower.startsWith('best move') && !lower.startsWith('best line')) return;
+
+    const labelIdx = formattedCoachSummary.indexOf(normalized);
+    if (labelIdx < 0) return;
+    const after = formattedCoachSummary.slice(labelIdx + normalized.length);
+    const moveMatch = after.match(/[a-i][0-9][a-i][0-9]/);
+    if (!moveMatch) return;
+
+    const move = moveMatch[0];
+    const from = squareToCoords(move.slice(0, 2));
+    const to = squareToCoords(move.slice(2, 4));
+    if (!from || !to) return;
+
+    const squares: [number, number][] = [from, to];
+    setGuidanceHighlights((prev) =>
+      JSON.stringify(prev) === JSON.stringify(squares) ? [] : squares,
+    );
+  }, [formattedCoachSummary]);
+  const resultLabel = result === "red_wins"
+    ? t.redWins
+    : result === "black_wins"
+      ? t.blackWins
+      : result === "draw"
+        ? t.draw
+        : null;
   // Wait for rule image decode before showing
   useEffect(() => {
     if (!selectedRule) { setRuleImageReady(false); return; }
@@ -606,7 +654,29 @@ const XiangqiGame = () => {
         <div className="flex flex-col items-center flex-shrink-0" style={{ marginLeft: "2vw" }}>
           {/* Turn indicator */}
           <div className="mb-3 sm:mb-4 relative" key={turn}>
-            {turn === "black" ? (
+            {resultLabel ? (
+              <div className="relative px-6 sm:px-8 py-2 flex items-center justify-center overflow-hidden" style={{ minHeight: 40 }}>
+                <img
+                  src={brushStroke.src}
+                  alt=""
+                  className="absolute left-0 w-full pointer-events-none opacity-75"
+                  style={{
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    height: "auto",
+                    maxHeight: "100%",
+                    objectFit: "contain",
+                    animation: "brush-swipe 0.6s cubic-bezier(0.22,1,0.36,1) forwards",
+                  }}
+                />
+                <span
+                  className="font-calligraphy text-rice-paper text-base sm:text-lg tracking-wider relative z-10"
+                  style={{ animation: "turn-text-in 0.5s 0.2s ease-out both" }}
+                >
+                  {resultLabel}
+                </span>
+              </div>
+            ) : turn === "black" ? (
               <div className="relative px-6 sm:px-8 py-2 flex items-center justify-center overflow-hidden" style={{ minHeight: 40 }}>
                 <img
                   src={brushStroke.src}
@@ -709,14 +779,14 @@ const XiangqiGame = () => {
               })}
 
               {/* Hint overlay */}
-              {hint && (
+              {hintMove && (
                 <>
-                  {[hint.from, hint.to].map(([hr, hc], idx) => {
+                  {[hintMove.from, hintMove.to].map(([hr, hc], idx) => {
                     const x = boardPad + margin + hc * BASE_CELL;
                     const y = boardPad + margin + hr * BASE_CELL;
                     return (
                       <div
-                        key={`hint-${idx}-${hintKey}`}
+                        key={`hint-${idx}-${hintMove.key}`}
                         className="absolute pointer-events-none hint-ink-spread"
                         style={{
                           left: x - 26,
@@ -1004,8 +1074,8 @@ const XiangqiGame = () => {
                       >
                         <span
                           style={{ fontFamily: "'Ma Shan Zheng', cursive" }}
-                          className={`text-sm sm:text-base leading-none ${
-                            piece.color === "black" ? "text-ink/70" : "text-ink/50"
+                          className={`font-calligraphy text-base sm:text-lg leading-none ${
+                            piece.color === "black" ? "text-ink/80" : "text-ink/60"
                           }`}
                         >
                           {PIECE_CHARS[piece.color][piece.type]}
@@ -1022,6 +1092,12 @@ const XiangqiGame = () => {
               );
             })}
           </div>
+
+          {error && (
+            <div className="mt-4 max-w-md rounded-lg bg-white/70 backdrop-blur-sm px-4 py-3 text-center text-sm text-ink/70 shadow-sm">
+              {error}
+            </div>
+          )}
         </div>
 
         {/* Right: rules panel — always occupies space when showRules is on */}
@@ -1068,41 +1144,79 @@ const XiangqiGame = () => {
 
         {/* Guidance panel */}
         {showGuidance && (
-          <div className="hidden lg:flex flex-1 items-start justify-center mt-12 min-w-[280px]">
+          <div className="hidden lg:flex flex-1 items-start justify-center mt-12 min-w-[560px]">
             <div
-              className="w-80 xl:w-96 flex-shrink-0"
+              className="w-[40rem] xl:w-[48rem] flex-shrink-0"
               style={{ animation: "rules-fade-in 0.5s ease-out both" }}
             >
               <div className="rounded-lg bg-white overflow-hidden shadow-sm p-5">
                 <h3 className="font-calligraphy text-ink text-2xl xl:text-3xl text-center mb-4">
                   {t.guidanceTitle}
                 </h3>
-                <p className="text-ink/40 text-xs text-center mb-5">{t.guidanceSub}</p>
-                <div className="space-y-5">
-                  {PLACEHOLDER_STRATEGIES.map((strategy, si) => (
-                    <div key={si} className="space-y-2">
-                      <h4 className="font-calligraphy text-ink text-lg">{lang === "en" ? (STRATEGY_TITLES_EN[strategy.title] || strategy.title) : strategy.title}</h4>
-                      <p className="text-ink/50 text-xs leading-relaxed">{strategy.description}</p>
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {strategy.keyMoves.map((move, mi) => (
-                          <button
-                            key={mi}
-                            onClick={() => setGuidanceHighlights(prev =>
-                              JSON.stringify(prev) === JSON.stringify(move.squares) ? [] : move.squares
-                            )}
-                            className={`text-[11px] px-2.5 py-1 rounded-full border transition-all font-calligraphy tracking-wide ${
-                              JSON.stringify(guidanceHighlights) === JSON.stringify(move.squares)
-                                ? "bg-ink text-rice-paper border-ink"
-                                : "border-ink/20 text-ink/60 hover:border-ink/40 hover:text-ink/80"
-                            }`}
-                          >
-                            {move.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <p className="text-ink/40 text-xs text-center mb-5 tracking-[0.2em] uppercase">
+                  {phaseLabel || t.guidanceSub}
+                </p>
+
+                {/* Coach prose summary — animates word-by-word as the LLM
+                    response arrives for the current FEN. The "Consulting
+                    the coach…" placeholder is suppressed at the starting
+                    position so the panel doesn't flash a wait state when
+                    the player has not yet moved; reference openings show
+                    instead. After the first move, the placeholder appears
+                    until the LLM responds, then the typewriter takes over. */}
+                {(coachGuidance || (coachGuidanceLoading && !isAtStartFen)) && (
+                  <div className="mb-5 pb-5 border-b border-ink/10 min-h-[3rem]">
+                    {coachGuidance ? (
+                      <Typewriter
+                        key={`${fen}-${structuredGuidance?.key ?? 'coach'}`}
+                        text={formattedCoachSummary}
+                        className="text-ink/70 text-sm leading-relaxed whitespace-pre-line"
+                        onPillClick={handleCoachPillClick}
+                      />
+                    ) : (
+                      <p className="text-ink/40 text-xs italic">{lang === 'zh' ? '正在请教棋师…' : 'Consulting the coach…'}</p>
+                    )}
+                  </div>
+                )}
+
+                {coachGuidanceError && !coachGuidance && (
+                  <p className="text-ink/40 text-xs italic mb-4">
+                    {coachGuidanceError}
+                  </p>
+                )}
+
+                {primaryGuidanceMove && (
+                  <div className="mb-5 pb-5 border-b border-ink/10">
+                    <h4 className="font-calligraphy text-ink text-lg mb-2">
+                      {lang === 'zh' ? '最佳着法' : 'Best Move'}
+                    </h4>
+                    <button
+                      onClick={() =>
+                        setGuidanceHighlights((prev) =>
+                          JSON.stringify(prev) === JSON.stringify(primaryGuidanceSquares) ? [] : primaryGuidanceSquares,
+                        )
+                      }
+                      className={`w-full text-left px-3 py-2 rounded-xl border transition-all ${
+                        primaryGuidanceActive
+                          ? 'bg-ink text-rice-paper border-ink'
+                          : 'border-ink/20 text-ink/70 hover:border-ink/40 hover:text-ink'
+                      }`}
+                    >
+                      <p className="font-calligraphy text-sm tracking-wide">
+                        {describeMoveWithPiece(board, primaryGuidanceMove.move, lang)}
+                      </p>
+                      <p className={`text-[11px] mt-1 ${primaryGuidanceActive ? 'text-rice-paper/80' : 'text-ink/40'}`}>
+                        {lang === 'zh' ? '点击在棋盘上高亮路线' : 'Tap to highlight the route on the board'}
+                      </p>
+                    </button>
+                  </div>
+                )}
+
+                {structuredGuidanceLoading && !structuredGuidance && (
+                  <p className="text-ink/30 text-xs italic mb-4">
+                    {lang === 'zh' ? '解析中…' : 'Analysing position…'}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -1363,6 +1477,13 @@ const XiangqiGame = () => {
           100% { clip-path: inset(0 0 0 0); opacity: 0; }
         }
       `}</style>
+
+      <GameOverModal
+        result={result}
+        lang={lang}
+        onRestart={handleReset}
+        onQuit={handleBack}
+      />
     </div>
   );
 };
